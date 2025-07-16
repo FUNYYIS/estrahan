@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الاستراحة</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Tajawal', sans-serif;
+      background-color: #f6f1e7;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #splash {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    #splash video {
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+    }
+
+    #main-content {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background-color: #f6f1e7;
+    }
+
+    .logo {
+      width: 90px;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .content-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      margin: 10px;
+      font-size: 18px;
+      background-color: #c76b29;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 80%;
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- شاشة الترحيب بالفيديو -->
+<div id="splash">
+  <video autoplay muted playsinline onended="showMain()">
+    <source src="welcome.mp4" type="video/mp4" />
+  </video>
+</div>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="main-content">
+  <img src="logo.png" class="logo" alt="شعار الاستراحة" />
+  <div class="content-body">
+    <h1>مرحباً بك في تطبيق الاستراحة</h1>
+    <button class="btn">تسجيل الدخول</button>
+    <button class="btn">إنشاء حساب جديد</button>
+  </div>
+</div>
+
+<script>
+  function showMain() {
+    document.getElementById("splash").style.display = "none";
+    document.getElementById("main-content").style.display = "block";
+  }
+</script>
+
+</body>
+</html>

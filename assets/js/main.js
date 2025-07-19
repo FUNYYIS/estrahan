@@ -226,12 +226,19 @@ function setupRecaptcha(containerId) {
 
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
     let phoneNumber = isRegister ? document.getElementById('register-phone-number').value : document.getElementById('phone-number').value;
     
-    // تحويل الرقم إلى الصيغة الدولية
-    if (phoneNumber.startsWith('05')) {
-        phoneNumber = '+966' + phoneNumber.substring(1);
+    // ✅ التحقق من صحة رقم الجوال (يبدأ بـ 05 ويتكون من 10 أرقام)
+    const phoneRegex = /^05\d{8}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+        showAlert('الرجاء إدخال رقم جوال سعودي صحيح (مثال: 0512345678).');
+        return;
     }
+
+    // تحويل الرقم إلى الصيغة الدولية
+    phoneNumber = '+966' + phoneNumber.substring(1);
 
     if(isRegister) {
         tempName = document.getElementById('register-name').value;
@@ -240,6 +247,10 @@ async function handleSendCode(e, isRegister = false) {
             return;
         }
     }
+
+    // ✅ تعطيل الزر لمنع الضغط المتكرر
+    submitButton.disabled = true;
+    submitButton.textContent = 'جاري الإرسال...';
 
     const appVerifier = window.recaptchaVerifier;
 
@@ -263,12 +274,14 @@ async function handleSendCode(e, isRegister = false) {
         console.error("SMS Error:", error);
         let userMessage = 'فشل إرسال الرمز. يرجى المحاولة مرة أخرى.';
         if (error.code === 'auth/invalid-phone-number') {
-            userMessage = 'الرقم الذي أدخلته غير صحيح. تأكد من أنه يبدأ بـ 05 ويتكون من 10 أرقام.';
+            userMessage = 'الرقم الذي أدخلته غير صحيح.';
         } else if (error.code === 'auth/too-many-requests') {
             userMessage = 'لقد حاولت عدة مرات. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.';
         }
         showAlert(userMessage);
-        // إعادة تعيين reCAPTCHA للسماح بمحاولة أخرى
+        // ✅ إعادة تفعيل الزر في حال حدوث خطأ
+        submitButton.disabled = false;
+        submitButton.textContent = 'إرسال الرمز';
         try {
             window.recaptchaVerifier.render().then(widgetId => {
                 grecaptcha.reset(widgetId);

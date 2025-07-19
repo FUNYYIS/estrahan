@@ -1,21 +1,25 @@
-# example netlify.toml
-[build]
-  command = "# no build command"
-  functions = "netlify/functions"
-  publish = "."
+# إعادة توجيه أساسية لضمان عمل التطبيق كصفحة واحدة (SPA)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
-  ## Uncomment to use this redirect for Single Page Applications like create-react-app.
-  ## Not needed for static site generators.
-  #[[redirects]]
-  #  from = "/*"
-  #  to = "/index.html"
-  #  status = 200
+# إعدادات الهيدرات لزيادة الأمان والأداء
+[[headers]]
+  # تطبيق هذه الهيدرات على جميع صفحات الموقع
+  for = "/*"
+  [headers.values]
+    # (HSTS) إجبار المتصفح على استخدام اتصال آمن (HTTPS) دائماً
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    
+    # (XFO) منع الموقع من العرض داخل إطار (iframe) للحماية من هجمات Clickjacking
+    X-Frame-Options = "DENY"
+    
+    # (CSP) سياسة أمان المحتوى لتحديد المصادر الموثوقة فقط
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://api.aladhan.com https://api-football-v1.p.rapidapi.com https://api.allorigins.win https://newsapi.org; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://media.api-sports.io; media-src 'self' https://assets.mixkit.co;"
 
-  ## (optional) Settings for Netlify Dev
-  ## https://github.com/netlify/cli/blob/main/docs/netlify-dev.md#project-detection
-  #[dev]
-  #  command = "yarn start" # Command to start your dev server
-  #  port = 3000 # Port that the dev server will be listening on
-  #  publish = "dist" # Folder with the static content for _redirect file
-
-  ## more info on configuring this file: https://ntl.fyi/file-based-build-config
+# إعدادات التخزين المؤقت (Caching) للملفات
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

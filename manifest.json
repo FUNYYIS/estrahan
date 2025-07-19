@@ -1,0 +1,23 @@
+{
+  "name": "الاستراحة",
+  "short_name": "الاستراحة",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f5eada",
+  "theme_color": "#c76b29",
+  "description": "تطبيق لإدارة وتنظيم شؤون استراحة الشباب",
+  "icons": [
+    {
+      "src": "assets/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

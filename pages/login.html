@@ -1,0 +1,26 @@
+<!-- ====================================================== -->
+<!--                  pages/login.html                  -->
+<!-- ====================================================== -->
+<div class="full-screen-container">
+    <div class="content-body">
+        <h1>تسجيل الدخول</h1>
+        <form id="phone-form" style="width: 100%;">
+            <div class="input-group">
+                <label for="phone-number">رقم الجوال</label>
+                <input type="tel" id="phone-number" placeholder="05XXXXXXXX" required>
+            </div>
+            <button type="submit" class="btn">إرسال الرمز</button>
+            <div id="recaptcha-container" class="mt-4"></div>
+        </form>
+        <form id="code-form" style="width: 100%; display: none;">
+            <div class="input-group">
+                <label for="verification-code">رمز التحقق</label>
+                <input type="text" id="verification-code" required>
+            </div>
+            <button type="submit" class="btn">تحقق ودخول</button>
+        </form>
+        <p class="link-text">
+            ليس لديك حساب؟ <a href="#register">أنشئ حساب جديد</a>
+        </p>
+    </div>
+</div>

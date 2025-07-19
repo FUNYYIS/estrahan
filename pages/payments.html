@@ -1,0 +1,30 @@
+<!-- ====================================================== -->
+<!--                pages/payments.html                 -->
+<!-- ====================================================== -->
+<div class="full-screen-container">
+    <div class="page-content-container">
+        <h1 class="text-2xl font-bold mb-4">💸 ادفع قطتك الشهرية</h1>
+        <div class="list-item-card flex-col items-start p-6 space-y-4 mb-6">
+            <div class="w-full">
+                <label class="text-sm">اسم البنك</label>
+                <p class="text-lg font-bold">بنك الراجحي</p>
+            </div>
+            <div class="w-full">
+                <label class="text-sm">اسم المستفيد</label>
+                <p class="text-lg font-bold">مدير الاستراحة</p>
+            </div>
+            <div class="w-full">
+                <label class="text-sm">رقم الآيبان</label>
+                <div class="flex items-center justify-between">
+                    <p class="text-lg font-bold" id="iban">SA00 ... 7890</p>
+                    <button onclick="copyToClipboard('SA00 1234 5678 9012 3456 7890')" class="btn" style="width:auto; padding: 5px 10px; font-size: 12px;">نسخ</button>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="text-xl font-bold mb-4">📄 سجل المدفوعات</h2>
+        <div id="payment-log-list" class="space-y-2">
+             <p class="text-center">جاري تحميل السجل...</p>
+        </div>
+    </div>
+</div>

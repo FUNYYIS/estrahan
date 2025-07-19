@@ -1,0 +1,15 @@
+<!-- ====================================================== -->
+<!--                   pages/chat.html                    -->
+<!-- ====================================================== -->
+<div class="full-screen-container" style="justify-content: flex-end;">
+    <div class="page-content-container" style="height: calc(100vh - 100px); display: flex; flex-direction: column;">
+        <h1 class="text-2xl font-bold mb-4 flex-shrink-0">💬 الدردشة العامة</h1>
+        <div id="chat-box" class="chat-box flex-grow p-4 overflow-y-auto space-y-4 mb-4" style="background: var(--card-bg); border-radius: 1rem;">
+            <!-- Messages will be loaded here -->
+        </div>
+        <form id="chat-form" class="flex gap-2 flex-shrink-0">
+            <input type="text" id="chat-input" placeholder="اكتب رسالتك..." class="w-full p-3 rounded-lg">
+            <button type="submit" class="btn p-3"><i data-lucide="send"></i></button>
+        </form>
+    </div>
+</div>

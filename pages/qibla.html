@@ -1,0 +1,15 @@
+<!-- ====================================================== -->
+<!--                   pages/qibla.html                   -->
+<!-- ====================================================== -->
+ <div class="full-screen-container">
+    <div class="page-content-container">
+        <a href="#services" class="font-bold mb-4 inline-block" style="color: var(--primary-accent);">&larr; العودة للخدمات</a>
+        <h1 class="text-2xl font-bold mb-4">🧭 اتجاه القبلة</h1>
+        <div id="qibla-container" class="list-item-card p-6 text-center">
+            <p id="qibla-status" class="mb-4">قم بالسماح بالوصول للموقع وحرك جهازك لتحديد القبلة.</p>
+            <div id="compass" style="width: 200px; height: 200px; background-image: url('https://i.imgur.com/s2k3zL6.png'); background-size: cover; position: relative; margin: auto; transition: transform 0.5s ease-out; display:none;">
+                <div id="qibla-arrow" style="width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 100px solid var(--primary-accent); position: absolute; top: 0; left: 50%; transform: translateX(-50%); transform-origin: bottom center; transition: transform 0.5s;"></div>
+            </div>
+        </div>
+    </div>
+</div>

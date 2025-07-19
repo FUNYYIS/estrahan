@@ -5,7 +5,9 @@ import {
     RecaptchaVerifier,
     signInWithPhoneNumber,
     signOut, 
-    onAuthStateChanged
+    onAuthStateChanged,
+    PhoneAuthProvider,
+    signInWithCredential
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -50,7 +52,6 @@ const appLogo = document.getElementById('app-logo');
 
 // --- حالة التطبيق ---
 let currentUser = null; 
-let confirmationResult = null;
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 
@@ -243,7 +244,13 @@ async function handleSendCode(e, isRegister = false) {
     const appVerifier = window.recaptchaVerifier;
 
     try {
-        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        // تخزين معرف التحقق في sessionStorage ليبقى حتى بعد تحديث الصفحة
+        sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
+        if (isRegister) {
+            sessionStorage.setItem('tempName', tempName);
+        }
+
         showAlert('تم إرسال رمز التحقق إلى جوالك.');
         if(isRegister) {
             document.getElementById('register-form').style.display = 'none';
@@ -254,7 +261,14 @@ async function handleSendCode(e, isRegister = false) {
         }
     } catch (error) {
         console.error("SMS Error:", error);
-        showAlert('فشل إرسال الرمز. تأكد من صحة الرقم.');
+        let userMessage = 'فشل إرسال الرمز. يرجى المحاولة مرة أخرى.';
+        if (error.code === 'auth/invalid-phone-number') {
+            userMessage = 'الرقم الذي أدخلته غير صحيح. تأكد من أنه يبدأ بـ 05 ويتكون من 10 أرقام.';
+        } else if (error.code === 'auth/too-many-requests') {
+            userMessage = 'لقد حاولت عدة مرات. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.';
+        }
+        showAlert(userMessage);
+        // إعادة تعيين reCAPTCHA للسماح بمحاولة أخرى
         try {
             window.recaptchaVerifier.render().then(widgetId => {
                 grecaptcha.reset(widgetId);
@@ -266,21 +280,30 @@ async function handleSendCode(e, isRegister = false) {
 async function handleVerifyCode(e, isRegister = false) {
     e.preventDefault();
     const code = isRegister ? document.getElementById('register-verification-code').value : document.getElementById('verification-code').value;
-    if (!confirmationResult) {
-        showAlert('حدث خطأ، يرجى طلب الرمز مرة أخرى.');
+    // استرجاع معرف التحقق من sessionStorage
+    const verificationId = sessionStorage.getItem('firebaseVerificationId');
+
+    if (!verificationId) {
+        showAlert('انتهت صلاحية جلسة التحقق. يرجى طلب الرمز مرة أخرى.');
         return;
     }
     try {
-        const result = await confirmationResult.confirm(code);
+        const credential = PhoneAuthProvider.credential(verificationId, code);
+        const result = await signInWithCredential(auth, credential);
         const user = result.user;
+        
         if (isRegister) {
+             const name = sessionStorage.getItem('tempName');
              await setDoc(doc(db, "users", user.uid), {
-                name: tempName,
+                name: name,
                 phone: user.phoneNumber,
                 paymentStatus: 'late',
                 createdAt: serverTimestamp()
             });
         }
+        // مسح البيانات المؤقتة بعد النجاح
+        sessionStorage.removeItem('firebaseVerificationId');
+        sessionStorage.removeItem('tempName');
         // onAuthStateChanged will handle navigation
     } catch (error) {
         console.error("Verification Error:", error);

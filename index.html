@@ -3,21 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> الاستراحة</title>
-    
-    <!-- Google Fonts: Tajawal -->
+    <title>🏕️ الاستراحة - تنظيم ومتابعة</title>
+    <meta name="description" content="تطبيق الاستراحة لإدارة وتنظيم الأمور المالية والإدارية بين أعضاء الاستراحة الشبابية، بما في ذلك جمع الاشتراكات، متابعة المدفوعات، الدردشة، ومواعيد المباريات.">
+    <meta name="robots" content="index, follow">
+
+    <!-- Content Security Policy to enhance security -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://api.aladhan.com https://api-football-v1.p.rapidapi.com https://api.allorigins.win https://newsapi.org; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://media.api-sports.io; media-src 'self'; frame-src 'self' https://www.google.com https://*.firebaseapp.com;">
+
+    <!-- Preconnect to Google Fonts for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     
+    <!-- PWA Manifest & Favicon -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="assets/images/favicon.ico">
+    <meta name="theme-color" content="#c76b29">
+
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="assets/css/main.css">
+    
+    <!-- Non-render-blocking script for Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+    
+    <!-- Non-render-blocking font loading -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap"></noscript>
 
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide-icons@0.292.0/dist/lucide.min.js"></script>
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -28,7 +40,7 @@
 
     <!-- Main App Content -->
     <div id="main-content">
-        <img id="app-logo" src="assets/images/logo.png" alt="شعار الاستراحة" class="logo">
+        <img id="app-logo" loading="lazy" src="assets/images/logo.png" alt="شعار الاستراحة" class="logo">
         <div id="page-content"></div>
         <nav id="bottom-nav" class="bottom-bar" style="display: none;">
             <ul>
@@ -58,7 +70,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                navigator.serviceWorker.register('service-worker.js').then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 }, err => {
                     console.log('ServiceWorker registration failed: ', err);

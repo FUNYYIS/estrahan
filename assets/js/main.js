@@ -40,7 +40,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const ADMIN_UID = "YOUR_ADMIN_UID_HERE"; //  <-- هام: ضع هنا الـ UID الخاص بحساب الأدمن
+const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
 
 // --- عناصر واجهة المستخدم ---
 const pageContent = document.getElementById('page-content');
@@ -226,19 +226,11 @@ function setupRecaptcha(containerId) {
 
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
     let phoneNumber = isRegister ? document.getElementById('register-phone-number').value : document.getElementById('phone-number').value;
     
-    // ✅ التحقق من صحة رقم الجوال (يبدأ بـ 05 ويتكون من 10 أرقام)
-    const phoneRegex = /^05\d{8}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-        showAlert('الرجاء إدخال رقم جوال سعودي صحيح (مثال: 0512345678).');
-        return;
+    if (phoneNumber.startsWith('05')) {
+        phoneNumber = '+966' + phoneNumber.substring(1);
     }
-
-    // تحويل الرقم إلى الصيغة الدولية
-    phoneNumber = '+966' + phoneNumber.substring(1);
 
     if(isRegister) {
         tempName = document.getElementById('register-name').value;
@@ -247,10 +239,6 @@ async function handleSendCode(e, isRegister = false) {
             return;
         }
     }
-
-    // ✅ تعطيل الزر لمنع الضغط المتكرر
-    submitButton.disabled = true;
-    submitButton.textContent = 'جاري الإرسال...';
 
     const appVerifier = window.recaptchaVerifier;
 
@@ -272,16 +260,8 @@ async function handleSendCode(e, isRegister = false) {
         }
     } catch (error) {
         console.error("SMS Error:", error);
-        let userMessage = 'فشل إرسال الرمز. يرجى المحاولة مرة أخرى.';
-        if (error.code === 'auth/invalid-phone-number') {
-            userMessage = 'الرقم الذي أدخلته غير صحيح.';
-        } else if (error.code === 'auth/too-many-requests') {
-            userMessage = 'لقد حاولت عدة مرات. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.';
-        }
-        showAlert(userMessage);
-        // ✅ إعادة تفعيل الزر في حال حدوث خطأ
-        submitButton.disabled = false;
-        submitButton.textContent = 'إرسال الرمز';
+        showAlert('فشل إرسال الرمز. تأكد من صحة الرقم وأنه بالصيغة الدولية (+966...).');
+        // This might not always work depending on environment, but it's a good practice
         try {
             window.recaptchaVerifier.render().then(widgetId => {
                 grecaptcha.reset(widgetId);

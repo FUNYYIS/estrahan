@@ -1,5 +1,5 @@
 // اسم ذاكرة التخزين المؤقت (Cache) للتطبيق
-const CACHE_NAME = 'estraha-cache-v2'; // تم تغيير الإصدار لتحديث الكاش
+const CACHE_NAME = 'estraha-cache-v3'; // تم تغيير الإصدار لتحديث الكاش
 
 // قائمة الملفات الأساسية التي سيتم تخزينها للعمل دون اتصال
 const urlsToCache = [
@@ -40,19 +40,23 @@ self.addEventListener('install', event => {
   );
 });
 
-// حدث الجلب: يتم تشغيله عند كل طلب يقوم به التطبيق (مثل طلب صفحة أو صورة)
+// حدث الجلب: يتم تشغيله عند كل طلب يقوم به التطبيق (استراتيجية الشبكة أولاً)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // إذا كان الملف موجوداً في الـ Cache، قم بإرجاعه مباشرة
-        if (response) {
-          return response;
-        }
-        // إذا لم يكن موجوداً، قم بجلبه من الشبكة
-        return fetch(event.request);
-      }
-    )
+        // إذا نجح الطلب من الشبكة، قم بتخزين نسخة وتحديث الكاش
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        return response;
+      })
+      .catch(() => {
+        // إذا فشل الطلب من الشبكة (لا يوجد اتصال)، ابحث في الكاش
+        return caches.match(event.request);
+      })
   );
 });
 

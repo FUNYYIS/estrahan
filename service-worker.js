@@ -1,5 +1,5 @@
 // اسم ذاكرة التخزين المؤقت (Cache) للتطبيق
-const CACHE_NAME = 'estraha-cache-v1';
+const CACHE_NAME = 'estraha-cache-v2'; // تم تغيير الإصدار لتحديث الكاش
 
 // قائمة الملفات الأساسية التي سيتم تخزينها للعمل دون اتصال
 const urlsToCache = [
@@ -8,6 +8,9 @@ const urlsToCache = [
   '/assets/css/main.css',
   '/assets/js/main.js',
   '/assets/images/logo.png',
+  '/assets/images/favicon.png',
+  '/assets/images/icon-192.png',
+  '/assets/images/icon-512.png',
   '/welcome.mp4',
   '/pages/login.html',
   '/pages/register.html',

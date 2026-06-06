@@ -1130,26 +1130,37 @@ function initApp() {
         }
     });
 
-    // Splash Screen Logic
+        // Splash Screen Logic
     const splash = document.getElementById('splash');
     const mainContent = document.getElementById('main-content');
-    
-    setTimeout(() => {
-        if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(() => {
-                splash.style.display = 'none';
-                if (mainContent) {
-                    mainContent.style.display = 'block';
-                    console.log('✓ Splash screen hidden, main content shown');
-                }
-            }, 500);
-        } else {
-            if (mainContent) {
+
+    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
+
+    if (hasSeenSplash) {
+        if (splash) splash.style.display = 'none';
+        if (mainContent) mainContent.style.display = 'block';
+
+        console.log('✓ Splash skipped');
+    } else {
+        sessionStorage.setItem('hasSeenSplash', 'true');
+
+        setTimeout(() => {
+            if (splash) {
+                splash.style.opacity = '0';
+
+                setTimeout(() => {
+                    splash.style.display = 'none';
+
+                    if (mainContent) {
+                        mainContent.style.display = 'block';
+                        console.log('✓ Splash screen hidden, main content shown');
+                    }
+                }, 500);
+            } else if (mainContent) {
                 mainContent.style.display = 'block';
             }
-        }
-    }, 3000); // Set to 3 seconds
+        }, 3000);
+    }
 
     window.addEventListener('hashchange', () => {
         console.log('Page navigation:', window.location.hash);

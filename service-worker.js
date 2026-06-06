@@ -1,7 +1,5 @@
-// اسم ذاكرة التخزين المؤقت (Cache) للتطبيق
-const CACHE_NAME = 'estraha-cache-v3'; // تم تغيير الإصدار لتحديث الكاش
+const CACHE_NAME = 'estraha-cache-v4';
 
-// قائمة الملفات الأساسية التي سيتم تخزينها للعمل دون اتصال
 const urlsToCache = [
   '/',
   '/index.html',
@@ -29,50 +27,62 @@ const urlsToCache = [
   '/pages/important-links.html'
 ];
 
-// حدث التثبيت: يتم تشغيله عند تثبيت الـ Service Worker لأول مرة
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache); // إضافة جميع الملفات الأساسية إلى الـ Cache
-      })
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
-// حدث الجلب: يتم تشغيله عند كل طلب يقوم به التطبيق (استراتيجية الشبكة أولاً)
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(cacheNames => Promise.all(
+        cacheNames
+          .filter(cacheName => cacheName !== CACHE_NAME)
+          .map(cacheName => caches.delete(cacheName))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('fetch', event => {
+  const request = event.request;
+
+  if (request.method !== 'GET') return;
+
+  const requestUrl = new URL(request.url);
+
+  if (requestUrl.origin !== self.location.origin) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
-        // إذا نجح الطلب من الشبكة، قم بتخزين نسخة وتحديث الكاش
+        if (
+          !response ||
+          response.status !== 200 ||
+          response.type === 'opaque' ||
+          response.status === 206
+        ) {
+          return response;
+        }
+
         const responseToCache = response.clone();
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(request, responseToCache).catch(() => {});
+        });
+
         return response;
       })
       .catch(() => {
-        // إذا فشل الطلب من الشبكة (لا يوجد اتصال)، ابحث في الكاش
-        return caches.match(event.request);
+        return caches.match(request).then(cachedResponse => {
+          return cachedResponse || caches.match('/index.html');
+        });
       })
-  );
-});
-
-// حدث التفعيل: يتم تشغيله عند تفعيل نسخة جديدة من الـ Service Worker
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          // حذف أي Cache قديم غير مستخدم
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
   );
 });

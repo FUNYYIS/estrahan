@@ -55,6 +55,80 @@ let currentUser = null;
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 
+// --- RecaptchaVerifier Manager ---
+const recaptchaManager = {
+    verifiers: new Map(), // Map<containerId, RecaptchaVerifier>
+    
+    getOrCreate(containerId) {
+        // Check if verifier already exists and is valid
+        if (this.verifiers.has(containerId)) {
+            const verifier = this.verifiers.get(containerId);
+            // Check if element still exists in DOM
+            if (document.getElementById(containerId) && !verifier.destroyed) {
+                console.log(`✓ Reusing existing RecaptchaVerifier for ${containerId}`);
+                return verifier;
+            } else {
+                console.log(`✗ Removing dead RecaptchaVerifier for ${containerId}`);
+                this.verifiers.delete(containerId);
+            }
+        }
+        
+        // Create new verifier
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`✗ Container ${containerId} not found in DOM`);
+            return null;
+        }
+        
+        try {
+            console.log(`Creating new RecaptchaVerifier for ${containerId}...`);
+            const verifier = new RecaptchaVerifier(auth, containerId, {
+                'size': 'invisible',
+                'callback': (response) => {
+                    console.log('✓ reCAPTCHA verification successful');
+                },
+                'expired-callback': () => {
+                    console.warn('⚠ reCAPTCHA expired');
+                    this.verifiers.delete(containerId);
+                },
+                'error-callback': (error) => {
+                    console.error('✗ reCAPTCHA error:', error);
+                    this.verifiers.delete(containerId);
+                }
+            });
+            
+            this.verifiers.set(containerId, verifier);
+            console.log(`✓ RecaptchaVerifier created successfully for ${containerId}`);
+            return verifier;
+        } catch (error) {
+            console.error(`✗ Failed to create RecaptchaVerifier for ${containerId}:`, error);
+            return null;
+        }
+    },
+    
+    destroy(containerId) {
+        if (this.verifiers.has(containerId)) {
+            try {
+                const verifier = this.verifiers.get(containerId);
+                if (verifier && !verifier.destroyed) {
+                    verifier.clear();
+                }
+                this.verifiers.delete(containerId);
+                console.log(`✓ Destroyed RecaptchaVerifier for ${containerId}`);
+            } catch (error) {
+                console.error(`Error destroying verifier for ${containerId}:`, error);
+                this.verifiers.delete(containerId);
+            }
+        }
+    },
+    
+    destroyAll() {
+        for (const [containerId] of this.verifiers) {
+            this.destroy(containerId);
+        }
+    }
+};
+
 // --- وظائف مساعدة ---
 function showAlert(message) {
     alertMessage.textContent = message;
@@ -165,19 +239,39 @@ function attachEventListeners(hash) {
     const pageId = hash.substring(1); // remove '#'
     
     if (pageId === 'login') {
+        console.log('Setting up login page event listeners');
+        
+        // Clean up old verifier if switching pages
+        recaptchaManager.destroy('recaptcha-container');
+        
         const phoneForm = document.getElementById('phone-form');
         const codeForm = document.getElementById('code-form');
         if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
         if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
-        setupRecaptcha('recaptcha-container');
+        
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on login page');
+        }
     }
     
     if (pageId === 'register') {
+        console.log('Setting up register page event listeners');
+        
+        // Clean up old verifier if switching pages
+        recaptchaManager.destroy('recaptcha-container-register');
+        
         const registerForm = document.getElementById('register-form');
         const registerCodeForm = document.getElementById('register-code-form');
         if (registerForm) registerForm.addEventListener('submit', (e) => handleSendCode(e, true));
         if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
-        setupRecaptcha('recaptcha-container-register');
+        
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on register page');
+        }
     }
     
     if (pageId === 'settings') {
@@ -242,41 +336,21 @@ function loadPageData(pageId) {
 
 // --- Firebase Auth Handlers ---
 function setupRecaptcha(containerId) {
-    try {
-        const container = document.getElementById(containerId);
-        if (!container) {
-            console.warn(`Recaptcha container '${containerId}' not found`);
-            return;
-        }
-
-        // Check if recaptchaVerifier already exists and is valid
-        if (window.recaptchaVerifier && window.recaptchaVerifier.destroyed !== true) {
-            return;
-        }
-
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-            'size': 'invisible',
-            'callback': (response) => {
-                // reCAPTCHA solved, allow signInWithPhoneNumber
-            },
-            'expired-callback': () => {
-                console.warn('reCAPTCHA expired');
-                window.recaptchaVerifier = null;
-            },
-            'error-callback': (error) => {
-                console.error('reCAPTCHA error:', error);
-                window.recaptchaVerifier = null;
-            }
-        });
-    } catch (error) {
-        console.error("Recaptcha Error:", error);
-        showAlert("حدث خطأ في إعداد reCAPTCHA. يرجى تحديث الصفحة.");
-        window.recaptchaVerifier = null;
+    console.log(`Setting up reCAPTCHA for container: ${containerId}`);
+    const verifier = recaptchaManager.getOrCreate(containerId);
+    if (verifier) {
+        window.recaptchaVerifier = verifier;
+        return true;
+    } else {
+        console.error(`Failed to set up reCAPTCHA for ${containerId}`);
+        showAlert('فشل إعداد التحقق. يرجى تحديث الصفحة.');
+        return false;
     }
 }
 
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
+    console.log(`handleSendCode called (isRegister=${isRegister})`);
     
     const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
     const phoneInput = document.getElementById(phoneInputId);
@@ -314,16 +388,20 @@ async function handleSendCode(e, isRegister = false) {
         }
     }
 
-    // Ensure recaptcha is ready
-    if (!window.recaptchaVerifier) {
-        showAlert('يتم تحضير التحقق... حاول مرة أخرى.');
+    // Get recaptcha verifier
+    const appVerifier = window.recaptchaVerifier;
+    if (!appVerifier) {
+        console.error('reCAPTCHA verifier not initialized');
+        showAlert('يتم تحضير التحقق... حاول مرة أخرى بعد قليل.');
         return;
     }
 
-    const appVerifier = window.recaptchaVerifier;
-
+    console.log(`Sending verification code to: ${phoneNumber}`);
+    
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        console.log('✓ Verification code sent successfully');
+        
         // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         if (isRegister) {
@@ -343,36 +421,41 @@ async function handleSendCode(e, isRegister = false) {
             if (codeForm) codeForm.style.display = 'block';
         }
     } catch (error) {
-        console.error("SMS Error:", error);
+        console.error("✗ SMS Error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
         let errorMsg = 'فشل إرسال الرمز. تأكد من صحة الرقم.';
         
         if (error.code === 'auth/invalid-phone-number') {
-            errorMsg = 'صيغة رقم الهاتف غير صحيحة.';
+            errorMsg = 'صيغة رقم الهاتف غير صحيحة. استخدم الصيغة الدولية +966XXXXXXXXX';
         } else if (error.code === 'auth/too-many-requests') {
             errorMsg = 'تم إرسال عدد كبير من الطلبات. حاول لاحقاً.';
+        } else if (error.code === 'auth/invalid-app-credential') {
+            errorMsg = 'خطأ في بيانات التحقق. تأكد من توافق النطاق.';
+        } else if (error.code === 'auth/captcha-check-failed') {
+            errorMsg = 'فشل التحقق من reCAPTCHA. حاول مرة أخرى.';
         }
         
         showAlert(errorMsg);
         
-        // Reset recaptcha
-        try {
-            if (window.recaptchaVerifier && window.recaptchaVerifier.render) {
-                window.recaptchaVerifier.render().then(widgetId => {
-                    if (window.grecaptcha) {
-                        window.grecaptcha.reset(widgetId);
-                    }
-                }).catch(err => console.error("Failed to reset recaptcha:", err));
+        // Reset recaptcha and try to recreate it
+        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
+        recaptchaManager.destroy(containerId);
+        
+        // Wait a moment then recreate
+        setTimeout(() => {
+            const success = setupRecaptcha(containerId);
+            if (!success) {
+                showAlert('فشل إعادة تعيين التحقق. يرجى تحديث الصفحة.');
             }
-        } catch (resetError) {
-            console.error("Recaptcha reset failed:", resetError);
-            window.recaptchaVerifier = null;
-            // Try to setup again on next attempt
-        }
+        }, 500);
     }
 }
 
 async function handleVerifyCode(e, isRegister = false) {
     e.preventDefault();
+    console.log(`handleVerifyCode called (isRegister=${isRegister})`);
     
     const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
     const codeInput = document.getElementById(codeInputId);
@@ -409,10 +492,13 @@ async function handleVerifyCode(e, isRegister = false) {
         return;
     }
     
+    console.log('Verifying code...');
+    
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
         const result = await signInWithCredential(auth, credential);
         const user = result.user;
+        console.log('✓ Phone verification successful');
         
         if (isRegister) {
             const name = sessionStorage.getItem('tempName');
@@ -420,12 +506,14 @@ async function handleVerifyCode(e, isRegister = false) {
                 showAlert('حدث خطأ: فقدان بيانات المستخدم. حاول مرة أخرى.');
                 return;
             }
+            console.log('Creating user profile...');
             await setDoc(doc(db, "users", user.uid), {
                 name: name,
                 phone: user.phoneNumber,
                 paymentStatus: 'late',
                 createdAt: serverTimestamp()
             });
+            console.log('✓ User profile created');
         }
         
         // Clear temporary data after success
@@ -433,15 +521,21 @@ async function handleVerifyCode(e, isRegister = false) {
         sessionStorage.removeItem('tempName');
         
         showAlert('تم التحقق بنجاح!');
+        console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
-        console.error("Verification Error:", error);
+        console.error("✗ Verification Error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
         let errorMsg = 'رمز التحقق غير صحيح.';
         
         if (error.code === 'auth/invalid-verification-code') {
-            errorMsg = 'الرمز المدخل غير صحيح.';
+            errorMsg = 'الرمز المدخل غير صحيح. تأكد من الرمز وحاول مرة أخرى.';
         } else if (error.code === 'auth/code-expired') {
             errorMsg = 'انتهت صلاحية الرمز. اطلب رمز جديد.';
+        } else if (error.code === 'auth/invalid-credential') {
+            errorMsg = 'بيانات التحقق غير صحيحة.';
         }
         
         showAlert(errorMsg);
@@ -993,6 +1087,8 @@ async function loadNews(container, limit = 10) {
 
 // --- App Initialization ---
 function initApp() {
+    console.log('Initializing app...');
+    
     try {
         loadTheme();
     } catch (error) {
@@ -1002,27 +1098,31 @@ function initApp() {
     onAuthStateChanged(auth, async (user) => {
         try {
             if (user) {
+                console.log('✓ User authenticated:', user.uid);
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     currentUser = { uid: user.uid, ...userDoc.data() };
                     bottomNav.style.display = 'flex';
                     appLogo.style.display = 'block';
+                    console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
                 } else {
                     // New user, redirect to register
+                    console.log('✓ New user, redirecting to register');
                     currentUser = null;
                     bottomNav.style.display = 'none';
                     appLogo.style.display = 'block';
                     await renderPage('#register');
                 }
             } else {
+                console.log('✓ No user authenticated, showing login');
                 currentUser = null;
                 bottomNav.style.display = 'none';
                 appLogo.style.display = 'block';
                 await renderPage('#login');
             }
         } catch (error) {
-            console.error('Error in auth state change:', error);
+            console.error('✗ Error in auth state change:', error);
             currentUser = null;
             bottomNav.style.display = 'none';
             appLogo.style.display = 'block';
@@ -1041,6 +1141,7 @@ function initApp() {
                 splash.style.display = 'none';
                 if (mainContent) {
                     mainContent.style.display = 'block';
+                    console.log('✓ Splash screen hidden, main content shown');
                 }
             }, 500);
         } else {
@@ -1050,7 +1151,14 @@ function initApp() {
         }
     }, 3000); // Set to 3 seconds
 
-    window.addEventListener('hashchange', () => renderPage(window.location.hash));
+    window.addEventListener('hashchange', () => {
+        console.log('Page navigation:', window.location.hash);
+        // Clean up recaptcha verifiers on page change
+        recaptchaManager.destroyAll();
+        renderPage(window.location.hash);
+    });
+    
+    console.log('✓ App initialization complete');
 }
 
 // Start the app

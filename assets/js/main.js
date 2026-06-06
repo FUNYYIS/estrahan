@@ -55,6 +55,80 @@ let currentUser = null;
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 
+// --- RecaptchaVerifier Manager ---
+const recaptchaManager = {
+    verifiers: new Map(), // Map<containerId, RecaptchaVerifier>
+    
+    getOrCreate(containerId) {
+        // Check if verifier already exists and is valid
+        if (this.verifiers.has(containerId)) {
+            const verifier = this.verifiers.get(containerId);
+            // Check if element still exists in DOM
+            if (document.getElementById(containerId) && !verifier.destroyed) {
+                console.log(`✓ Reusing existing RecaptchaVerifier for ${containerId}`);
+                return verifier;
+            } else {
+                console.log(`✗ Removing dead RecaptchaVerifier for ${containerId}`);
+                this.verifiers.delete(containerId);
+            }
+        }
+        
+        // Create new verifier
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`✗ Container ${containerId} not found in DOM`);
+            return null;
+        }
+        
+        try {
+            console.log(`Creating new RecaptchaVerifier for ${containerId}...`);
+            const verifier = new RecaptchaVerifier(auth, containerId, {
+                'size': 'invisible',
+                'callback': (response) => {
+                    console.log('✓ reCAPTCHA verification successful');
+                },
+                'expired-callback': () => {
+                    console.warn('⚠ reCAPTCHA expired');
+                    this.verifiers.delete(containerId);
+                },
+                'error-callback': (error) => {
+                    console.error('✗ reCAPTCHA error:', error);
+                    this.verifiers.delete(containerId);
+                }
+            });
+            
+            this.verifiers.set(containerId, verifier);
+            console.log(`✓ RecaptchaVerifier created successfully for ${containerId}`);
+            return verifier;
+        } catch (error) {
+            console.error(`✗ Failed to create RecaptchaVerifier for ${containerId}:`, error);
+            return null;
+        }
+    },
+    
+    destroy(containerId) {
+        if (this.verifiers.has(containerId)) {
+            try {
+                const verifier = this.verifiers.get(containerId);
+                if (verifier && !verifier.destroyed) {
+                    verifier.clear();
+                }
+                this.verifiers.delete(containerId);
+                console.log(`✓ Destroyed RecaptchaVerifier for ${containerId}`);
+            } catch (error) {
+                console.error(`Error destroying verifier for ${containerId}:`, error);
+                this.verifiers.delete(containerId);
+            }
+        }
+    },
+    
+    destroyAll() {
+        for (const [containerId] of this.verifiers) {
+            this.destroy(containerId);
+        }
+    }
+};
+
 // --- وظائف مساعدة ---
 function showAlert(message) {
     alertMessage.textContent = message;
@@ -125,13 +199,21 @@ async function renderPage(hash) {
     if (pageFile) {
         try {
             const response = await fetch(`pages/${pageFile}`);
-            if (!response.ok) throw new Error('Page not found');
+            if (!response.ok) {
+                throw new Error(`Page fetch failed with status ${response.status}`);
+            }
             const pageHtml = await response.text();
             pageContent.innerHTML = pageHtml;
             
+            // Create lucide icons with retry logic
             const safeCreateIcons = () => {
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    try {
+                        lucide.createIcons();
+                    } catch (error) {
+                        console.warn('Error creating lucide icons:', error);
+                        setTimeout(safeCreateIcons, 100);
+                    }
                 } else {
                     setTimeout(safeCreateIcons, 100);
                 }
@@ -139,168 +221,324 @@ async function renderPage(hash) {
             safeCreateIcons();
 
             attachEventListeners(currentHash);
-            loadPageData(currentHash);
+            // Normalize page ID for loadPageData
+            const normalizedPageId = currentHash.substring(1).replace('#', '');
+            loadPageData(normalizedPageId);
             updateActiveNav(currentHash);
         } catch (error) {
             console.error('Error fetching page:', error);
             pageContent.innerHTML = '<p class="text-center">عفواً، الصفحة غير موجودة.</p>';
         }
     } else {
-         await renderPage(defaultPage); // Fallback to default
+        // Fallback to default page
+        await renderPage(defaultPage);
     }
 }
 
 function attachEventListeners(hash) {
     const pageId = hash.substring(1); // remove '#'
+    
     if (pageId === 'login') {
-        document.getElementById('phone-form')?.addEventListener('submit', (e) => handleSendCode(e, false));
-        document.getElementById('code-form')?.addEventListener('submit', (e) => handleVerifyCode(e, false));
-        setupRecaptcha('recaptcha-container');
+        console.log('Setting up login page event listeners');
+        
+        // Clean up old verifier if switching pages
+        recaptchaManager.destroy('recaptcha-container');
+        
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
+        if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
+        
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on login page');
+        }
     }
+    
     if (pageId === 'register') {
-        document.getElementById('register-form')?.addEventListener('submit', (e) => handleSendCode(e, true));
-        document.getElementById('register-code-form')?.addEventListener('submit', (e) => handleVerifyCode(e, true));
-        setupRecaptcha('recaptcha-container-register');
+        console.log('Setting up register page event listeners');
+        
+        // Clean up old verifier if switching pages
+        recaptchaManager.destroy('recaptcha-container-register');
+        
+        const registerForm = document.getElementById('register-form');
+        const registerCodeForm = document.getElementById('register-code-form');
+        if (registerForm) registerForm.addEventListener('submit', (e) => handleSendCode(e, true));
+        if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
+        
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on register page');
+        }
     }
+    
     if (pageId === 'settings') {
-        document.getElementById('logout-button')?.addEventListener('click', handleLogout);
+        const logoutBtn = document.getElementById('logout-button');
+        if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        
         const themeToggle = document.getElementById('theme-toggle');
-        if(themeToggle) {
+        if (themeToggle) {
             themeToggle.checked = (localStorage.getItem('theme') === 'dark');
             themeToggle.addEventListener('change', toggleTheme);
         }
     }
+    
     if (pageId === 'chat') {
-        document.getElementById('chat-form')?.addEventListener('submit', handleSendMessage);
+        const chatForm = document.getElementById('chat-form');
+        if (chatForm) chatForm.addEventListener('submit', handleSendMessage);
     }
 }
 
 function loadPageData(pageId) {
-    if (!currentUser && !['login-page', 'register-page'].includes(pageId)) return;
+    // Normalize page ID (remove '-page' suffix if present)
+    const normalizedPageId = pageId.replace('-page', '');
     
-    switch (pageId) {
-        case 'home-page':
-            loadHomePageData();
-            break;
-        case 'members-page':
-            loadMembers();
-            break;
-        case 'payments-page':
-            loadPaymentLog();
-            break;
-        case 'chat-page':
-            loadChat();
-            break;
-        case 'profile-settings-page':
-            loadProfileData();
-            break;
-        case 'prayer-page':
-            loadPrayerTimes();
-            break;
-        case 'qibla-page':
-            initQibla();
-            break;
-        case 'matches-page':
-            loadMatches();
-            break;
-        case 'news-page':
-            loadNews();
-            break;
+    if (!currentUser && !['login', 'register'].includes(normalizedPageId)) {
+        return;
+    }
+    
+    try {
+        switch (normalizedPageId) {
+            case 'home':
+                loadHomePageData();
+                break;
+            case 'members':
+                loadMembers();
+                break;
+            case 'payments':
+                loadPaymentLog();
+                break;
+            case 'chat':
+                loadChat();
+                break;
+            case 'profile-settings':
+                loadProfileData();
+                break;
+            case 'prayer':
+                loadPrayerTimes();
+                break;
+            case 'qibla':
+                initQibla();
+                break;
+            case 'matches':
+                loadMatches();
+                break;
+            case 'news':
+                loadNews();
+                break;
+        }
+    } catch (error) {
+        console.error(`Error loading page data for ${normalizedPageId}:`, error);
     }
 }
 
 // --- Firebase Auth Handlers ---
 function setupRecaptcha(containerId) {
-    try {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-            'size': 'invisible',
-            'callback': (response) => {
-                // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
-    } catch (error) {
-        console.error("Recaptcha Error:", error);
-        showAlert("حدث خطأ في إعداد reCAPTCHA. يرجى تحديث الصفحة.");
+    console.log(`Setting up reCAPTCHA for container: ${containerId}`);
+    const verifier = recaptchaManager.getOrCreate(containerId);
+    if (verifier) {
+        window.recaptchaVerifier = verifier;
+        return true;
+    } else {
+        console.error(`Failed to set up reCAPTCHA for ${containerId}`);
+        showAlert('فشل إعداد التحقق. يرجى تحديث الصفحة.');
+        return false;
     }
 }
 
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
-    let phoneNumber = isRegister ? document.getElementById('register-phone-number').value : document.getElementById('phone-number').value;
+    console.log(`handleSendCode called (isRegister=${isRegister})`);
     
+    const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
+    const phoneInput = document.getElementById(phoneInputId);
+    
+    if (!phoneInput) {
+        showAlert('عنصر الهاتف غير موجود. يرجى تحديث الصفحة.');
+        return;
+    }
+    
+    let phoneNumber = phoneInput.value.trim();
+    
+    // Validate phone number format
+    if (!phoneNumber) {
+        showAlert('الرجاء إدخال رقم جوال صحيح.');
+        return;
+    }
+    
+    // Convert Saudi format to international format
     if (phoneNumber.startsWith('05')) {
         phoneNumber = '+966' + phoneNumber.substring(1);
+    } else if (!phoneNumber.startsWith('+')) {
+        phoneNumber = '+966' + phoneNumber;
     }
 
-    if(isRegister) {
-        tempName = document.getElementById('register-name').value;
-        if(!tempName) {
+    if (isRegister) {
+        const nameInput = document.getElementById('register-name');
+        if (!nameInput) {
+            showAlert('عنصر الاسم غير موجود. يرجى تحديث الصفحة.');
+            return;
+        }
+        tempName = nameInput.value.trim();
+        if (!tempName) {
             showAlert('الرجاء إدخال الاسم الكامل.');
             return;
         }
     }
 
+    // Get recaptcha verifier
     const appVerifier = window.recaptchaVerifier;
+    if (!appVerifier) {
+        console.error('reCAPTCHA verifier not initialized');
+        showAlert('يتم تحضير التحقق... حاول مرة أخرى بعد قليل.');
+        return;
+    }
 
+    console.log(`Sending verification code to: ${phoneNumber}`);
+    
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-        // تخزين معرف التحقق في sessionStorage ليبقى حتى بعد تحديث الصفحة
+        console.log('✓ Verification code sent successfully');
+        
+        // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         if (isRegister) {
             sessionStorage.setItem('tempName', tempName);
         }
 
         showAlert('تم إرسال رمز التحقق إلى جوالك.');
-        if(isRegister) {
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('register-code-form').style.display = 'block';
+        if (isRegister) {
+            const registerForm = document.getElementById('register-form');
+            const registerCodeForm = document.getElementById('register-code-form');
+            if (registerForm) registerForm.style.display = 'none';
+            if (registerCodeForm) registerCodeForm.style.display = 'block';
         } else {
-            document.getElementById('phone-form').style.display = 'none';
-            document.getElementById('code-form').style.display = 'block';
+            const phoneForm = document.getElementById('phone-form');
+            const codeForm = document.getElementById('code-form');
+            if (phoneForm) phoneForm.style.display = 'none';
+            if (codeForm) codeForm.style.display = 'block';
         }
     } catch (error) {
-        console.error("SMS Error:", error);
-        showAlert('فشل إرسال الرمز. تأكد من صحة الرقم وأنه بالصيغة الدولية (+966...).');
-        // This might not always work depending on environment, but it's a good practice
-        try {
-            window.recaptchaVerifier.render().then(widgetId => {
-                grecaptcha.reset(widgetId);
-            });
-        } catch(e) { console.error("Recaptcha reset failed", e); }
+        console.error("✗ SMS Error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
+        let errorMsg = 'فشل إرسال الرمز. تأكد من صحة الرقم.';
+        
+        if (error.code === 'auth/invalid-phone-number') {
+            errorMsg = 'صيغة رقم الهاتف غير صحيحة. استخدم الصيغة الدولية +966XXXXXXXXX';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMsg = 'تم إرسال عدد كبير من الطلبات. حاول لاحقاً.';
+        } else if (error.code === 'auth/invalid-app-credential') {
+            errorMsg = 'خطأ في بيانات التحقق. تأكد من توافق النطاق.';
+        } else if (error.code === 'auth/captcha-check-failed') {
+            errorMsg = 'فشل التحقق من reCAPTCHA. حاول مرة أخرى.';
+        }
+        
+        showAlert(errorMsg);
+        
+        // Reset recaptcha and try to recreate it
+        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
+        recaptchaManager.destroy(containerId);
+        
+        // Wait a moment then recreate
+        setTimeout(() => {
+            const success = setupRecaptcha(containerId);
+            if (!success) {
+                showAlert('فشل إعادة تعيين التحقق. يرجى تحديث الصفحة.');
+            }
+        }, 500);
     }
 }
 
 async function handleVerifyCode(e, isRegister = false) {
     e.preventDefault();
-    const code = isRegister ? document.getElementById('register-verification-code').value : document.getElementById('verification-code').value;
-    // استرجاع معرف التحقق من sessionStorage
+    console.log(`handleVerifyCode called (isRegister=${isRegister})`);
+    
+    const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
+    const codeInput = document.getElementById(codeInputId);
+    
+    if (!codeInput) {
+        showAlert('عنصر الرمز غير موجود. يرجى تحديث الصفحة.');
+        return;
+    }
+    
+    const code = codeInput.value.trim();
+    
+    if (!code) {
+        showAlert('الرجاء إدخال رمز التحقق.');
+        return;
+    }
+    
+    // Get verification ID from sessionStorage
     const verificationId = sessionStorage.getItem('firebaseVerificationId');
 
     if (!verificationId) {
         showAlert('انتهت صلاحية جلسة التحقق. يرجى طلب الرمز مرة أخرى.');
+        // Reset forms
+        if (isRegister) {
+            const registerForm = document.getElementById('register-form');
+            const registerCodeForm = document.getElementById('register-code-form');
+            if (registerForm) registerForm.style.display = 'block';
+            if (registerCodeForm) registerCodeForm.style.display = 'none';
+        } else {
+            const phoneForm = document.getElementById('phone-form');
+            const codeForm = document.getElementById('code-form');
+            if (phoneForm) phoneForm.style.display = 'block';
+            if (codeForm) codeForm.style.display = 'none';
+        }
         return;
     }
+    
+    console.log('Verifying code...');
+    
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
         const result = await signInWithCredential(auth, credential);
         const user = result.user;
+        console.log('✓ Phone verification successful');
         
         if (isRegister) {
-             const name = sessionStorage.getItem('tempName');
-             await setDoc(doc(db, "users", user.uid), {
+            const name = sessionStorage.getItem('tempName');
+            if (!name) {
+                showAlert('حدث خطأ: فقدان بيانات المستخدم. حاول مرة أخرى.');
+                return;
+            }
+            console.log('Creating user profile...');
+            await setDoc(doc(db, "users", user.uid), {
                 name: name,
                 phone: user.phoneNumber,
                 paymentStatus: 'late',
                 createdAt: serverTimestamp()
             });
+            console.log('✓ User profile created');
         }
-        // مسح البيانات المؤقتة بعد النجاح
+        
+        // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
         sessionStorage.removeItem('tempName');
+        
+        showAlert('تم التحقق بنجاح!');
+        console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
-        console.error("Verification Error:", error);
-        showAlert('رمز التحقق غير صحيح.');
+        console.error("✗ Verification Error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
+        let errorMsg = 'رمز التحقق غير صحيح.';
+        
+        if (error.code === 'auth/invalid-verification-code') {
+            errorMsg = 'الرمز المدخل غير صحيح. تأكد من الرمز وحاول مرة أخرى.';
+        } else if (error.code === 'auth/code-expired') {
+            errorMsg = 'انتهت صلاحية الرمز. اطلب رمز جديد.';
+        } else if (error.code === 'auth/invalid-credential') {
+            errorMsg = 'بيانات التحقق غير صحيحة.';
+        }
+        
+        showAlert(errorMsg);
     }
 }
 
@@ -315,128 +553,222 @@ async function handleLogout() {
 
 function loadHomePageData() {
     if (!currentUser) return;
-    const welcomeMsg = document.getElementById('welcome-message');
-    if(welcomeMsg) welcomeMsg.querySelector('h1').textContent = `أرحب يا ${currentUser.name}`;
     
-    loadHomePrayerAndDate();
-    loadHomeMatches();
-    loadHomeNews();
+    const welcomeMsg = document.getElementById('welcome-message');
+    if (welcomeMsg) {
+        const h1 = welcomeMsg.querySelector('h1');
+        if (h1) {
+            h1.textContent = `أرحب يا ${currentUser.name || 'المستخدم'}`;
+        }
+    }
+    
+    try {
+        loadHomePrayerAndDate();
+        loadHomeMatches();
+        loadHomeNews();
+    } catch (error) {
+        console.error('Error loading home page data:', error);
+    }
 }
 
 function loadMembers() {
     const membersList = document.getElementById('members-list');
-    if (!membersList) return;
-    const membersCollection = collection(db, "users");
-    unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
-        membersList.innerHTML = '';
-        snapshot.forEach(doc => {
-            const member = doc.data();
-            const memberId = doc.id;
-            const div = document.createElement('div');
-            div.className = 'list-item-card';
-            const statusIcon = member.paymentStatus === 'paid' ? `<span class="font-bold" style="color: #5cb85c;">✅ دافع</span>` : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
+    if (!membersList) {
+        console.warn('members-list element not found');
+        return;
+    }
+    
+    try {
+        const membersCollection = collection(db, "users");
+        unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
+            membersList.innerHTML = '';
             
-            let adminControls = '';
-            if (auth.currentUser?.uid === ADMIN_UID) {
-                adminControls = `
-                    <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
-                    <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
-                `;
+            if (snapshot.empty) {
+                membersList.innerHTML = '<p class="text-center">لا يوجد أعضاء بعد.</p>';
+                return;
             }
+            
+            snapshot.forEach(doc => {
+                const member = doc.data();
+                const memberId = doc.id;
+                const div = document.createElement('div');
+                div.className = 'list-item-card';
+                
+                const statusIcon = member.paymentStatus === 'paid' 
+                    ? `<span class="font-bold" style="color: #5cb85c;">✅ دافع</span>` 
+                    : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
+                
+                let adminControls = '';
+                if (auth.currentUser?.uid === ADMIN_UID) {
+                    adminControls = `
+                        <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
+                        <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
+                    `;
+                }
 
-            div.innerHTML = `
-                <div>
-                    <p class="font-bold">${member.name}</p>
-                    <p class="text-sm">${member.phone || ''}</p>
-                </div>
-                <div class="flex items-center">
-                    ${adminControls}
-                    ${statusIcon}
-                </div>
-            `;
-            membersList.appendChild(div);
-        });
-
-        document.querySelectorAll('.toggle-payment-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const memberId = e.target.dataset.id;
-                const newStatus = e.target.dataset.status;
-                await updateDoc(doc(db, "users", memberId), { paymentStatus: newStatus });
-                showAlert('تم تحديث الحالة بنجاح!');
+                div.innerHTML = `
+                    <div>
+                        <p class="font-bold">${member.name || 'بدون اسم'}</p>
+                        <p class="text-sm">${member.phone || 'بدون رقم'}</p>
+                    </div>
+                    <div class="flex items-center">
+                        ${adminControls}
+                        ${statusIcon}
+                    </div>
+                `;
+                membersList.appendChild(div);
             });
+
+            document.querySelectorAll('.toggle-payment-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const memberId = e.target.dataset.id;
+                    const newStatus = e.target.dataset.status;
+                    try {
+                        await updateDoc(doc(db, "users", memberId), { paymentStatus: newStatus });
+                        showAlert('تم تحديث الحالة بنجاح!');
+                    } catch (error) {
+                        console.error('Error updating payment status:', error);
+                        showAlert('فشل تحديث الحالة. حاول مرة أخرى.');
+                    }
+                });
+            });
+        }, error => {
+            console.error('Error loading members:', error);
+            membersList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الأعضاء.</p>';
         });
-    });
+    } catch (error) {
+        console.error('Error setting up members listener:', error);
+        membersList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الأعضاء.</p>';
+    }
 }
 
 function loadPaymentLog() {
     const logList = document.getElementById('payment-log-list');
-    if (!logList) return;
-    unsubscribePayments = onSnapshot(query(collection(db, "payments"), orderBy("date", "desc")), (snapshot) => {
-        logList.innerHTML = '';
-         if (snapshot.empty) {
-            logList.innerHTML = '<p class="text-center">لا يوجد سجل للمدفوعات بعد.</p>';
-            return;
-        }
-        snapshot.docs.forEach(doc => {
-            const payment = doc.data();
-            const div = document.createElement('div');
-            div.className = 'list-item-card text-sm';
-            const date = payment.date ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA') : 'غير محدد';
-            div.innerHTML = `
-                <span class="font-bold">${payment.userName}</span>
-                <span style="color: #5cb85c;">✅ تم الدفع</span>
-                <span>${date}</span>
-            `;
-            logList.appendChild(div);
-        });
-    });
+    if (!logList) {
+        console.warn('payment-log-list element not found');
+        return;
+    }
+    
+    try {
+        unsubscribePayments = onSnapshot(
+            query(collection(db, "payments"), orderBy("date", "desc")), 
+            (snapshot) => {
+                logList.innerHTML = '';
+                if (snapshot.empty) {
+                    logList.innerHTML = '<p class="text-center">لا يوجد سجل للمدفوعات بعد.</p>';
+                    return;
+                }
+                snapshot.docs.forEach(doc => {
+                    const payment = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'list-item-card text-sm';
+                    const date = payment.date 
+                        ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA') 
+                        : 'غير محدد';
+                    div.innerHTML = `
+                        <span class="font-bold">${payment.userName || 'بدون اسم'}</span>
+                        <span style="color: #5cb85c;">✅ تم الدفع</span>
+                        <span>${date}</span>
+                    `;
+                    logList.appendChild(div);
+                });
+            },
+            error => {
+                console.error('Error loading payment log:', error);
+                logList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل السجل.</p>';
+            }
+        );
+    } catch (error) {
+        console.error('Error setting up payment listener:', error);
+        logList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل السجل.</p>';
+    }
 }
 
 function loadChat() {
     const chatBox = document.getElementById('chat-box');
-    if (!chatBox) return;
-    unsubscribeChat = onSnapshot(query(collection(db, "chat"), orderBy("createdAt")), (snapshot) => {
-        chatBox.innerHTML = '';
-        snapshot.forEach(doc => {
-            const msg = doc.data();
-            const div = document.createElement('div');
-            const isMe = msg.userId === auth.currentUser?.uid;
-            div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-            div.innerHTML = `
-                <div class="text-xs mb-1 mx-2" style="color: var(--text-color); opacity: 0.7;">${msg.userName}</div>
-                <div class="max-w-xs p-3 rounded-xl ${isMe ? 'bg-[#c76b29] text-white rounded-br-none' : 'bg-gray-200 text-black rounded-bl-none'}" style="${isMe ? 'background-color: var(--primary-accent);' : 'background-color: var(--card-bg);'}">
-                    <p>${msg.text}</p>
-                </div>
-            `;
-            chatBox.appendChild(div);
-        });
-        chatBox.scrollTop = chatBox.scrollHeight;
-    });
+    if (!chatBox) {
+        console.warn('chat-box element not found');
+        return;
+    }
+    
+    try {
+        unsubscribeChat = onSnapshot(
+            query(collection(db, "chat"), orderBy("createdAt")), 
+            (snapshot) => {
+                chatBox.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const msg = doc.data();
+                    const div = document.createElement('div');
+                    const isMe = msg.userId === auth.currentUser?.uid;
+                    div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                    
+                    const userDisplayName = msg.userName || 'مستخدم';
+                    const messageText = msg.text ? msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                    
+                    div.innerHTML = `
+                        <div class="text-xs mb-1 mx-2" style="color: var(--text-color); opacity: 0.7;">${userDisplayName}</div>
+                        <div class="max-w-xs p-3 rounded-xl ${isMe ? 'bg-[#c76b29] text-white rounded-br-none' : 'bg-gray-200 text-black rounded-bl-none'}" style="${isMe ? 'background-color: var(--primary-accent);' : 'background-color: var(--card-bg);'}">
+                            <p>${messageText}</p>
+                        </div>
+                    `;
+                    chatBox.appendChild(div);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            },
+            error => {
+                console.error('Error loading chat:', error);
+                chatBox.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الرسائل.</p>';
+            }
+        );
+    } catch (error) {
+        console.error('Error setting up chat listener:', error);
+        chatBox.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الرسائل.</p>';
+    }
 }
 
 async function handleSendMessage(e) {
     e.preventDefault();
+    
     const input = document.getElementById('chat-input');
+    if (!input) {
+        showAlert('عنصر الإدخال غير موجود.');
+        return;
+    }
+    
     const text = input.value.trim();
-    if (text === '' || !currentUser) return;
+    
+    if (!text) {
+        showAlert('الرجاء كتابة رسالة.');
+        return;
+    }
+    
+    if (!currentUser) {
+        showAlert('يجب تسجيل الدخول أولاً.');
+        return;
+    }
 
     try {
         await addDoc(collection(db, "chat"), {
             text: text,
             userId: currentUser.uid,
-            userName: currentUser.name,
+            userName: currentUser.name || 'مستخدم',
             createdAt: serverTimestamp()
         });
         input.value = '';
     } catch (error) {
-        showAlert('لم يتم إرسال الرسالة: ' + error.message);
+        console.error('Error sending message:', error);
+        showAlert('فشل إرسال الرسالة: ' + (error.message || 'حاول مرة أخرى'));
     }
 }
 
 function loadProfileData() {
     if (!currentUser) return;
-    document.getElementById('profile-name').textContent = currentUser.name;
-    document.getElementById('profile-phone').textContent = currentUser.phone;
+    
+    const nameElement = document.getElementById('profile-name');
+    const phoneElement = document.getElementById('profile-phone');
+    
+    if (nameElement) nameElement.textContent = currentUser.name || 'بدون اسم';
+    if (phoneElement) phoneElement.textContent = currentUser.phone || 'بدون رقم';
 }
 
 // --- Service Functions ---
@@ -450,39 +782,49 @@ async function getPrayerData(latitude, longitude) {
 async function loadHomePrayerAndDate() {
     const hijriContainer = document.getElementById('hijri-date-container');
     const prayerContainer = document.getElementById('home-prayer-times');
+    
     if (!hijriContainer || !prayerContainer) return;
 
     const todayGregorian = new Date();
-    hijriContainer.innerHTML = `<p class="font-bold text-lg">${todayGregorian.toLocaleDateString('ar-SA-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
     
     try {
+        hijriContainer.innerHTML = `<p class="font-bold text-lg">${todayGregorian.toLocaleDateString('ar-SA-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
+        
         const response = await fetch(`https://api.aladhan.com/v1/gToH?date=${todayGregorian.getDate()}-${todayGregorian.getMonth()+1}-${todayGregorian.getFullYear()}`);
-        const data = await response.json();
-        const hijri = data.data.hijri;
-        hijriContainer.innerHTML += `<p class="text-md">${hijri.day} ${hijri.month.ar} ${hijri.year} هـ</p>`;
-    } catch(e) {
-        console.error("Could not fetch Hijri date");
+        if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.hijri) {
+                const hijri = data.data.hijri;
+                hijriContainer.innerHTML += `<p class="text-md">${hijri.day} ${hijri.month.ar} ${hijri.year} هـ</p>`;
+            }
+        }
+    } catch (error) {
+        console.error("Could not fetch Hijri date:", error);
     }
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            const data = await getPrayerData(latitude, longitude);
-            const timings = data.data.timings;
-            
-            prayerContainer.innerHTML = `
-                <div class="flex justify-between items-center w-full text-sm"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
-                <div class="flex justify-between items-center w-full text-sm"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
-                <div class="flex justify-between items-center w-full text-sm"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
-                <div class="flex justify-between items-center w-full text-sm"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
-                <div class="flex justify-between items-center w-full text-sm"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
-            `;
-        } catch (error) {
-            prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب البيانات.</p>`;
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            try {
+                const { latitude, longitude } = position.coords;
+                const data = await getPrayerData(latitude, longitude);
+                const timings = data.data.timings;
+                
+                prayerContainer.innerHTML = `
+                    <div class="flex justify-between items-center w-full text-sm"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
+                    <div class="flex justify-between items-center w-full text-sm"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
+                    <div class="flex justify-between items-center w-full text-sm"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
+                    <div class="flex justify-between items-center w-full text-sm"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
+                    <div class="flex justify-between items-center w-full text-sm"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
+                `;
+            } catch (error) {
+                console.error('Error fetching prayer times:', error);
+                prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب البيانات.</p>`;
+            }
+        },
+        () => {
+            prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">يرجى السماح بالوصول للموقع.</p>`;
         }
-    }, () => {
-        prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">يرجى السماح بالوصول للموقع.</p>`;
-    });
+    );
 }
 
 async function loadHomeMatches() {
@@ -501,77 +843,114 @@ async function loadHomeNews() {
 async function loadPrayerTimes() {
     const container = document.getElementById('prayer-times-container');
     if (!container) return;
+    
     container.innerHTML = `<p class="text-center w-full">يرجى السماح بالوصول إلى موقعك...</p>`;
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            const data = await getPrayerData(latitude, longitude);
-            const timings = data.data.timings;
-            container.innerHTML = `
-                <div class="flex justify-between items-center w-full"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
-                <div class="flex justify-between items-center w-full"><span>الشروق</span><span class="font-bold">${timings.Sunrise}</span></div>
-                <div class="flex justify-between items-center w-full"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
-                <div class="flex justify-between items-center w-full"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
-                <div class="flex justify-between items-center w-full"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
-                <div class="flex justify-between items-center w-full"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
-            `;
-        } catch (error) {
-            container.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب مواقيت الصلاة.</p>`;
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            try {
+                const { latitude, longitude } = position.coords;
+                const data = await getPrayerData(latitude, longitude);
+                
+                if (!data.data || !data.data.timings) {
+                    throw new Error('Invalid prayer data structure');
+                }
+                
+                const timings = data.data.timings;
+                container.innerHTML = `
+                    <div class="flex justify-between items-center w-full"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
+                    <div class="flex justify-between items-center w-full"><span>الشروق</span><span class="font-bold">${timings.Sunrise}</span></div>
+                    <div class="flex justify-between items-center w-full"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
+                    <div class="flex justify-between items-center w-full"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
+                    <div class="flex justify-between items-center w-full"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
+                    <div class="flex justify-between items-center w-full"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
+                `;
+            } catch (error) {
+                console.error('Error fetching prayer times:', error);
+                container.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب مواقيت الصلاة.</p>`;
+            }
+        },
+        () => {
+            container.innerHTML = `<p class="text-yellow-400 text-center w-full">تم رفض الوصول للموقع. لا يمكن عرض المواقيت.</p>`;
         }
-    }, () => {
-        container.innerHTML = `<p class="text-yellow-400 text-center w-full">تم رفض الوصول للموقع. لا يمكن عرض المواقيت.</p>`;
-    });
+    );
 }
 
 async function initQibla() {
     const container = document.getElementById('qibla-container');
-    if (!container) return;
     const status = document.getElementById('qibla-status');
     const compass = document.getElementById('compass');
     
+    if (!container || !status || !compass) {
+        console.warn('Qibla elements not found');
+        return;
+    }
+    
     status.textContent = "يرجى السماح بالوصول إلى موقعك...";
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
-            const qiblaAngle = data.data.direction;
+    
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            try {
+                const { latitude, longitude } = position.coords;
+                const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch qibla direction');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.data || data.data.direction === undefined) {
+                    throw new Error('Invalid qibla data structure');
+                }
+                
+                const qiblaAngle = data.data.direction;
 
-            status.textContent = "حرك جهازك لمعرفة اتجاه القبلة";
-            compass.style.display = 'block';
+                status.textContent = "حرك جهازك لمعرفة اتجاه القبلة";
+                compass.style.display = 'block';
 
-            if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-                const permission = await window.DeviceOrientationEvent.requestPermission();
-                if (permission === 'granted') {
+                if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
+                    try {
+                        const permission = await window.DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                        } else {
+                            status.textContent = 'تم رفض إذن الوصول لحساسات الحركة.';
+                        }
+                    } catch (permError) {
+                        console.error('Permission request error:', permError);
+                        status.textContent = 'حدث خطأ في طلب الإذن.';
+                    }
+                } else if ('DeviceOrientationEvent' in window) {
                     window.addEventListener('deviceorientation', handleOrientation);
                 } else {
-                    status.textContent = 'تم رفض إذن الوصول لحساسات الحركة.';
+                    status.textContent = 'جهازك لا يدعم تحديد الاتجاه.';
                 }
-            } else if ('DeviceOrientationEvent' in window) {
-                window.addEventListener('deviceorientation', handleOrientation);
-            } else {
-                status.textContent = 'جهازك لا يدعم تحديد الاتجاه.';
-            }
 
-            function handleOrientation(event) {
-                let direction = event.webkitCompassHeading || event.alpha;
-                if (direction === null) return;
-                compass.style.transform = `rotate(${-direction}deg)`;
-                document.getElementById('qibla-arrow').style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                function handleOrientation(event) {
+                    let direction = event.webkitCompassHeading || event.alpha;
+                    if (direction === null) return;
+                    compass.style.transform = `rotate(${-direction}deg)`;
+                    const qiblaArrow = document.getElementById('qibla-arrow');
+                    if (qiblaArrow) {
+                        qiblaArrow.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error in initQibla:', error);
+                status.textContent = 'فشل في حساب اتجاه القبلة.';
             }
-        } catch (error) {
-             status.textContent = 'فشل في حساب اتجاه القبلة.';
+        },
+        () => {
+            status.textContent = 'تم رفض الوصول للموقع. لا يمكن عرض القبلة.';
         }
-    }, () => {
-        status.textContent = 'تم رفض الوصول للموقع. لا يمكن عرض القبلة.';
-    });
+    );
 }
 
 async function loadMatches(container, limit = 10) {
     if (!container) container = document.getElementById('matches-list');
     if (!container) return;
+    
     container.innerHTML = `<p class="text-center">جاري تحميل المباريات...</p>`;
     
     const API_KEY = '48988b2765msh20399a4a297b4f2p13ddc8jsn272009bee0d7';
@@ -590,7 +969,16 @@ async function loadMatches(container, limit = 10) {
 
     try {
         const response = await fetch(url, options);
+        
+        if (!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
+        }
+        
         const data = await response.json();
+        
+        if (!data.response || !Array.isArray(data.response)) {
+            throw new Error('Invalid API response structure');
+        }
         
         if (data.response.length === 0) {
             container.innerHTML = `<p class="text-center">لا توجد مباريات اليوم.</p>`;
@@ -599,97 +987,145 @@ async function loadMatches(container, limit = 10) {
 
         container.innerHTML = '';
         data.response.slice(0, limit).forEach(fixture => {
-            const homeTeam = fixture.teams.home;
-            const awayTeam = fixture.teams.away;
-            const score = fixture.fixture.status.short === 'FT' ? `${fixture.goals.home} - ${fixture.goals.away}` : new Date(fixture.fixture.date).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
-            
-            const matchCard = `
-                <div class="list-item-card flex-col items-center p-4 space-y-2">
-                    <span class="text-xs opacity-70">${fixture.league.name}</span>
-                    <div class="flex justify-between items-center w-full">
-                        <div class="flex flex-col items-center w-1/3">
-                            <img src="${homeTeam.logo}" alt="${homeTeam.name}" class="w-10 h-10 mb-1">
-                            <span class="font-bold text-center text-sm">${homeTeam.name}</span>
+            try {
+                const homeTeam = fixture.teams?.home;
+                const awayTeam = fixture.teams?.away;
+                
+                if (!homeTeam || !awayTeam) {
+                    console.warn('Invalid team data in fixture');
+                    return;
+                }
+                
+                const score = fixture.fixture?.status?.short === 'FT' 
+                    ? `${fixture.goals?.home || 0} - ${fixture.goals?.away || 0}` 
+                    : new Date(fixture.fixture?.date).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
+                
+                const matchCard = `
+                    <div class="list-item-card flex-col items-center p-4 space-y-2">
+                        <span class="text-xs opacity-70">${fixture.league?.name || 'دوري'}</span>
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex flex-col items-center w-1/3">
+                                <img src="${homeTeam.logo || ''}" alt="${homeTeam.name}" class="w-10 h-10 mb-1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect fill=%22%23ccc%22 width=%2240%22 height=%2240%22/%3E%3C/svg%3E'">
+                                <span class="font-bold text-center text-sm">${homeTeam.name || 'فريق'}</span>
+                            </div>
+                            <span class="font-bold text-2xl" style="color: var(--primary-accent);">${score}</span>
+                            <div class="flex flex-col items-center w-1/3">
+                                <img src="${awayTeam.logo || ''}" alt="${awayTeam.name}" class="w-10 h-10 mb-1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect fill=%22%23ccc%22 width=%2240%22 height=%2240%22/%3E%3C/svg%3E'">
+                                <span class="font-bold text-center text-sm">${awayTeam.name || 'فريق'}</span>
+                            </div>
                         </div>
-                        <span class="font-bold text-2xl" style="color: var(--primary-accent);">${score}</span>
-                        <div class="flex flex-col items-center w-1/3">
-                            <img src="${awayTeam.logo}" alt="${awayTeam.name}" class="w-10 h-10 mb-1">
-                            <span class="font-bold text-center text-sm">${awayTeam.name}</span>
-                        </div>
+                        <span class="text-xs opacity-70">${fixture.fixture?.status?.long || 'جاري'}</span>
                     </div>
-                    <span class="text-xs opacity-70">${fixture.fixture.status.long}</span>
-                </div>
-            `;
-            container.innerHTML += matchCard;
+                `;
+                container.innerHTML += matchCard;
+            } catch (itemError) {
+                console.error('Error processing fixture:', itemError);
+            }
         });
 
     } catch (error) {
         console.error("Error fetching matches:", error);
-        container.innerHTML = `<p class="text-center">فشل في جلب المباريات. تأكد من صحة مفتاح API والاتصال بالإنترنت.</p>`;
+        container.innerHTML = `<p class="text-center">فشل في جلب المباريات. حاول مرة أخرى.</p>`;
     }
 }
 
 async function loadNews(container, limit = 10) {
     if (!container) container = document.getElementById('news-list');
     if (!container) return;
+    
     container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
 
     const API_KEY = 'fed169451378413e924ac29dca024540';
     const url = `https://newsapi.org/v2/top-headlines?country=sa&category=sports&language=ar&apiKey=${API_KEY}`;
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-
     try {
         const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            throw new Error(`Proxy returned status ${response.status}`);
+        }
+        
         const data = await response.json();
 
-        if (data.status !== 'ok') {
-            throw new Error(data.message || 'فشل في جلب الأخبار');
+        if (!data || data.status !== 'ok') {
+            throw new Error(data?.message || 'فشل في جلب الأخبار');
         }
 
-        if (data.articles.length === 0) {
+        if (!Array.isArray(data.articles) || data.articles.length === 0) {
             container.innerHTML = `<p class="text-center">لا توجد أخبار حالياً.</p>`;
             return;
         }
 
         container.innerHTML = '';
-        data.articles.slice(0, limit).forEach(article => { 
-            const newsCard = `
-                <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="list-item-card flex-col items-start p-4 text-right no-underline" style="text-decoration: none;">
-                    <h3 class="font-bold mb-2">${article.title}</h3>
-                    <p class="text-sm opacity-75">${article.description || ''}</p>
-                    <span class="text-xs opacity-50 mt-2">${article.source.name}</span>
-                </a>
-            `;
-            container.innerHTML += newsCard;
+        data.articles.slice(0, limit).forEach(article => {
+            try {
+                const title = article.title || 'بدون عنوان';
+                const description = article.description || article.content || '';
+                const url = article.url || '#';
+                const source = article.source?.name || 'مصدر';
+                
+                const newsCard = `
+                    <a href="${url}" target="_blank" rel="noopener noreferrer" class="list-item-card flex-col items-start p-4 text-right no-underline" style="text-decoration: none;">
+                        <h3 class="font-bold mb-2">${title.substring(0, 100)}</h3>
+                        <p class="text-sm opacity-75">${description.substring(0, 150)}</p>
+                        <span class="text-xs opacity-50 mt-2">${source}</span>
+                    </a>
+                `;
+                container.innerHTML += newsCard;
+            } catch (itemError) {
+                console.error('Error processing article:', itemError);
+            }
         });
 
     } catch (error) {
         console.error("Error fetching news:", error);
-        container.innerHTML = `<p class="text-center">فشل في جلب الأخبار. قد يكون مفتاح الـ API غير صالح أو انتهت صلاحيته.</p>`;
+        container.innerHTML = `<p class="text-center">فشل في جلب الأخبار. حاول مرة أخرى.</p>`;
     }
 }
 
 
 // --- App Initialization ---
 function initApp() {
-    loadTheme();
+    console.log('Initializing app...');
+    
+    try {
+        loadTheme();
+    } catch (error) {
+        console.error('Error loading theme:', error);
+    }
 
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-                currentUser = { uid: user.uid, ...userDoc.data() };
-                bottomNav.style.display = 'flex';
-                appLogo.style.display = 'block';
-                await renderPage(window.location.hash || '#home');
+        try {
+            if (user) {
+                console.log('✓ User authenticated:', user.uid);
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    currentUser = { uid: user.uid, ...userDoc.data() };
+                    bottomNav.style.display = 'flex';
+                    appLogo.style.display = 'block';
+                    console.log('✓ User profile found, navigating to home');
+                    await renderPage(window.location.hash || '#home');
+                } else {
+                    // New user, redirect to register
+                    console.log('✓ New user, redirecting to register');
+                    currentUser = null;
+                    bottomNav.style.display = 'none';
+                    appLogo.style.display = 'block';
+                    await renderPage('#register');
+                }
             } else {
-                await renderPage('#register');
+                console.log('✓ No user authenticated, showing login');
+                currentUser = null;
+                bottomNav.style.display = 'none';
+                appLogo.style.display = 'block';
+                await renderPage('#login');
             }
-        } else {
+        } catch (error) {
+            console.error('✗ Error in auth state change:', error);
             currentUser = null;
             bottomNav.style.display = 'none';
-            appLogo.style.display = 'block'; // Show logo on login/register pages
+            appLogo.style.display = 'block';
             await renderPage('#login');
         }
     });
@@ -697,19 +1133,32 @@ function initApp() {
     // Splash Screen Logic
     const splash = document.getElementById('splash');
     const mainContent = document.getElementById('main-content');
+    
     setTimeout(() => {
-        if(splash) {
+        if (splash) {
             splash.style.opacity = '0';
             setTimeout(() => {
                 splash.style.display = 'none';
-                mainContent.style.display = 'block';
+                if (mainContent) {
+                    mainContent.style.display = 'block';
+                    console.log('✓ Splash screen hidden, main content shown');
+                }
             }, 500);
         } else {
-             mainContent.style.display = 'block';
+            if (mainContent) {
+                mainContent.style.display = 'block';
+            }
         }
     }, 3000); // Set to 3 seconds
 
-    window.addEventListener('hashchange', () => renderPage(window.location.hash));
+    window.addEventListener('hashchange', () => {
+        console.log('Page navigation:', window.location.hash);
+        // Clean up recaptcha verifiers on page change
+        recaptchaManager.destroyAll();
+        renderPage(window.location.hash);
+    });
+    
+    console.log('✓ App initialization complete');
 }
 
 // Start the app

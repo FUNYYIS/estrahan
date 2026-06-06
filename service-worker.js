@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v4';
+const CACHE_NAME = 'estraha-cache-v5';
 
 const urlsToCache = [
   '/',
@@ -30,8 +30,17 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(cache => {
+        return Promise.all(
+          urlsToCache.map(url => {
+            return cache.add(url).catch(err => {
+              console.warn(`Failed to cache ${url}:`, err);
+            });
+          })
+        );
+      })
       .then(() => self.skipWaiting())
+      .catch(err => console.error('Install event failed:', err))
   );
 });
 
@@ -41,48 +50,107 @@ self.addEventListener('activate', event => {
       .then(cacheNames => Promise.all(
         cacheNames
           .filter(cacheName => cacheName !== CACHE_NAME)
-          .map(cacheName => caches.delete(cacheName))
+          .map(cacheName => {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
       ))
       .then(() => self.clients.claim())
+      .catch(err => console.error('Activate event failed:', err))
   );
 });
 
 self.addEventListener('fetch', event => {
   const request = event.request;
 
-  if (request.method !== 'GET') return;
-
-  const requestUrl = new URL(request.url);
-
-  if (requestUrl.origin !== self.location.origin) {
-    event.respondWith(fetch(request));
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return;
   }
 
-  event.respondWith(
-    fetch(request)
-      .then(response => {
-        if (
-          !response ||
-          response.status !== 200 ||
-          response.type === 'opaque' ||
-          response.status === 206
-        ) {
+  const requestUrl = new URL(request.url);
+
+  // Handle cross-origin requests directly
+  if (requestUrl.origin !== self.location.origin) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // Cache-first strategy for assets, network-first for pages
+  const isAsset = requestUrl.pathname.includes('/assets/');
+  
+  if (isAsset) {
+    // Cache-first for assets
+    event.respondWith(
+      caches.match(request)
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return fetch(request)
+            .then(response => {
+              // Don't cache non-200 responses or partial responses
+              if (
+                !response ||
+                response.status !== 200 ||
+                response.type === 'opaque' ||
+                response.status === 206
+              ) {
+                return response;
+              }
+
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(request, responseToCache).catch(err => {
+                    console.warn('Failed to cache response:', err);
+                  });
+                })
+                .catch(err => console.warn('Failed to open cache:', err));
+
+              return response;
+            })
+            .catch(() => {
+              // Return fallback for failed asset requests
+              return caches.match('/index.html');
+            });
+        })
+        .catch(() => {
+          return caches.match('/index.html');
+        })
+    );
+  } else {
+    // Network-first for HTML pages
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type === 'opaque' ||
+            response.status === 206
+          ) {
+            return response;
+          }
+
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(request, responseToCache).catch(err => {
+                console.warn('Failed to cache page response:', err);
+              });
+            })
+            .catch(err => console.warn('Failed to open cache:', err));
+
           return response;
-        }
-
-        const responseToCache = response.clone();
-
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(request, responseToCache).catch(() => {});
-        });
-
-        return response;
-      })
-      .catch(() => {
-        return caches.match(request).then(cachedResponse => {
-          return cachedResponse || caches.match('/index.html');
-        });
-      })
-  );
+        })
+        .catch(() => {
+          // Return cached page if network fails
+          return caches.match(request)
+            .then(cachedResponse => {
+              return cachedResponse || caches.match('/index.html');
+            });
+        })
+    );
+  }
 });

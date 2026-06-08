@@ -822,7 +822,7 @@ function loadMembers() {
                 div.className = 'list-item-card';
                 
                 const statusIcon = member.paymentStatus === 'paid'
-                    ? `<span class="font-bold" style="color: #5cb85c;">✅ دافع</span>` 
+                    ? `<span class="font-bold" style="color: #5cb85c;">✅ مدفوع</span>`
                     : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
                 
                 let adminControls = '';
@@ -894,7 +894,7 @@ function loadPaymentLog() {
                         : 'غير محدد';
                     div.innerHTML = `
                         <span class="font-bold">${payment.userName || 'بدون اسم'}</span>
-                        <span style="color: #5cb85c;">✅ دفع القطة</span>
+                        <span style="color: #5cb85c;">✅ مدفوع</span>
                         <span>${date}</span>
                     `;
                     logList.appendChild(div);

@@ -1,16 +1,18 @@
-<section class="panel">
+<section class="panel payment-panel">
     <div class="panel-head">
-        <h2><i data-lucide="credit-card"></i> لا تنسى القطة يا ذيبان</h2>
+        <h2><i data-lucide="credit-card"></i> دفع القطة</h2>
+        <span class="badge scheduled">يوم 27</span>
     </div>
-    <div class="cards-grid">
-        <article class="stat"><span>التذكير</span><strong>يوم 27</strong></article>
-        <article class="stat"><span>اسم البنك</span><strong>بنك الراجحي</strong></article>
-        <article class="stat"><span>اسم المستفيد</span><strong>مدير الاستراحة</strong></article>
-        <article class="stat">
+    <div class="payment-card">
+        <div class="payment-bank">
+            <span>البنك</span>
+            <strong>بنك الراجحي</strong>
+        </div>
+        <div class="payment-iban">
             <span>رقم الآيبان</span>
             <strong id="iban">SA00 ... 7890</strong>
-            <button id="copy-iban-button" class="btn mt-2" type="button">انسخ الآيبان</button>
-        </article>
+        </div>
+        <button id="copy-iban-button" class="btn payment-copy" type="button">انسخ الآيبان</button>
     </div>
 </section>
 

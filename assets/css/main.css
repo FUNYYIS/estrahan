@@ -256,6 +256,50 @@ body[data-theme="dark"] .theme-moon-btn {
 .stat span, .muted { color: var(--muted); }
 .stat strong { display: block; margin-top: 0.35rem; font-size: 1.65rem; }
 
+.payment-panel {
+  overflow: hidden;
+}
+
+.payment-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) auto;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(181, 138, 56, 0.26);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255, 250, 240, 0.94), rgba(247, 233, 199, 0.74));
+}
+
+.payment-bank,
+.payment-iban {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.payment-bank span,
+.payment-iban span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.payment-bank strong,
+.payment-iban strong {
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+}
+
+.payment-copy {
+  align-self: stretch;
+  min-width: 132px;
+}
+
 .panel { padding: 1rem; margin-bottom: 1rem; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .panel-head h2 { margin-bottom: 0; font-size: 1.25rem; }
@@ -680,6 +724,15 @@ body[data-theme="dark"] .alert-content {
   background: rgba(45, 37, 27, 0.92);
 }
 
+body[data-theme="dark"] .payment-card {
+  background: linear-gradient(135deg, rgba(63, 52, 38, 0.96), rgba(38, 31, 23, 0.96));
+}
+
+body[data-theme="dark"] .payment-bank,
+body[data-theme="dark"] .payment-iban {
+  background: rgba(255, 250, 240, 0.06);
+}
+
 body[data-theme="dark"] .field,
 body[data-theme="dark"] .input-group input,
 body[data-theme="dark"] .input-group textarea,
@@ -744,6 +797,8 @@ body[data-theme="dark"] #chat-input {
   .topbar { align-items: flex-start; }
   .status-pill { display: none; }
   .stats-grid { grid-template-columns: 1fr; }
+  .payment-card { grid-template-columns: 1fr; }
+  .payment-copy { width: 100%; }
   .toolbar .field, .toolbar button, .chat-form .field { width: 100%; }
   .chat-form { grid-template-columns: 1fr; }
   .hero h2 { font-size: 2.6rem; }

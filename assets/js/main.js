@@ -214,12 +214,12 @@ function applyTheme(theme) {
 
 function toggleTheme() {
     const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem('al-istiraha-theme', newTheme);
     applyTheme(newTheme);
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
     applyTheme(savedTheme);
 }
 
@@ -387,7 +387,7 @@ function attachEventListeners(hash) {
         
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
-            themeToggle.checked = (localStorage.getItem('theme') === 'dark');
+            themeToggle.checked = (localStorage.getItem('al-istiraha-theme') === 'dark');
             themeToggle.addEventListener('change', toggleTheme);
         }
     }

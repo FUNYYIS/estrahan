@@ -15,29 +15,20 @@
         <button id="copy-iban-button" class="btn payment-copy" type="button">انسخ الآيبان</button>
     </div>
     <div class="payment-methods">
-        <div class="payment-method">
-            <div>
-                <span class="payment-logo apple-pay-logo" aria-hidden="true">Apple Pay</span>
-                <span>Apple Pay</span>
-            </div>
-            <span class="badge scheduled">قريبا</span>
-        </div>
-        <div class="payment-method">
-            <div>
-                <span class="payment-logo stc-pay-logo" aria-hidden="true">stc pay</span>
-                <span>STC Pay</span>
-            </div>
-            <span class="badge scheduled">قريبا</span>
-        </div>
-        <div class="payment-method">
-            <div>
-                <span class="payment-logo card-pay-logo" aria-hidden="true">
-                    <span></span>
-                </span>
-                <span>الدفع بالبطاقة</span>
-            </div>
-            <span class="badge scheduled">قريبا</span>
-        </div>
+        <button class="payment-method payment-button apple-pay-button" type="button" disabled aria-disabled="true">
+            <span class="apple-mark" aria-hidden="true">Apple Pay</span>
+            <span class="payment-soon">قريبا</span>
+        </button>
+        <button class="payment-method payment-button stc-pay-button" type="button" disabled aria-disabled="true">
+            <span class="stc-pay-mark" aria-hidden="true">stc pay</span>
+            <span>STC Pay</span>
+            <span class="payment-soon">قريبا</span>
+        </button>
+        <button class="payment-method payment-button card-pay-button" type="button" disabled aria-disabled="true">
+            <span class="card-pay-mark" aria-hidden="true"><span></span></span>
+            <span>الدفع بالبطاقة</span>
+            <span class="payment-soon">قريبا</span>
+        </button>
     </div>
 </section>
 

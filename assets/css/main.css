@@ -300,6 +300,37 @@ body[data-theme="dark"] .theme-moon-btn {
   min-width: 132px;
 }
 
+.payment-methods {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.8rem;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(181, 138, 56, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.58);
+}
+
+.payment-method > div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.payment-method svg {
+  width: 19px;
+  height: 19px;
+  color: var(--gold-strong);
+}
+
 .panel { padding: 1rem; margin-bottom: 1rem; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .panel-head h2 { margin-bottom: 0; font-size: 1.25rem; }
@@ -731,6 +762,11 @@ body[data-theme="dark"] .payment-card {
 body[data-theme="dark"] .payment-bank,
 body[data-theme="dark"] .payment-iban {
   background: rgba(255, 250, 240, 0.06);
+}
+
+body[data-theme="dark"] .payment-method {
+  background: rgba(255, 250, 240, 0.05);
+  border-color: rgba(210, 172, 95, 0.16);
 }
 
 body[data-theme="dark"] .field,

@@ -1,30 +1,31 @@
-<!-- ====================================================== -->
-<!--                 pages/register.html                -->
-<!-- ====================================================== -->
- <div class="full-screen-container">
+<div class="auth-layout">
+    <div class="auth-brand">
+        <h2>حياك في Al Istiraha</h2>
+        <p>أنشئ حسابك برقم الجوال، وسيبقى تحقق OTP وملف العضو محفوظين عبر Firebase كما في المشروع الأصلي.</p>
+        <div class="majlis-art" role="img" aria-label="Premium Gulf majlis inspired illustration"></div>
+    </div>
+
     <div class="content-body">
-        <h1>حساب جديد</h1>
-        <form id="register-form" style="width: 100%;">
+        <h2>حساب جديد</h2>
+        <form id="register-form">
             <div class="input-group">
                 <label for="register-name">الاسم الكامل</label>
-                <input type="text" id="register-name" required>
+                <input type="text" id="register-name" autocomplete="name" required>
             </div>
-             <div class="input-group">
+            <div class="input-group">
                 <label for="register-phone-number">رقم الجوال</label>
-                <input type="tel" id="register-phone-number" placeholder="05XXXXXXXX" required>
+                <input type="tel" id="register-phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
             </div>
             <button type="submit" class="btn">إرسال الرمز</button>
             <div id="recaptcha-container-register" class="mt-4"></div>
         </form>
-         <form id="register-code-form" style="width: 100%; display: none;">
+        <form id="register-code-form" style="display: none;">
             <div class="input-group">
                 <label for="register-verification-code">رمز التحقق</label>
-                <input type="text" id="register-verification-code" required>
+                <input type="text" id="register-verification-code" inputmode="numeric" autocomplete="one-time-code" required>
             </div>
             <button type="submit" class="btn">تحقق وإنشاء حساب</button>
         </form>
-        <p class="link-text">
-            عندك حساب؟ <a href="#login">سجّل دخولك</a>
-        </p>
+        <p class="link-text">عندك حساب؟ <a href="#login">سجّل دخولك</a></p>
     </div>
 </div>

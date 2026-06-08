@@ -1,26 +1,27 @@
-    <!-- ====================================================== -->
-    <!--                  pages/login.html                  -->
-    <!-- ====================================================== -->
-    <div class="full-screen-container">
-        <div class="content-body">
-            <h1>تسجيل الدخول</h1>
-            <form id="phone-form" style="width: 100%;">
-                <div class="input-group">
-                    <label for="phone-number">رقم الجوال</label>
-                    <input type="tel" id="phone-number" placeholder="05XXXXXXXX" required>
-                </div>
-                <button type="submit" class="btn">إرسال الرمز</button>
-                <div id="recaptcha-container" class="mt-4"></div>
-            </form>
-            <form id="code-form" style="width: 100%; display: none;">
-                <div class="input-group">
-                    <label for="verification-code">رمز التحقق</label>
-                    <input type="text" id="verification-code" required>
-                </div>
-                <button type="submit" class="btn">تحقق ودخول</button>
-            </form>
-            <p class="link-text">
-                ليس لديك حساب؟ <a href="#register">أنشئ حساب جديد</a>
-            </p>
-        </div>
+<div class="auth-layout">
+    <div class="auth-brand">
+        <h2>Al Istiraha</h2>
+        <p>منصة خاصة وآمنة لأعضاء الاستراحة، تجمع القطة الشهرية، الدردشة، الخدمات اليومية، المباريات، الأخبار، ومواقيت الصلاة في تجربة واحدة.</p>
+        <div class="majlis-art" role="img" aria-label="Premium Gulf majlis inspired illustration"></div>
     </div>
+
+    <div class="content-body">
+        <h2>تسجيل الدخول</h2>
+        <form id="phone-form">
+            <div class="input-group">
+                <label for="phone-number">رقم الجوال</label>
+                <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
+            </div>
+            <button type="submit" class="btn">إرسال الرمز</button>
+            <div id="recaptcha-container" class="mt-4"></div>
+        </form>
+        <form id="code-form" style="display: none;">
+            <div class="input-group">
+                <label for="verification-code">رمز التحقق</label>
+                <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
+            </div>
+            <button type="submit" class="btn">تحقق ودخول</button>
+        </form>
+        <p class="link-text">ليس لديك حساب؟ <a href="#register">أنشئ حساب جديد</a></p>
+    </div>
+</div>

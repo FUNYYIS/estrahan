@@ -1,32 +1,41 @@
-<!-- ====================================================== -->
-<!--                   pages/home.html                    -->
-<!-- ====================================================== -->
-<div class="full-screen-container">
-    <div class="page-content-container">
-        <div id="welcome-message" class="mb-6 text-center">
-            <h1 class="text-3xl font-bold">أهلاً بك!</h1>
-            <p class="text-lg" id="hijri-date-container">...</p>
-        </div>
-
-        <div class="list-item-card flex-col items-start p-4 mb-4">
-             <h2 class="text-xl font-bold mb-3 w-full text-center flex items-center justify-center gap-2"><i data-lucide="moon-star"></i> مواقيت الصلاة</h2>
-            <div id="home-prayer-times" class="w-full space-y-2">
-                <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
-            </div>
-        </div>
-
-        <div class="list-item-card flex-col items-start p-4 mb-4">
-            <h2 class="text-xl font-bold mb-3 w-full text-center flex items-center justify-center gap-2"><i data-lucide="trophy"></i> أهم مباريات اليوم</h2>
-            <div id="home-matches-list" class="space-y-3 w-full">
-                <p class="text-center">جاري تحميل المباريات...</p>
-            </div>
-        </div>
-
-        <div class="list-item-card flex-col items-start p-4">
-             <h2 class="text-xl font-bold mb-3 w-full text-center flex items-center justify-center gap-2"><i data-lucide="newspaper"></i> آخر الأخبار</h2>
-            <div id="home-news-list" class="space-y-3 w-full">
-                <p class="text-center">جاري تحميل الأخبار...</p>
-            </div>
+<section class="hero">
+    <div id="welcome-message">
+        <h2>أهلاً بك!</h2>
+        <p id="hijri-date-container">...</p>
+        <div class="hero-actions">
+            <a href="#members" class="primary">الأعضاء</a>
+            <a href="#payments" class="ghost">متابعة القطة</a>
+            <a href="#chat" class="ghost">الدردشة</a>
         </div>
     </div>
-</div>
+    <div class="majlis-art" role="img" aria-label="Premium Gulf majlis inspired illustration"></div>
+</section>
+
+<section class="home-grid">
+    <article class="panel">
+        <div class="panel-head">
+            <h2><i data-lucide="moon-star"></i> مواقيت الصلاة</h2>
+        </div>
+        <div id="home-prayer-times" class="section-stack">
+            <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-head">
+            <h2><i data-lucide="trophy"></i> أهم مباريات اليوم</h2>
+        </div>
+        <div id="home-matches-list" class="section-stack">
+            <p class="text-center">جاري تحميل المباريات...</p>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-head">
+            <h2><i data-lucide="newspaper"></i> آخر الأخبار</h2>
+        </div>
+        <div id="home-news-list" class="section-stack">
+            <p class="text-center">جاري تحميل الأخبار...</p>
+        </div>
+    </article>
+</section>

@@ -1,12 +1,22 @@
 {
-  "name": "الاستراحة",
-  "short_name": "الاستراحة",
+  "name": "Al Istiraha",
+  "short_name": "Al Istiraha",
+  "description": "Private members-only community platform for activities, Qattah, chat, prayer times, matches, and news.",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f5eada",
-  "theme_color": "#c76b29",
-  "description": "تطبيق لإدارة وتنظيم شؤون استراحة ",
+  "orientation": "portrait-primary",
+  "background_color": "#f8f1e5",
+  "theme_color": "#b58a38",
   "icons": [
+    {
+      "src": "/assets/images/al-istiraha-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/assets/images/icon-192.png",
       "sizes": "192x192",

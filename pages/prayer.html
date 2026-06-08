@@ -1,12 +1,11 @@
-<!-- ====================================================== -->
-<!--                  pages/prayer.html                   -->
-<!-- ====================================================== -->
-<div class="full-screen-container">
-    <div class="page-content-container">
-         <a href="#services" class="font-bold mb-4 inline-block" style="color: var(--primary-accent);">&larr; العودة للخدمات</a>
-        <h1 class="text-2xl font-bold mb-4">📿 مواقيت الصلاة</h1>
-        <div id="prayer-times-container" class="list-item-card flex-col items-start p-6 space-y-3">
-            <p class="text-center w-full">جاري جلب مواقيت الصلاة لموقعك...</p>
-        </div>
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="moon-star"></i> مواقيت الصلاة</h2>
+        <a href="#services" class="service-link">الخدمات</a>
     </div>
-</div>
+    <p class="muted">سيطلب التطبيق إذن الموقع لعرض المواقيت اليومية من AlAdhan API.</p>
+</section>
+
+<section id="prayer-times-container" class="cards-grid">
+    <p class="text-center w-full">جاري جلب مواقيت الصلاة لموقعك...</p>
+</section>

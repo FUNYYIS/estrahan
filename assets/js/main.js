@@ -49,11 +49,71 @@ const customAlert = document.getElementById('custom-alert');
 const alertMessage = document.getElementById('alert-message');
 const alertCloseBtn = document.getElementById('alert-close-btn');
 const appLogo = document.getElementById('app-logo');
+const pageTitle = document.getElementById('pageTitle');
+const todayLabel = document.getElementById('todayLabel');
+const onlineState = document.getElementById('onlineState');
+const notifyBtn = document.getElementById('notifyBtn');
+const menuBtn = document.getElementById('menuBtn');
+const sidebar = document.querySelector('.sidebar');
 
 // --- حالة التطبيق ---
 let currentUser = null; 
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
+
+const routeTitles = {
+    '#login': 'تسجيل الدخول',
+    '#register': 'حساب جديد',
+    '#home': 'الرئيسية',
+    '#members': 'الأعضاء',
+    '#payments': 'القطة الشهرية',
+    '#chat': 'الدردشة',
+    '#settings': 'الإعدادات',
+    '#profile-settings': 'الملف الشخصي',
+    '#notifications-settings': 'التنبيهات',
+    '#services': 'الخدمات',
+    '#prayer': 'الصلاة',
+    '#qibla': 'القبلة',
+    '#matches': 'مباريات اليوم',
+    '#news': 'الأخبار',
+    '#important-links': 'روابط مهمة',
+};
+
+function escapeHtml(value = '') {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
+function safeExternalUrl(value, fallback = '#') {
+    if (!value) return fallback;
+
+    try {
+        const url = new URL(value, window.location.origin);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function cleanupRealtimeListeners() {
+    if (unsubscribeChat) {
+        unsubscribeChat();
+        unsubscribeChat = null;
+    }
+    if (unsubscribeMembers) {
+        unsubscribeMembers();
+        unsubscribeMembers = null;
+    }
+    if (unsubscribePayments) {
+        unsubscribePayments();
+        unsubscribePayments = null;
+    }
+}
 
 // --- RecaptchaVerifier Manager ---
 const recaptchaManager = {
@@ -163,6 +223,29 @@ function loadTheme() {
     applyTheme(savedTheme);
 }
 
+function setOnlineState() {
+    if (!onlineState) return;
+    onlineState.textContent = navigator.onLine ? 'متصل' : 'وضع عدم الاتصال';
+}
+
+menuBtn?.addEventListener('click', () => sidebar?.classList.toggle('open'));
+notifyBtn?.addEventListener('click', async () => {
+    if (!('Notification' in window)) {
+        showAlert('متصفحك لا يدعم إشعارات الويب.');
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+        new Notification('Al Istiraha', {
+            body: 'تم تفعيل الإشعارات.',
+            icon: 'assets/images/al-istiraha-icon.svg'
+        });
+    }
+});
+window.addEventListener('online', setOnlineState);
+window.addEventListener('offline', setOnlineState);
+
 // --- نظام التنقل (Router) ---
 const routes = {
     '#login': 'login.html',
@@ -182,6 +265,17 @@ const routes = {
     '#important-links': 'important-links.html',
 };
 
+const publicRoutes = ['#login', '#register'];
+
+function normalizeHash(hash) {
+    return hash && hash.startsWith('#') ? hash : `#${hash || ''}`;
+}
+
+function currentPublicRoute() {
+    const hash = normalizeHash(window.location.hash);
+    return publicRoutes.includes(hash) ? hash : '#login';
+}
+
 function updateActiveNav(hash) {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
@@ -189,11 +283,23 @@ function updateActiveNav(hash) {
             link.classList.add('active');
         }
     });
+
+    if (pageTitle) pageTitle.textContent = routeTitles[hash] || 'Al Istiraha';
+    if (todayLabel) {
+        todayLabel.textContent = new Intl.DateTimeFormat('ar-SA', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        }).format(new Date());
+    }
 }
 
 async function renderPage(hash) {
     const defaultPage = currentUser ? '#home' : '#login';
-    const currentHash = hash || defaultPage;
+    const requestedHash = normalizeHash(hash || defaultPage);
+    const isPublicRoute = publicRoutes.includes(requestedHash);
+    const currentHash = routes[requestedHash] && (currentUser || isPublicRoute) ? requestedHash : defaultPage;
     const pageFile = routes[currentHash];
     
     if (pageFile) {
@@ -225,6 +331,7 @@ async function renderPage(hash) {
             const normalizedPageId = currentHash.substring(1).replace('#', '');
             loadPageData(normalizedPageId);
             updateActiveNav(currentHash);
+            sidebar?.classList.remove('open');
         } catch (error) {
             console.error('Error fetching page:', error);
             pageContent.innerHTML = '<p class="text-center">عفواً، الصفحة غير موجودة.</p>';
@@ -289,6 +396,13 @@ function attachEventListeners(hash) {
         const chatForm = document.getElementById('chat-form');
         if (chatForm) chatForm.addEventListener('submit', handleSendMessage);
     }
+
+    if (pageId === 'payments') {
+        const copyIbanButton = document.getElementById('copy-iban-button');
+        if (copyIbanButton) {
+            copyIbanButton.addEventListener('click', () => copyToClipboard('SA00 1234 5678 9012 3456 7890'));
+        }
+    }
 }
 
 function loadPageData(pageId) {
@@ -299,6 +413,8 @@ function loadPageData(pageId) {
         return;
     }
     
+    cleanupRealtimeListeners();
+
     try {
         switch (normalizedPageId) {
             case 'home':
@@ -594,7 +710,7 @@ function loadMembers() {
                 const div = document.createElement('div');
                 div.className = 'list-item-card';
                 
-                const statusIcon = member.paymentStatus === 'paid' 
+                const statusIcon = member.paymentStatus === 'paid'
                     ? `<span class="font-bold" style="color: #5cb85c;">✅ دافع</span>` 
                     : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
                 
@@ -608,8 +724,8 @@ function loadMembers() {
 
                 div.innerHTML = `
                     <div>
-                        <p class="font-bold">${member.name || 'بدون اسم'}</p>
-                        <p class="text-sm">${member.phone || 'بدون رقم'}</p>
+                        <p class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</p>
+                        <p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>
                     </div>
                     <div class="flex items-center">
                         ${adminControls}
@@ -703,11 +819,11 @@ function loadChat() {
                     div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
                     
                     const userDisplayName = msg.userName || 'مستخدم';
-                    const messageText = msg.text ? msg.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                    const messageText = escapeHtml(msg.text || '');
                     
                     div.innerHTML = `
-                        <div class="text-xs mb-1 mx-2" style="color: var(--text-color); opacity: 0.7;">${userDisplayName}</div>
-                        <div class="max-w-xs p-3 rounded-xl ${isMe ? 'bg-[#c76b29] text-white rounded-br-none' : 'bg-gray-200 text-black rounded-bl-none'}" style="${isMe ? 'background-color: var(--primary-accent);' : 'background-color: var(--card-bg);'}">
+                        <div class="text-xs mb-1 mx-2" style="color: var(--muted);">${escapeHtml(userDisplayName)}</div>
+                        <div class="message ${isMe ? 'mine' : ''}">
                             <p>${messageText}</p>
                         </div>
                     `;
@@ -773,10 +889,29 @@ function loadProfileData() {
 
 // --- Service Functions ---
 async function getPrayerData(latitude, longitude) {
-    const date = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
     const response = await fetch(`https://api.aladhan.com/v1/timings/${date}?latitude=${latitude}&longitude=${longitude}&method=4`);
     if (!response.ok) throw new Error('Network response was not ok');
     return await response.json();
+}
+
+function prayerCards(timings, keys) {
+    const labels = {
+        Fajr: 'الفجر',
+        Sunrise: 'الشروق',
+        Dhuhr: 'الظهر',
+        Asr: 'العصر',
+        Maghrib: 'المغرب',
+        Isha: 'العشاء'
+    };
+
+    return keys.map((key) => `
+        <article class="stat">
+            <span>${labels[key]}</span>
+            <strong>${escapeHtml(timings[key] || '--:--')}</strong>
+        </article>
+    `).join('');
 }
 
 async function loadHomePrayerAndDate() {
@@ -809,13 +944,7 @@ async function loadHomePrayerAndDate() {
                 const data = await getPrayerData(latitude, longitude);
                 const timings = data.data.timings;
                 
-                prayerContainer.innerHTML = `
-                    <div class="flex justify-between items-center w-full text-sm"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
-                    <div class="flex justify-between items-center w-full text-sm"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
-                    <div class="flex justify-between items-center w-full text-sm"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
-                    <div class="flex justify-between items-center w-full text-sm"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
-                    <div class="flex justify-between items-center w-full text-sm"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
-                `;
+                prayerContainer.innerHTML = prayerCards(timings, ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
                 console.error('Error fetching prayer times:', error);
                 prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب البيانات.</p>`;
@@ -857,14 +986,7 @@ async function loadPrayerTimes() {
                 }
                 
                 const timings = data.data.timings;
-                container.innerHTML = `
-                    <div class="flex justify-between items-center w-full"><span>الفجر</span><span class="font-bold">${timings.Fajr}</span></div>
-                    <div class="flex justify-between items-center w-full"><span>الشروق</span><span class="font-bold">${timings.Sunrise}</span></div>
-                    <div class="flex justify-between items-center w-full"><span>الظهر</span><span class="font-bold">${timings.Dhuhr}</span></div>
-                    <div class="flex justify-between items-center w-full"><span>العصر</span><span class="font-bold">${timings.Asr}</span></div>
-                    <div class="flex justify-between items-center w-full"><span>المغرب</span><span class="font-bold">${timings.Maghrib}</span></div>
-                    <div class="flex justify-between items-center w-full"><span>العشاء</span><span class="font-bold">${timings.Isha}</span></div>
-                `;
+                container.innerHTML = prayerCards(timings, ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
                 console.error('Error fetching prayer times:', error);
                 container.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب مواقيت الصلاة.</p>`;
@@ -1000,22 +1122,20 @@ async function loadMatches(container, limit = 10) {
                     ? `${fixture.goals?.home || 0} - ${fixture.goals?.away || 0}` 
                     : new Date(fixture.fixture?.date).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
                 
+                const homeLogo = safeExternalUrl(homeTeam.logo, 'assets/images/al-istiraha-icon.svg');
+                const awayLogo = safeExternalUrl(awayTeam.logo, 'assets/images/al-istiraha-icon.svg');
+                const statusShort = fixture.fixture?.status?.short;
+                const statusClass = statusShort === 'FT' ? 'done' : statusShort === 'LIVE' ? 'live' : 'scheduled';
                 const matchCard = `
-                    <div class="list-item-card flex-col items-center p-4 space-y-2">
-                        <span class="text-xs opacity-70">${fixture.league?.name || 'دوري'}</span>
-                        <div class="flex justify-between items-center w-full">
-                            <div class="flex flex-col items-center w-1/3">
-                                <img src="${homeTeam.logo || ''}" alt="${homeTeam.name}" class="w-10 h-10 mb-1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect fill=%22%23ccc%22 width=%2240%22 height=%2240%22/%3E%3C/svg%3E'">
-                                <span class="font-bold text-center text-sm">${homeTeam.name || 'فريق'}</span>
-                            </div>
-                            <span class="font-bold text-2xl" style="color: var(--primary-accent);">${score}</span>
-                            <div class="flex flex-col items-center w-1/3">
-                                <img src="${awayTeam.logo || ''}" alt="${awayTeam.name}" class="w-10 h-10 mb-1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect fill=%22%23ccc%22 width=%2240%22 height=%2240%22/%3E%3C/svg%3E'">
-                                <span class="font-bold text-center text-sm">${awayTeam.name || 'فريق'}</span>
-                            </div>
+                    <article class="match-card card">
+                        <span class="badge ${statusClass}">${escapeHtml(fixture.fixture?.status?.long || 'قادمة')}</span>
+                        <p class="muted">${escapeHtml(fixture.league?.name || 'دوري')}</p>
+                        <div class="match-teams">
+                            <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(homeTeam.name || 'فريق')}</span>
+                            <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(awayTeam.name || 'فريق')}</span>
                         </div>
-                        <span class="text-xs opacity-70">${fixture.fixture?.status?.long || 'جاري'}</span>
-                    </div>
+                        <div class="match-score">${escapeHtml(score)}</div>
+                    </article>
                 `;
                 container.innerHTML += matchCard;
             } catch (itemError) {
@@ -1062,15 +1182,18 @@ async function loadNews(container, limit = 10) {
             try {
                 const title = article.title || 'بدون عنوان';
                 const description = article.description || article.content || '';
-                const url = article.url || '#';
+                const url = safeExternalUrl(article.url, '#');
                 const source = article.source?.name || 'مصدر';
+                const image = safeExternalUrl(article.urlToImage, 'assets/images/al-istiraha-news-service.svg');
                 
                 const newsCard = `
-                    <a href="${url}" target="_blank" rel="noopener noreferrer" class="list-item-card flex-col items-start p-4 text-right no-underline" style="text-decoration: none;">
-                        <h3 class="font-bold mb-2">${title.substring(0, 100)}</h3>
-                        <p class="text-sm opacity-75">${description.substring(0, 150)}</p>
-                        <span class="text-xs opacity-50 mt-2">${source}</span>
-                    </a>
+                    <article class="news-card card">
+                        <img src="${image}" alt="" loading="lazy">
+                        <h3>${escapeHtml(title.substring(0, 100))}</h3>
+                        <p class="muted">${escapeHtml(description.substring(0, 150))}</p>
+                        <span class="text-xs opacity-70">${escapeHtml(source)}</span>
+                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="primary">قراءة المزيد</a>
+                    </article>
                 `;
                 container.innerHTML += newsCard;
             } catch (itemError) {
@@ -1088,6 +1211,7 @@ async function loadNews(container, limit = 10) {
 // --- App Initialization ---
 function initApp() {
     console.log('Initializing app...');
+    setOnlineState();
     
     try {
         loadTheme();
@@ -1102,7 +1226,7 @@ function initApp() {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     currentUser = { uid: user.uid, ...userDoc.data() };
-                    bottomNav.style.display = 'flex';
+                    bottomNav.style.display = 'grid';
                     appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
@@ -1119,14 +1243,14 @@ function initApp() {
                 currentUser = null;
                 bottomNav.style.display = 'none';
                 appLogo.style.display = 'block';
-                await renderPage('#login');
+                await renderPage(currentPublicRoute());
             }
         } catch (error) {
             console.error('✗ Error in auth state change:', error);
             currentUser = null;
             bottomNav.style.display = 'none';
             appLogo.style.display = 'block';
-            await renderPage('#login');
+            await renderPage(currentPublicRoute());
         }
     });
 
@@ -1138,7 +1262,7 @@ function initApp() {
 
     if (hasSeenSplash) {
         if (splash) splash.style.display = 'none';
-        if (mainContent) mainContent.style.display = 'block';
+        if (mainContent) mainContent.style.display = 'grid';
 
         console.log('✓ Splash skipped');
     } else {
@@ -1152,12 +1276,12 @@ function initApp() {
                     splash.style.display = 'none';
 
                     if (mainContent) {
-                        mainContent.style.display = 'block';
+                        mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
                 }, 500);
             } else if (mainContent) {
-                mainContent.style.display = 'block';
+                mainContent.style.display = 'grid';
             }
         }, 3000);
     }

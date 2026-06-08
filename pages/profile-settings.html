@@ -1,18 +1,20 @@
-<!-- ====================================================== -->
-<!--             pages/profile-settings.html            -->
-<!-- ====================================================== -->
-<div class="full-screen-container">
-    <div class="page-content-container">
-        <a href="#settings" class="font-bold mb-4 inline-block" style="color: var(--primary-accent);">&larr; العودة للإعدادات</a>
-        <h1 class="text-2xl font-bold mb-6">👤 الملف الشخصي</h1>
-        <div class="list-item-card flex-col items-start p-6 space-y-4 mb-6">
-            <div><label class="text-sm">الاسم:</label><p id="profile-name" class="font-bold">...</p></div>
-            <div><label class="text-sm">البريد الإلكتروني:</label><p id="profile-email" class="font-bold">...</p></div>
-        </div>
-        <h2 class="text-xl font-bold mb-4">🔑 تغيير كلمة المرور</h2>
-        <form id="change-password-form" class="space-y-4">
-            <input type="password" id="new-password" placeholder="كلمة المرور الجديدة" class="w-full p-3 rounded-lg" required>
-            <button type="submit" class="btn w-full">حفظ التغييرات</button>
-        </form>
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="user-circle-2"></i> الملف الشخصي</h2>
+        <a href="#settings" class="service-link">الإعدادات</a>
     </div>
-</div>
+    <div class="cards-grid">
+        <article class="stat">
+            <span>الاسم</span>
+            <strong id="profile-name">...</strong>
+        </article>
+        <article class="stat">
+            <span>رقم الجوال</span>
+            <strong id="profile-phone">...</strong>
+        </article>
+        <article class="stat">
+            <span>الحالة</span>
+            <strong>عضو</strong>
+        </article>
+    </div>
+</section>

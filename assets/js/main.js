@@ -62,20 +62,20 @@ let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 
 const routeTitles = {
-    '#login': 'تسجيل الدخول',
-    '#register': 'حساب جديد',
-    '#home': 'الرئيسية',
-    '#members': 'الأعضاء',
+    '#login': 'أقلط',
+    '#register': 'سجل معنا',
+    '#home': 'المجلس',
+    '#members': 'المطانيخ',
     '#payments': 'القطة الشهرية',
-    '#chat': 'الدردشة',
-    '#settings': 'الإعدادات',
-    '#profile-settings': 'الملف الشخصي',
-    '#notifications-settings': 'التنبيهات',
+    '#chat': 'الشات',
+    '#settings': 'الضبط',
+    '#profile-settings': 'بياناتك',
+    '#notifications-settings': 'تنبيهاتك',
     '#services': 'الخدمات',
     '#prayer': 'الصلاة',
     '#qibla': 'القبلة',
     '#matches': 'مباريات اليوم',
-    '#news': 'الأخبار',
+    '#news': 'السوالف',
 };
 
 function escapeHtml(value = '') {
@@ -199,9 +199,9 @@ alertCloseBtn.addEventListener('click', () => {
 
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        showAlert('تم نسخ الآيبان بنجاح!');
+    showAlert('تم نسخ الآيبان يا ذيب.');
     }).catch(err => {
-        showAlert('فشل النسخ، حاول مرة أخرى.');
+        showAlert('ما ضبط النسخ، جرّب مرة ثانية.');
     });
 }
 window.copyToClipboard = copyToClipboard;
@@ -244,14 +244,14 @@ menuBtn?.addEventListener('click', () => {
 });
 notifyBtn?.addEventListener('click', async () => {
     if (!('Notification' in window)) {
-        showAlert('متصفحك لا يدعم إشعارات الويب.');
+        showAlert('متصفحك ما يدعم إشعارات الويب.');
         return;
     }
 
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
         new Notification('Al Istiraha', {
-            body: 'تم تفعيل الإشعارات.',
+            body: 'تم تشغيل التنبيهات يا ذيب.',
             icon: 'assets/images/al-istiraha-icon.svg'
         });
     }
@@ -518,7 +518,7 @@ function setupRecaptcha(containerId) {
         return true;
     } else {
         console.error(`Failed to set up reCAPTCHA for ${containerId}`);
-        showAlert('فشل إعداد التحقق. يرجى تحديث الصفحة.');
+        showAlert('ما ضبط تجهيز التحقق، حدّث الصفحة وجرب.');
         return false;
     }
 }
@@ -552,7 +552,7 @@ async function handleSendCode(e, isRegister = false) {
     const phoneInput = document.getElementById(phoneInputId);
     
     if (!phoneInput) {
-        showAlert('عنصر الهاتف غير موجود. يرجى تحديث الصفحة.');
+        showAlert('خانة الجوال مو موجودة، حدّث الصفحة.');
         return;
     }
     
@@ -574,7 +574,7 @@ async function handleSendCode(e, isRegister = false) {
     if (isRegister) {
         const nameInput = document.getElementById('register-name');
         if (!nameInput) {
-            showAlert('عنصر الاسم غير موجود. يرجى تحديث الصفحة.');
+            showAlert('خانة الاسم مو موجودة، حدّث الصفحة.');
             return;
         }
         tempName = nameInput.value.trim();
@@ -594,7 +594,7 @@ async function handleSendCode(e, isRegister = false) {
 
     console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
-    setAuthStatus(isRegister, 'phone', 'جاري تجهيز التحقق وإرسال الرمز...');
+    setAuthStatus(isRegister, 'phone', 'نجهز التحقق ونرسل لك الرمز...');
     
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -606,7 +606,7 @@ async function handleSendCode(e, isRegister = false) {
             sessionStorage.setItem('tempName', tempName);
         }
 
-        setAuthStatus(isRegister, 'code', 'تم إرسال الرمز. أدخله هنا للمتابعة.');
+        setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
         if (isRegister) {
             const registerForm = document.getElementById('register-form');
             const registerCodeForm = document.getElementById('register-code-form');
@@ -624,16 +624,16 @@ async function handleSendCode(e, isRegister = false) {
         console.error("Error code:", error.code);
         console.error("Error message:", error.message);
         
-        let errorMsg = 'فشل إرسال الرمز. تأكد من صحة الرقم.';
+        let errorMsg = 'ما قدرنا نرسل الرمز. تأكد من الرقم.';
         
         if (error.code === 'auth/invalid-phone-number') {
-            errorMsg = 'صيغة رقم الهاتف غير صحيحة. استخدم الصيغة الدولية +966XXXXXXXXX';
+            errorMsg = 'صيغة الرقم ما هي صحيحة. استخدم +966XXXXXXXXX';
         } else if (error.code === 'auth/too-many-requests') {
-            errorMsg = 'تم إرسال عدد كبير من الطلبات. حاول لاحقاً.';
+            errorMsg = 'كثرت الطلبات شوي. جرّب بعدين.';
         } else if (error.code === 'auth/invalid-app-credential') {
-            errorMsg = 'خطأ في بيانات التحقق. تأكد من توافق النطاق.';
+            errorMsg = 'في مشكلة بالتحقق. تأكد من إعدادات النطاق.';
         } else if (error.code === 'auth/captcha-check-failed') {
-            errorMsg = 'فشل التحقق من reCAPTCHA. حاول مرة أخرى.';
+            errorMsg = 'ما ضبط تحقق reCAPTCHA. جرّب مرة ثانية.';
         }
         
         showAlert(errorMsg);
@@ -647,7 +647,7 @@ async function handleSendCode(e, isRegister = false) {
         setTimeout(() => {
             const success = setupRecaptcha(containerId);
             if (!success) {
-                showAlert('فشل إعادة تعيين التحقق. يرجى تحديث الصفحة.');
+                showAlert('ما ضبطت إعادة التحقق. حدّث الصفحة وجرب.');
             }
         }, 500);
         setFormLoading(e.currentTarget, false);
@@ -662,14 +662,14 @@ async function handleVerifyCode(e, isRegister = false) {
     const codeInput = document.getElementById(codeInputId);
     
     if (!codeInput) {
-        showAlert('عنصر الرمز غير موجود. يرجى تحديث الصفحة.');
+        showAlert('خانة الرمز مو موجودة، حدّث الصفحة.');
         return;
     }
     
     const code = codeInput.value.trim();
     
     if (!code) {
-        showAlert('الرجاء إدخال رمز التحقق.');
+        showAlert('اكتب رمز الدخول يا ذيب.');
         return;
     }
     
@@ -677,7 +677,7 @@ async function handleVerifyCode(e, isRegister = false) {
     const verificationId = sessionStorage.getItem('firebaseVerificationId');
 
     if (!verificationId) {
-        showAlert('انتهت صلاحية جلسة التحقق. يرجى طلب الرمز مرة أخرى.');
+        showAlert('انتهت مهلة الرمز. اطلب رمز جديد.');
         // Reset forms
         if (isRegister) {
             const registerForm = document.getElementById('register-form');
@@ -695,7 +695,7 @@ async function handleVerifyCode(e, isRegister = false) {
     
     console.log('Verifying code...');
     setFormLoading(e.currentTarget, true, 'جاري التحقق...');
-    setAuthStatus(isRegister, 'code', 'جاري التحقق من الرمز...');
+    setAuthStatus(isRegister, 'code', 'نتأكد من الرمز...');
     
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
@@ -706,7 +706,7 @@ async function handleVerifyCode(e, isRegister = false) {
         if (isRegister) {
             const name = sessionStorage.getItem('tempName');
             if (!name) {
-                showAlert('حدث خطأ: فقدان بيانات المستخدم. حاول مرة أخرى.');
+                showAlert('ضاعت بيانات التسجيل. جرّب مرة ثانية.');
                 return;
             }
             console.log('Creating user profile...');
@@ -724,7 +724,7 @@ async function handleVerifyCode(e, isRegister = false) {
             const existingUserDoc = await getDoc(userDocRef);
             if (!existingUserDoc.exists()) {
                 await setDoc(userDocRef, {
-                    name: user.phoneNumber || 'عضو جديد',
+                    name: user.phoneNumber || 'مطناخ جديد',
                     phone: user.phoneNumber,
                     paymentStatus: 'late',
                     createdAt: serverTimestamp(),
@@ -738,7 +738,7 @@ async function handleVerifyCode(e, isRegister = false) {
         sessionStorage.removeItem('firebaseVerificationId');
         sessionStorage.removeItem('tempName');
         
-        setAuthStatus(isRegister, 'code', 'تم التحقق بنجاح. جاري الدخول...');
+        setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
@@ -746,14 +746,14 @@ async function handleVerifyCode(e, isRegister = false) {
         console.error("Error code:", error.code);
         console.error("Error message:", error.message);
         
-        let errorMsg = 'رمز التحقق غير صحيح.';
+        let errorMsg = 'رمز الدخول غير صحيح.';
         
         if (error.code === 'auth/invalid-verification-code') {
-            errorMsg = 'الرمز المدخل غير صحيح. تأكد من الرمز وحاول مرة أخرى.';
+            errorMsg = 'الرمز اللي دخلته غير صحيح. تأكد وجرب.';
         } else if (error.code === 'auth/code-expired') {
             errorMsg = 'انتهت صلاحية الرمز. اطلب رمز جديد.';
         } else if (error.code === 'auth/invalid-credential') {
-            errorMsg = 'بيانات التحقق غير صحيحة.';
+            errorMsg = 'بيانات التحقق ما هي صحيحة.';
         }
         
         showAlert(errorMsg);
@@ -778,7 +778,7 @@ function loadHomePageData() {
     if (welcomeMsg) {
         const welcomeTitle = document.getElementById('home-welcome-title') || welcomeMsg.querySelector('h1, h2');
         if (welcomeTitle) {
-            welcomeTitle.textContent = `أرحب يا ${currentUser.name || 'العضو'}`;
+            welcomeTitle.textContent = `أرحب يا ${currentUser.name || 'المطناخ'}`;
         }
     }
     
@@ -804,7 +804,7 @@ function loadMembers() {
             membersList.innerHTML = '';
             
             if (snapshot.empty) {
-                membersList.innerHTML = '<p class="text-center">لا يوجد أعضاء بعد.</p>';
+                membersList.innerHTML = '<p class="text-center">ما فيه مطانيخ للحين.</p>';
                 return;
             }
             
@@ -854,11 +854,11 @@ function loadMembers() {
             });
         }, error => {
             console.error('Error loading members:', error);
-            membersList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الأعضاء.</p>';
+                    membersList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل المطانيخ.</p>';
         });
     } catch (error) {
         console.error('Error setting up members listener:', error);
-        membersList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الأعضاء.</p>';
+        membersList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل المطانيخ.</p>';
     }
 }
 
@@ -875,7 +875,7 @@ function loadPaymentLog() {
             (snapshot) => {
                 logList.innerHTML = '';
                 if (snapshot.empty) {
-                    logList.innerHTML = '<p class="text-center">لا يوجد سجل للمدفوعات بعد.</p>';
+                    logList.innerHTML = '<p class="text-center">ما فيه سجل للقطة للحين.</p>';
                     return;
                 }
                 snapshot.docs.forEach(doc => {
@@ -887,7 +887,7 @@ function loadPaymentLog() {
                         : 'غير محدد';
                     div.innerHTML = `
                         <span class="font-bold">${payment.userName || 'بدون اسم'}</span>
-                        <span style="color: #5cb85c;">✅ تم الدفع</span>
+                        <span style="color: #5cb85c;">✅ دفع القطة</span>
                         <span>${date}</span>
                     `;
                     logList.appendChild(div);
@@ -895,12 +895,12 @@ function loadPaymentLog() {
             },
             error => {
                 console.error('Error loading payment log:', error);
-                logList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل السجل.</p>';
+                logList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل سجل القطة.</p>';
             }
         );
     } catch (error) {
         console.error('Error setting up payment listener:', error);
-        logList.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل السجل.</p>';
+        logList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل سجل القطة.</p>';
     }
 }
 
@@ -937,12 +937,12 @@ function loadChat() {
             },
             error => {
                 console.error('Error loading chat:', error);
-                chatBox.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الرسائل.</p>';
+                chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل السوالف.</p>';
             }
         );
     } catch (error) {
         console.error('Error setting up chat listener:', error);
-        chatBox.innerHTML = '<p class="text-center text-red-500">حدث خطأ في تحميل الرسائل.</p>';
+        chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل السوالف.</p>';
     }
 }
 
@@ -958,12 +958,12 @@ async function handleSendMessage(e) {
     const text = input.value.trim();
     
     if (!text) {
-        showAlert('الرجاء كتابة رسالة.');
+        showAlert('اكتب سالفتك أول.');
         return;
     }
     
     if (!currentUser) {
-        showAlert('يجب تسجيل الدخول أولاً.');
+        showAlert('لازم تقلط أول.');
         return;
     }
 
@@ -977,7 +977,7 @@ async function handleSendMessage(e) {
         input.value = '';
     } catch (error) {
         console.error('Error sending message:', error);
-        showAlert('فشل إرسال الرسالة: ' + (error.message || 'حاول مرة أخرى'));
+        showAlert('ما قدرت أرسل السالفة: ' + (error.message || 'جرّب مرة ثانية'));
     }
 }
 
@@ -1051,11 +1051,11 @@ async function loadHomePrayerAndDate() {
                 prayerContainer.innerHTML = prayerCards(timings, ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
                 console.error('Error fetching prayer times:', error);
-                prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب البيانات.</p>`;
+                prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">ما قدرنا نجيب المواقيت.</p>`;
             }
         },
         () => {
-            prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">يرجى السماح بالوصول للموقع.</p>`;
+            prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">فعّل الموقع عشان نجيب المواقيت.</p>`;
         }
     );
 }
@@ -1077,7 +1077,7 @@ async function loadPrayerTimes() {
     const container = document.getElementById('prayer-times-container');
     if (!container) return;
     
-    container.innerHTML = `<p class="text-center w-full">يرجى السماح بالوصول إلى موقعك...</p>`;
+    container.innerHTML = `<p class="text-center w-full">اسمح بالموقع عشان نجيب المواقيت...</p>`;
 
     navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -1093,11 +1093,11 @@ async function loadPrayerTimes() {
                 container.innerHTML = prayerCards(timings, ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
                 console.error('Error fetching prayer times:', error);
-                container.innerHTML = `<p class="text-red-400 text-center w-full">فشل في جلب مواقيت الصلاة.</p>`;
+                container.innerHTML = `<p class="text-red-400 text-center w-full">ما قدرنا نجيب مواقيت الصلاة.</p>`;
             }
         },
         () => {
-            container.innerHTML = `<p class="text-yellow-400 text-center w-full">تم رفض الوصول للموقع. لا يمكن عرض المواقيت.</p>`;
+            container.innerHTML = `<p class="text-yellow-400 text-center w-full">الموقع مقفل، ما نقدر نعرض المواقيت.</p>`;
         }
     );
 }
@@ -1112,7 +1112,7 @@ async function initQibla() {
         return;
     }
     
-    status.textContent = "يرجى السماح بالوصول إلى موقعك...";
+    status.textContent = "اسمح بالموقع عشان نحدد القبلة...";
     
     navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -1132,7 +1132,7 @@ async function initQibla() {
                 
                 const qiblaAngle = data.data.direction;
 
-                status.textContent = "حرك جهازك لمعرفة اتجاه القبلة";
+                status.textContent = "حرك جوالك وبتضبط معك القبلة";
                 compass.style.display = 'block';
 
                 if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
@@ -1141,16 +1141,16 @@ async function initQibla() {
                         if (permission === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation);
                         } else {
-                            status.textContent = 'تم رفض إذن الوصول لحساسات الحركة.';
+                            status.textContent = 'تم رفض حساس الحركة.';
                         }
                     } catch (permError) {
                         console.error('Permission request error:', permError);
-                        status.textContent = 'حدث خطأ في طلب الإذن.';
+                        status.textContent = 'صار خطأ بطلب الإذن.';
                     }
                 } else if ('DeviceOrientationEvent' in window) {
                     window.addEventListener('deviceorientation', handleOrientation);
                 } else {
-                    status.textContent = 'جهازك لا يدعم تحديد الاتجاه.';
+                    status.textContent = 'جهازك ما يدعم تحديد الاتجاه.';
                 }
 
                 function handleOrientation(event) {
@@ -1164,11 +1164,11 @@ async function initQibla() {
                 }
             } catch (error) {
                 console.error('Error in initQibla:', error);
-                status.textContent = 'فشل في حساب اتجاه القبلة.';
+                status.textContent = 'ما قدرنا نحسب اتجاه القبلة.';
             }
         },
         () => {
-            status.textContent = 'تم رفض الوصول للموقع. لا يمكن عرض القبلة.';
+            status.textContent = 'الموقع مقفل، ما نقدر نعرض القبلة.';
         }
     );
 }
@@ -1202,7 +1202,7 @@ async function loadMatches(container, limit = 10) {
         ]);
         
         if (!seasonData.events || !Array.isArray(seasonData.events)) {
-            container.innerHTML = `<p class="text-center">لا توجد مباريات متاحة للدوري السعودي حالياً.</p>`;
+            container.innerHTML = `<p class="text-center">ما فيه مباريات متاحة للدوري السعودي حالياً.</p>`;
             return;
         }
 
@@ -1218,20 +1218,20 @@ async function loadMatches(container, limit = 10) {
             <div class="panel">
                 <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">${escapeHtml(season)}</span></div>
                 <div class="cards-grid">
-                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">لا توجد مباريات اليوم.</div>'}
+                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-head"><h2>المباريات القادمة</h2><span class="badge scheduled">Saudi Pro League</span></div>
+                <div class="panel-head"><h2>المباريات الجاية</h2><span class="badge scheduled">Saudi Pro League</span></div>
                 <div class="cards-grid">
-                    ${upcomingMatches.length ? upcomingMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">لا توجد مباريات قادمة حالياً.</div>'}
+                    ${upcomingMatches.length ? upcomingMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية حالياً.</div>'}
                 </div>
             </div>
         `;
 
     } catch (error) {
         console.error("Error fetching matches:", error);
-        container.innerHTML = `<p class="text-center">فشل في جلب المباريات. حاول مرة أخرى.</p>`;
+        container.innerHTML = `<p class="text-center">ما قدرنا نجيب المباريات. جرّب مرة ثانية.</p>`;
     }
 }
 
@@ -1283,7 +1283,7 @@ async function loadNews(container, limit = 10) {
     if (!container) container = document.getElementById('news-list');
     if (!container) return;
     
-    container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
+    container.innerHTML = `<p class="text-center">جاري تحميل السوالف...</p>`;
 
     const API_KEY = 'fed169451378413e924ac29dca024540';
     const url = `https://newsapi.org/v2/top-headlines?country=sa&category=sports&language=ar&apiKey=${API_KEY}`;
@@ -1299,11 +1299,11 @@ async function loadNews(container, limit = 10) {
         const data = await response.json();
 
         if (!data || data.status !== 'ok') {
-            throw new Error(data?.message || 'فشل في جلب الأخبار');
+            throw new Error(data?.message || 'ما قدرنا نجيب السوالف');
         }
 
         if (!Array.isArray(data.articles) || data.articles.length === 0) {
-            container.innerHTML = `<p class="text-center">لا توجد أخبار حالياً.</p>`;
+            container.innerHTML = `<p class="text-center">ما فيه سوالف حالياً.</p>`;
             return;
         }
 
@@ -1333,7 +1333,7 @@ async function loadNews(container, limit = 10) {
 
     } catch (error) {
         console.error("Error fetching news:", error);
-        container.innerHTML = `<p class="text-center">فشل في جلب الأخبار. حاول مرة أخرى.</p>`;
+        container.innerHTML = `<p class="text-center">ما قدرنا نجيب السوالف. جرّب مرة ثانية.</p>`;
     }
 }
 
@@ -1364,7 +1364,7 @@ function initApp() {
                 } else {
                     console.log('✓ Auth user has no Firestore profile, creating a minimal member profile');
                     const repairedProfile = {
-                        name: user.phoneNumber || 'عضو جديد',
+                        name: user.phoneNumber || 'مطناخ جديد',
                         phone: user.phoneNumber,
                         paymentStatus: 'late',
                         createdAt: serverTimestamp(),

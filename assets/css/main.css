@@ -306,8 +306,7 @@ body[data-theme="dark"] .theme-moon-btn {
   margin-top: 0.8rem;
 }
 
-.payment-method,
-.payment-button {
+.payment-method {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -319,8 +318,16 @@ body[data-theme="dark"] .theme-moon-btn {
 }
 
 .payment-button {
-  width: 100%;
-  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: auto;
+  min-width: 126px;
+  min-height: 38px;
+  padding: 0.45rem 0.72rem;
+  border: 1px solid rgba(181, 138, 56, 0.18);
+  border-radius: 8px;
   color: var(--ink);
   cursor: not-allowed;
   font: inherit;
@@ -333,7 +340,6 @@ body[data-theme="dark"] .theme-moon-btn {
 }
 
 .apple-pay-button {
-  justify-content: center;
   color: #fff;
   background: #050505;
   border-color: #050505;
@@ -341,13 +347,10 @@ body[data-theme="dark"] .theme-moon-btn {
 
 .stc-pay-button,
 .card-pay-button {
-  justify-content: flex-start;
+  background: rgba(255, 250, 240, 0.7);
 }
 
-.payment-method > div {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.payment-method-name {
   min-width: 0;
   font-weight: 800;
 }
@@ -357,11 +360,11 @@ body[data-theme="dark"] .theme-moon-btn {
 .card-pay-mark {
   display: inline-grid;
   place-items: center;
-  width: 68px;
-  height: 34px;
-  flex: 0 0 68px;
-  border-radius: 7px;
-  font-size: 0.72rem;
+  width: 58px;
+  height: 28px;
+  flex: 0 0 58px;
+  border-radius: 6px;
+  font-size: 0.66rem;
   font-weight: 900;
   letter-spacing: 0;
   white-space: nowrap;
@@ -372,7 +375,7 @@ body[data-theme="dark"] .theme-moon-btn {
   flex: 0 1 auto;
   height: auto;
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.92rem;
 }
 
 .stc-pay-mark {
@@ -391,8 +394,8 @@ body[data-theme="dark"] .theme-moon-btn {
   position: absolute;
   top: 8px;
   right: 9px;
-  width: 18px;
-  height: 12px;
+  width: 16px;
+  height: 10px;
   border-radius: 3px;
   background: linear-gradient(135deg, #d9b668, #f3db9d);
 }
@@ -408,9 +411,8 @@ body[data-theme="dark"] .theme-moon-btn {
 }
 
 .payment-soon {
-  margin-inline-start: auto;
   color: var(--gold-strong);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 900;
 }
 
@@ -852,7 +854,8 @@ body[data-theme="dark"] .payment-iban {
 }
 
 body[data-theme="dark"] .payment-method,
-body[data-theme="dark"] .payment-button {
+body[data-theme="dark"] .stc-pay-button,
+body[data-theme="dark"] .card-pay-button {
   background: rgba(255, 250, 240, 0.05);
   border-color: rgba(210, 172, 95, 0.16);
 }

@@ -15,20 +15,27 @@
         <button id="copy-iban-button" class="btn payment-copy" type="button">انسخ الآيبان</button>
     </div>
     <div class="payment-methods">
-        <button class="payment-method payment-button apple-pay-button" type="button" disabled aria-disabled="true">
-            <span class="apple-mark" aria-hidden="true">Apple Pay</span>
-            <span class="payment-soon">قريبا</span>
-        </button>
-        <button class="payment-method payment-button stc-pay-button" type="button" disabled aria-disabled="true">
-            <span class="stc-pay-mark" aria-hidden="true">stc pay</span>
-            <span>STC Pay</span>
-            <span class="payment-soon">قريبا</span>
-        </button>
-        <button class="payment-method payment-button card-pay-button" type="button" disabled aria-disabled="true">
-            <span class="card-pay-mark" aria-hidden="true"><span></span></span>
-            <span>الدفع بالبطاقة</span>
-            <span class="payment-soon">قريبا</span>
-        </button>
+        <div class="payment-method">
+            <span class="payment-method-name">Apple Pay</span>
+            <button class="payment-button apple-pay-button" type="button" disabled aria-disabled="true">
+                <span class="apple-mark" aria-hidden="true">Apple Pay</span>
+                <span class="payment-soon">قريبا</span>
+            </button>
+        </div>
+        <div class="payment-method">
+            <span class="payment-method-name">STC Pay</span>
+            <button class="payment-button stc-pay-button" type="button" disabled aria-disabled="true">
+                <span class="stc-pay-mark" aria-hidden="true">stc pay</span>
+                <span class="payment-soon">قريبا</span>
+            </button>
+        </div>
+        <div class="payment-method">
+            <span class="payment-method-name">الدفع بالبطاقة</span>
+            <button class="payment-button card-pay-button" type="button" disabled aria-disabled="true">
+                <span class="card-pay-mark" aria-hidden="true"><span></span></span>
+                <span class="payment-soon">قريبا</span>
+            </button>
+        </div>
     </div>
 </section>
 

@@ -13,6 +13,7 @@
                 <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
             </div>
             <button type="submit" class="btn">إرسال الرمز</button>
+            <p id="login-status" class="auth-status muted" aria-live="polite"></p>
             <div id="recaptcha-container" class="mt-4"></div>
         </form>
         <form id="code-form" style="display: none;">
@@ -21,6 +22,7 @@
                 <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
             </div>
             <button type="submit" class="btn">تحقق ودخول</button>
+            <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
         </form>
         <p class="link-text">ليس لديك حساب؟ <a href="#register">أنشئ حساب جديد</a></p>
     </div>

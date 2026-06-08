@@ -480,12 +480,40 @@ function setupRecaptcha(containerId) {
     const verifier = recaptchaManager.getOrCreate(containerId);
     if (verifier) {
         window.recaptchaVerifier = verifier;
+        if (typeof verifier.render === 'function' && !verifier.renderStarted) {
+            verifier.renderStarted = true;
+            verifier.render().catch((error) => {
+                verifier.renderStarted = false;
+                console.warn('reCAPTCHA pre-render failed:', error);
+            });
+        }
         return true;
     } else {
         console.error(`Failed to set up reCAPTCHA for ${containerId}`);
         showAlert('فشل إعداد التحقق. يرجى تحديث الصفحة.');
         return false;
     }
+}
+
+function setFormLoading(form, isLoading, loadingText) {
+    if (!form) return;
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (!submitButton) return;
+
+    if (!submitButton.dataset.defaultText) {
+        submitButton.dataset.defaultText = submitButton.textContent;
+    }
+
+    submitButton.disabled = isLoading;
+    submitButton.textContent = isLoading ? loadingText : submitButton.dataset.defaultText;
+}
+
+function setAuthStatus(isRegister, phase, message) {
+    const id = isRegister
+        ? phase === 'code' ? 'register-code-status' : 'register-status'
+        : phase === 'code' ? 'login-code-status' : 'login-status';
+    const element = document.getElementById(id);
+    if (element) element.textContent = message || '';
 }
 
 async function handleSendCode(e, isRegister = false) {
@@ -537,6 +565,8 @@ async function handleSendCode(e, isRegister = false) {
     }
 
     console.log(`Sending verification code to: ${phoneNumber}`);
+    setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
+    setAuthStatus(isRegister, 'phone', 'جاري تجهيز التحقق وإرسال الرمز...');
     
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -548,7 +578,7 @@ async function handleSendCode(e, isRegister = false) {
             sessionStorage.setItem('tempName', tempName);
         }
 
-        showAlert('تم إرسال رمز التحقق إلى جوالك.');
+        setAuthStatus(isRegister, 'code', 'تم إرسال الرمز. أدخله هنا للمتابعة.');
         if (isRegister) {
             const registerForm = document.getElementById('register-form');
             const registerCodeForm = document.getElementById('register-code-form');
@@ -560,6 +590,7 @@ async function handleSendCode(e, isRegister = false) {
             if (phoneForm) phoneForm.style.display = 'none';
             if (codeForm) codeForm.style.display = 'block';
         }
+        setFormLoading(e.currentTarget, false);
     } catch (error) {
         console.error("✗ SMS Error:", error);
         console.error("Error code:", error.code);
@@ -578,6 +609,7 @@ async function handleSendCode(e, isRegister = false) {
         }
         
         showAlert(errorMsg);
+        setAuthStatus(isRegister, 'phone', '');
         
         // Reset recaptcha and try to recreate it
         const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
@@ -590,6 +622,7 @@ async function handleSendCode(e, isRegister = false) {
                 showAlert('فشل إعادة تعيين التحقق. يرجى تحديث الصفحة.');
             }
         }, 500);
+        setFormLoading(e.currentTarget, false);
     }
 }
 
@@ -633,6 +666,8 @@ async function handleVerifyCode(e, isRegister = false) {
     }
     
     console.log('Verifying code...');
+    setFormLoading(e.currentTarget, true, 'جاري التحقق...');
+    setAuthStatus(isRegister, 'code', 'جاري التحقق من الرمز...');
     
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
@@ -655,12 +690,27 @@ async function handleVerifyCode(e, isRegister = false) {
             });
             console.log('✓ User profile created');
         }
+
+        if (!isRegister) {
+            const userDocRef = doc(db, "users", user.uid);
+            const existingUserDoc = await getDoc(userDocRef);
+            if (!existingUserDoc.exists()) {
+                await setDoc(userDocRef, {
+                    name: user.phoneNumber || 'عضو جديد',
+                    phone: user.phoneNumber,
+                    paymentStatus: 'late',
+                    createdAt: serverTimestamp(),
+                    autoCreatedFromLogin: true
+                });
+                console.log('✓ Missing user profile repaired after login');
+            }
+        }
         
         // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
         sessionStorage.removeItem('tempName');
         
-        showAlert('تم التحقق بنجاح!');
+        setAuthStatus(isRegister, 'code', 'تم التحقق بنجاح. جاري الدخول...');
         console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
@@ -679,6 +729,8 @@ async function handleVerifyCode(e, isRegister = false) {
         }
         
         showAlert(errorMsg);
+        setAuthStatus(isRegister, 'code', '');
+        setFormLoading(e.currentTarget, false);
     }
 }
 
@@ -1282,14 +1334,20 @@ function initApp() {
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
                 } else {
-                    // New user, redirect to register
-                    console.log('✓ New user, redirecting to register');
-                    currentUser = null;
-                    document.body.classList.remove('is-authenticated');
-                    sidebar?.classList.remove('open');
-                    bottomNav.style.display = 'none';
+                    console.log('✓ Auth user has no Firestore profile, creating a minimal member profile');
+                    const repairedProfile = {
+                        name: user.phoneNumber || 'عضو جديد',
+                        phone: user.phoneNumber,
+                        paymentStatus: 'late',
+                        createdAt: serverTimestamp(),
+                        autoCreatedFromLogin: true
+                    };
+                    await setDoc(doc(db, "users", user.uid), repairedProfile);
+                    currentUser = { uid: user.uid, ...repairedProfile };
+                    document.body.classList.add('is-authenticated');
+                    bottomNav.style.display = 'grid';
                     appLogo.style.display = 'block';
-                    await renderPage('#register');
+                    await renderPage('#home');
                 }
             } else {
                 console.log('✓ No user authenticated, showing login');

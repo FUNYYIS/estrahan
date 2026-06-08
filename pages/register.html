@@ -17,6 +17,7 @@
                 <input type="tel" id="register-phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
             </div>
             <button type="submit" class="btn">إرسال الرمز</button>
+            <p id="register-status" class="auth-status muted" aria-live="polite"></p>
             <div id="recaptcha-container-register" class="mt-4"></div>
         </form>
         <form id="register-code-form" style="display: none;">
@@ -25,6 +26,7 @@
                 <input type="text" id="register-verification-code" inputmode="numeric" autocomplete="one-time-code" required>
             </div>
             <button type="submit" class="btn">تحقق وإنشاء حساب</button>
+            <p id="register-code-status" class="auth-status muted" aria-live="polite"></p>
         </form>
         <p class="link-text">عندك حساب؟ <a href="#login">سجّل دخولك</a></p>
     </div>

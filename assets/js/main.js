@@ -776,9 +776,9 @@ function loadHomePageData() {
     
     const welcomeMsg = document.getElementById('welcome-message');
     if (welcomeMsg) {
-        const h1 = welcomeMsg.querySelector('h1');
-        if (h1) {
-            h1.textContent = `أرحب يا ${currentUser.name || 'المستخدم'}`;
+        const welcomeTitle = document.getElementById('home-welcome-title') || welcomeMsg.querySelector('h1, h2');
+        if (welcomeTitle) {
+            welcomeTitle.textContent = `أرحب يا ${currentUser.name || 'العضو'}`;
         }
     }
     

@@ -197,6 +197,29 @@ h1 { margin-bottom: 0; font-size: clamp(1.55rem, 3vw, 2.4rem); }
 
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.4rem; }
 
+.theme-moon-btn {
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(181, 138, 56, 0.36);
+  border-radius: 50%;
+  color: var(--gold-strong);
+  background: rgba(255, 250, 240, 0.78);
+  box-shadow: 0 10px 26px rgba(80, 55, 18, 0.12);
+}
+
+.theme-moon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+body[data-theme="dark"] .theme-moon-btn {
+  color: #fff4df;
+  background: rgba(181, 138, 56, 0.24);
+  border-color: rgba(255, 250, 240, 0.24);
+}
+
 .majlis-art {
   min-height: 390px;
   border-radius: var(--radius);

@@ -210,6 +210,7 @@ window.copyToClipboard = copyToClipboard;
 // --- إدارة الوضع الليلي ---
 function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    updateThemeButtons();
 }
 
 function toggleTheme() {
@@ -221,6 +222,16 @@ function toggleTheme() {
 function loadTheme() {
     const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
     applyTheme(savedTheme);
+}
+
+function updateThemeButtons() {
+    const isDark = document.body.getAttribute('data-theme') === 'dark';
+    document.querySelectorAll('[data-theme-toggle-icon]').forEach((icon) => {
+        icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+    });
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+    }
 }
 
 function setOnlineState() {
@@ -395,6 +406,14 @@ function attachEventListeners(hash) {
     if (pageId === 'chat') {
         const chatForm = document.getElementById('chat-form');
         if (chatForm) chatForm.addEventListener('submit', handleSendMessage);
+    }
+
+    if (pageId === 'home') {
+        const homeThemeToggle = document.getElementById('home-theme-toggle');
+        const homeThemeIcon = homeThemeToggle?.querySelector('i');
+        if (homeThemeIcon) homeThemeIcon.setAttribute('data-theme-toggle-icon', '');
+        if (homeThemeToggle) homeThemeToggle.addEventListener('click', toggleTheme);
+        updateThemeButtons();
     }
 
     if (pageId === 'payments') {

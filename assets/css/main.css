@@ -317,15 +317,21 @@ body[data-theme="dark"] .theme-moon-btn {
   background: rgba(255, 250, 240, 0.58);
 }
 
+.payment-method-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 .payment-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem;
-  width: auto;
-  min-width: 126px;
-  min-height: 38px;
-  padding: 0.45rem 0.72rem;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  padding: 0;
   border: 1px solid rgba(181, 138, 56, 0.18);
   border-radius: 8px;
   color: var(--ink);
@@ -350,19 +356,25 @@ body[data-theme="dark"] .theme-moon-btn {
   background: rgba(255, 250, 240, 0.7);
 }
 
+.card-pay-button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gold-strong);
+}
+
 .payment-method-name {
   min-width: 0;
   font-weight: 800;
 }
 
-.apple-mark,
+.payment-mark,
 .stc-pay-mark,
 .card-pay-mark {
   display: inline-grid;
   place-items: center;
-  width: 58px;
-  height: 28px;
-  flex: 0 0 58px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   border-radius: 6px;
   font-size: 0.66rem;
   font-weight: 900;
@@ -370,12 +382,15 @@ body[data-theme="dark"] .theme-moon-btn {
   white-space: nowrap;
 }
 
-.apple-mark {
-  width: auto;
-  flex: 0 1 auto;
-  height: auto;
+.apple-method-mark {
   color: #fff;
-  font-size: 0.92rem;
+  background: #050505;
+}
+
+.apple-pay-button-mark {
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 
 .stc-pay-mark {
@@ -389,35 +404,31 @@ body[data-theme="dark"] .theme-moon-btn {
   background: linear-gradient(135deg, #18233a, #43627f);
 }
 
+.stc-pay-button-mark {
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .card-pay-mark::before {
   content: "";
   position: absolute;
   top: 8px;
-  right: 9px;
-  width: 16px;
-  height: 10px;
-  border-radius: 3px;
+  right: 7px;
+  width: 13px;
+  height: 9px;
+  border-radius: 2px;
   background: linear-gradient(135deg, #d9b668, #f3db9d);
 }
 
 .card-pay-mark span {
   position: absolute;
-  right: 9px;
+  right: 7px;
   bottom: 8px;
-  width: 38px;
+  width: 21px;
   height: 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
-}
-
-.payment-soon {
-  color: var(--gold-strong);
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
-.apple-pay-button .payment-soon {
-  color: rgba(255, 255, 255, 0.72);
 }
 
 .panel { padding: 1rem; margin-bottom: 1rem; }

@@ -16,24 +16,30 @@
     </div>
     <div class="payment-methods">
         <div class="payment-method">
-            <span class="payment-method-name">Apple Pay</span>
-            <button class="payment-button apple-pay-button" type="button" disabled aria-disabled="true">
-                <span class="apple-mark" aria-hidden="true">Apple Pay</span>
-                <span class="payment-soon">قريبا</span>
+            <div class="payment-method-label">
+                <span class="payment-mark apple-method-mark" aria-hidden="true">Pay</span>
+                <span class="payment-method-name">Apple Pay</span>
+            </div>
+            <button class="payment-button apple-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
+                <span class="apple-pay-button-mark" aria-hidden="true">Pay</span>
             </button>
         </div>
         <div class="payment-method">
-            <span class="payment-method-name">STC Pay</span>
-            <button class="payment-button stc-pay-button" type="button" disabled aria-disabled="true">
-                <span class="stc-pay-mark" aria-hidden="true">stc pay</span>
-                <span class="payment-soon">قريبا</span>
+            <div class="payment-method-label">
+                <span class="payment-mark stc-pay-mark" aria-hidden="true">stc</span>
+                <span class="payment-method-name">STC Pay</span>
+            </div>
+            <button class="payment-button stc-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
+                <span class="stc-pay-button-mark" aria-hidden="true">pay</span>
             </button>
         </div>
         <div class="payment-method">
-            <span class="payment-method-name">الدفع بالبطاقة</span>
-            <button class="payment-button card-pay-button" type="button" disabled aria-disabled="true">
-                <span class="card-pay-mark" aria-hidden="true"><span></span></span>
-                <span class="payment-soon">قريبا</span>
+            <div class="payment-method-label">
+                <span class="payment-mark card-pay-mark" aria-hidden="true"><span></span></span>
+                <span class="payment-method-name">الدفع بالبطاقة</span>
+            </div>
+            <button class="payment-button card-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
+                <i data-lucide="credit-card"></i>
             </button>
         </div>
     </div>

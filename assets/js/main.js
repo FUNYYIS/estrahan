@@ -67,7 +67,7 @@ const routeTitles = {
     '#home': 'المجلس',
     '#members': 'المطانيخ',
     '#payments': 'القطة الشهرية',
-    '#chat': 'الشات',
+    '#chat': 'السوالف',
     '#settings': 'الضبط',
     '#profile-settings': 'بياناتك',
     '#notifications-settings': 'تنبيهاتك',
@@ -75,7 +75,7 @@ const routeTitles = {
     '#prayer': 'الصلاة',
     '#qibla': 'القبلة',
     '#matches': 'مباريات اليوم',
-    '#news': 'السوالف',
+    '#news': 'الأخبار',
 };
 
 function escapeHtml(value = '') {
@@ -1290,7 +1290,7 @@ async function loadNews(container, limit = 10) {
     if (!container) container = document.getElementById('news-list');
     if (!container) return;
     
-    container.innerHTML = `<p class="text-center">جاري تحميل السوالف...</p>`;
+    container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
 
     const API_KEY = 'fed169451378413e924ac29dca024540';
     const url = `https://newsapi.org/v2/top-headlines?country=sa&category=sports&language=ar&apiKey=${API_KEY}`;
@@ -1306,11 +1306,11 @@ async function loadNews(container, limit = 10) {
         const data = await response.json();
 
         if (!data || data.status !== 'ok') {
-            throw new Error(data?.message || 'ما قدرنا نجيب السوالف');
+            throw new Error(data?.message || 'ما قدرنا نجيب الأخبار');
         }
 
         if (!Array.isArray(data.articles) || data.articles.length === 0) {
-            container.innerHTML = `<p class="text-center">ما فيه سوالف حالياً.</p>`;
+            container.innerHTML = `<p class="text-center">ما فيه أخبار حالياً.</p>`;
             return;
         }
 
@@ -1340,7 +1340,7 @@ async function loadNews(container, limit = 10) {
 
     } catch (error) {
         console.error("Error fetching news:", error);
-        container.innerHTML = `<p class="text-center">ما قدرنا نجيب السوالف. جرّب مرة ثانية.</p>`;
+        container.innerHTML = `<p class="text-center">ما قدرنا نجيب الأخبار. جرّب مرة ثانية.</p>`;
     }
 }
 

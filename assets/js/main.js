@@ -239,7 +239,10 @@ function setOnlineState() {
     onlineState.textContent = navigator.onLine ? 'متصل' : 'وضع عدم الاتصال';
 }
 
-menuBtn?.addEventListener('click', () => sidebar?.classList.toggle('open'));
+menuBtn?.addEventListener('click', () => {
+    if (!currentUser) return;
+    sidebar?.classList.toggle('open');
+});
 notifyBtn?.addEventListener('click', async () => {
     if (!('Notification' in window)) {
         showAlert('متصفحك لا يدعم إشعارات الويب.');
@@ -310,7 +313,9 @@ async function renderPage(hash) {
     const defaultPage = currentUser ? '#home' : '#login';
     const requestedHash = normalizeHash(hash || defaultPage);
     const isPublicRoute = publicRoutes.includes(requestedHash);
-    const currentHash = routes[requestedHash] && (currentUser || isPublicRoute) ? requestedHash : defaultPage;
+    const currentHash = currentUser && isPublicRoute
+        ? '#home'
+        : routes[requestedHash] && (currentUser || isPublicRoute) ? requestedHash : defaultPage;
     const pageFile = routes[currentHash];
     
     if (pageFile) {
@@ -1271,6 +1276,7 @@ function initApp() {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     currentUser = { uid: user.uid, ...userDoc.data() };
+                    document.body.classList.add('is-authenticated');
                     bottomNav.style.display = 'grid';
                     appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
@@ -1279,6 +1285,8 @@ function initApp() {
                     // New user, redirect to register
                     console.log('✓ New user, redirecting to register');
                     currentUser = null;
+                    document.body.classList.remove('is-authenticated');
+                    sidebar?.classList.remove('open');
                     bottomNav.style.display = 'none';
                     appLogo.style.display = 'block';
                     await renderPage('#register');
@@ -1286,6 +1294,8 @@ function initApp() {
             } else {
                 console.log('✓ No user authenticated, showing login');
                 currentUser = null;
+                document.body.classList.remove('is-authenticated');
+                sidebar?.classList.remove('open');
                 bottomNav.style.display = 'none';
                 appLogo.style.display = 'block';
                 await renderPage(currentPublicRoute());
@@ -1293,6 +1303,8 @@ function initApp() {
         } catch (error) {
             console.error('✗ Error in auth state change:', error);
             currentUser = null;
+            document.body.classList.remove('is-authenticated');
+            sidebar?.classList.remove('open');
             bottomNav.style.display = 'none';
             appLogo.style.display = 'block';
             await renderPage(currentPublicRoute());

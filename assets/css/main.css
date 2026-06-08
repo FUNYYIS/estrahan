@@ -434,6 +434,7 @@ tr:last-child td { border-bottom: 0; }
 }
 
 .mobile-only { display: none; }
+#menuBtn { display: none; }
 
 #main-content { display: none; }
 
@@ -688,6 +689,8 @@ body[data-theme="dark"] #chat-input {
   .auth-brand { display: none; }
   .sidebar.open { transform: translateX(0); }
   .mobile-only { display: inline-grid; }
+  #menuBtn { display: none; }
+  body.is-authenticated #menuBtn { display: inline-grid; }
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .majlis-art { min-height: 260px; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -1075,83 +1075,104 @@ async function loadMatches(container, limit = 10) {
     
     container.innerHTML = `<p class="text-center">جاري تحميل المباريات...</p>`;
     
-    const API_KEY = '14929df2f67189681a83746b9009038a';
-    const SAUDI_LEAGUE_ID = '307';
-    const season = new Date().getFullYear();
-    const today = new Date().toISOString().slice(0, 10);
-
-    const url = `https://v3.football.api-sports.io/fixtures?league=${SAUDI_LEAGUE_ID}&season=${season}&date=${today}`;
-    const options = {
-        method: 'GET',
-        headers: {
-            'x-apisports-key': API_KEY
-        }
-    };
+    const THE_SPORTS_DB_KEY = '3';
+    const SAUDI_LEAGUE_ID = '4668';
+    const today = getLocalDateKey();
 
     try {
-        const response = await fetch(url, options);
+        const season = await getSaudiLeagueSeason(THE_SPORTS_DB_KEY, SAUDI_LEAGUE_ID);
+        const todayUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsday.php?d=${today}&s=Soccer`;
+        const seasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(season)}`;
+        const [todayResponse, seasonResponse] = await Promise.all([
+            fetch(todayUrl),
+            fetch(seasonUrl)
+        ]);
         
-        if (!response.ok) {
-            throw new Error(`API returned status ${response.status}`);
+        if (!todayResponse.ok || !seasonResponse.ok) {
+            throw new Error(`API returned status ${todayResponse.status}/${seasonResponse.status}`);
         }
         
-        const data = await response.json();
-
-        if (data.errors && Object.keys(data.errors).length > 0) {
-            const apiMessage = data.errors.plan || data.errors.requests || data.errors.season || 'تعذر جلب بيانات المباريات من مزود الخدمة.';
-            container.innerHTML = `<p class="text-center">${escapeHtml(apiMessage)}</p>`;
+        const [todayData, seasonData] = await Promise.all([
+            todayResponse.json(),
+            seasonResponse.json()
+        ]);
+        
+        if (!seasonData.events || !Array.isArray(seasonData.events)) {
+            container.innerHTML = `<p class="text-center">لا توجد مباريات متاحة للدوري السعودي حالياً.</p>`;
             return;
         }
-        
-        if (!data.response || !Array.isArray(data.response)) {
-            throw new Error('Invalid API response structure');
-        }
-        
-        if (data.response.length === 0) {
-            container.innerHTML = `<p class="text-center">لا توجد مباريات اليوم.</p>`;
-            return;
-        }
 
-        container.innerHTML = '';
-        data.response.slice(0, limit).forEach(fixture => {
-            try {
-                const homeTeam = fixture.teams?.home;
-                const awayTeam = fixture.teams?.away;
-                
-                if (!homeTeam || !awayTeam) {
-                    console.warn('Invalid team data in fixture');
-                    return;
-                }
-                
-                const score = fixture.fixture?.status?.short === 'FT' 
-                    ? `${fixture.goals?.home || 0} - ${fixture.goals?.away || 0}` 
-                    : new Date(fixture.fixture?.date).toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
-                
-                const homeLogo = safeExternalUrl(homeTeam.logo, 'assets/images/al-istiraha-icon.svg');
-                const awayLogo = safeExternalUrl(awayTeam.logo, 'assets/images/al-istiraha-icon.svg');
-                const statusShort = fixture.fixture?.status?.short;
-                const statusClass = statusShort === 'FT' ? 'done' : statusShort === 'LIVE' ? 'live' : 'scheduled';
-                const matchCard = `
-                    <article class="match-card card">
-                        <span class="badge ${statusClass}">${escapeHtml(fixture.fixture?.status?.long || 'قادمة')}</span>
-                        <p class="muted">${escapeHtml(fixture.league?.name || 'دوري')}</p>
-                        <div class="match-teams">
-                            <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(homeTeam.name || 'فريق')}</span>
-                            <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(awayTeam.name || 'فريق')}</span>
-                        </div>
-                        <div class="match-score">${escapeHtml(score)}</div>
-                    </article>
-                `;
-                container.innerHTML += matchCard;
-            } catch (itemError) {
-                console.error('Error processing fixture:', itemError);
-            }
-        });
+        const sortedEvents = seasonData.events
+            .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
+            .sort((a, b) => `${a.dateEventLocal || a.dateEvent} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${b.dateEventLocal || b.dateEvent} ${b.strTimeLocal || b.strTime || ''}`));
+        const todayMatches = (todayData.events || [])
+            .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
+            .slice(0, limit);
+        const upcomingMatches = sortedEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
+
+        container.innerHTML = `
+            <div class="panel">
+                <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">${escapeHtml(season)}</span></div>
+                <div class="cards-grid">
+                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">لا توجد مباريات اليوم.</div>'}
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-head"><h2>المباريات القادمة</h2><span class="badge scheduled">Saudi Pro League</span></div>
+                <div class="cards-grid">
+                    ${upcomingMatches.length ? upcomingMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">لا توجد مباريات قادمة حالياً.</div>'}
+                </div>
+            </div>
+        `;
 
     } catch (error) {
         console.error("Error fetching matches:", error);
         container.innerHTML = `<p class="text-center">فشل في جلب المباريات. حاول مرة أخرى.</p>`;
     }
+}
+
+async function getSaudiLeagueSeason(apiKey, leagueId) {
+    const response = await fetch(`https://www.thesportsdb.com/api/v1/json/${apiKey}/lookupleague.php?id=${leagueId}`);
+    if (!response.ok) return '2025-2026';
+    const data = await response.json();
+    return data.leagues?.[0]?.strCurrentSeason || '2025-2026';
+}
+
+function getLocalDateKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getEventDateKey(event) {
+    return event.dateEventLocal || event.dateEvent || '';
+}
+
+function renderSportsDbMatchCard(event) {
+    const status = event.strStatus || (event.intHomeScore !== null && event.intAwayScore !== null ? 'FT' : 'NS');
+    const isFinished = status === 'FT' || (event.intHomeScore !== null && event.intAwayScore !== null);
+    const isLive = ['Live', '1H', '2H', 'HT', 'ET', 'P'].includes(status);
+    const statusClass = isLive ? 'live' : isFinished ? 'done' : 'scheduled';
+    const statusLabel = isLive ? 'مباشر' : isFinished ? 'انتهت' : 'قادمة';
+    const score = isFinished
+        ? `${event.intHomeScore ?? 0} - ${event.intAwayScore ?? 0}`
+        : (event.strTimeLocal || event.strTime || '--:--').slice(0, 5);
+    const homeLogo = safeExternalUrl(event.strHomeTeamBadge, 'assets/images/al-istiraha-icon.svg');
+    const awayLogo = safeExternalUrl(event.strAwayTeamBadge, 'assets/images/al-istiraha-icon.svg');
+
+    return `
+        <article class="match-card card">
+            <span class="badge ${statusClass}">${statusLabel}</span>
+            <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}</p>
+            <div class="match-teams">
+                <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
+                <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
+            </div>
+            <div class="match-score">${escapeHtml(score)}</div>
+            <p class="muted">${escapeHtml(getEventDateKey(event))}</p>
+        </article>
+    `;
 }
 
 async function loadNews(container, limit = 10) {

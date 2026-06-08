@@ -76,7 +76,6 @@ const routeTitles = {
     '#qibla': 'القبلة',
     '#matches': 'مباريات اليوم',
     '#news': 'الأخبار',
-    '#important-links': 'روابط مهمة',
 };
 
 function escapeHtml(value = '') {
@@ -276,7 +275,6 @@ const routes = {
     '#qibla': 'qibla.html',
     '#matches': 'matches.html',
     '#news': 'news.html',
-    '#important-links': 'important-links.html',
 };
 
 const publicRoutes = ['#login', '#register'];
@@ -426,6 +424,36 @@ function attachEventListeners(hash) {
         if (copyIbanButton) {
             copyIbanButton.addEventListener('click', () => copyToClipboard('SA00 1234 5678 9012 3456 7890'));
         }
+    }
+
+    if (pageId === 'notifications-settings') {
+        setupNotificationToggles();
+    }
+}
+
+function setupNotificationToggles() {
+    document.querySelectorAll('[data-notification-toggle]').forEach((button) => {
+        const key = `al-istiraha-${button.dataset.notificationToggle}`;
+        const savedValue = localStorage.getItem(key);
+        const enabled = savedValue === null ? button.getAttribute('aria-pressed') === 'true' : savedValue === 'true';
+        setNotificationToggleState(button, enabled);
+        button.addEventListener('click', () => {
+            const nextValue = button.getAttribute('aria-pressed') !== 'true';
+            localStorage.setItem(key, String(nextValue));
+            setNotificationToggleState(button, nextValue);
+        });
+    });
+}
+
+function setNotificationToggleState(button, enabled) {
+    button.setAttribute('aria-pressed', String(enabled));
+    button.setAttribute('aria-label', enabled ? 'إيقاف التنبيه' : 'تفعيل التنبيه');
+    const icon = button.querySelector('i, svg');
+    if (icon) {
+        icon.setAttribute('data-lucide', enabled ? 'toggle-right' : 'toggle-left');
+    }
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
     }
 }
 

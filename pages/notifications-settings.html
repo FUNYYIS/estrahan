@@ -4,9 +4,29 @@
         <a href="#settings" class="service-link">الإعدادات</a>
     </div>
     <div class="section-stack">
-        <div class="list-item-card"><label for="payment-notification" class="font-bold">تذكير الدفع الشهري</label><label class="switch"><input type="checkbox" id="payment-notification" checked><span class="slider"></span></label></div>
-        <div class="list-item-card"><label for="prayer-notification" class="font-bold">تنبيهات مواقيت الصلاة</label><label class="switch"><input type="checkbox" id="prayer-notification" checked><span class="slider"></span></label></div>
-        <div class="list-item-card"><label for="matches-notification" class="font-bold">تنبيهات نتائج المباريات</label><label class="switch"><input type="checkbox" id="matches-notification"><span class="slider"></span></label></div>
-        <div class="list-item-card"><label for="chat-notification" class="font-bold">تنبيهات الرسائل الجديدة</label><label class="switch"><input type="checkbox" id="chat-notification" checked><span class="slider"></span></label></div>
+        <div class="list-item-card">
+            <span class="font-bold">تذكير الدفع الشهري</span>
+            <button class="notification-toggle" type="button" data-notification-toggle="payment-notification" aria-pressed="true" aria-label="تفعيل تذكير الدفع الشهري">
+                <i data-lucide="toggle-right"></i>
+            </button>
+        </div>
+        <div class="list-item-card">
+            <span class="font-bold">تنبيهات مواقيت الصلاة</span>
+            <button class="notification-toggle" type="button" data-notification-toggle="prayer-notification" aria-pressed="true" aria-label="تفعيل تنبيهات مواقيت الصلاة">
+                <i data-lucide="toggle-right"></i>
+            </button>
+        </div>
+        <div class="list-item-card">
+            <span class="font-bold">تنبيهات نتائج المباريات</span>
+            <button class="notification-toggle" type="button" data-notification-toggle="matches-notification" aria-pressed="false" aria-label="تفعيل تنبيهات نتائج المباريات">
+                <i data-lucide="toggle-left"></i>
+            </button>
+        </div>
+        <div class="list-item-card">
+            <span class="font-bold">تنبيهات الرسائل الجديدة</span>
+            <button class="notification-toggle" type="button" data-notification-toggle="chat-notification" aria-pressed="true" aria-label="تفعيل تنبيهات الرسائل الجديدة">
+                <i data-lucide="toggle-right"></i>
+            </button>
+        </div>
     </div>
 </section>

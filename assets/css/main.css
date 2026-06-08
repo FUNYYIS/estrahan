@@ -650,6 +650,12 @@ body[data-theme="dark"] {
   --ink: #fff8eb;
   --muted: #d7c6a8;
   --line: rgba(255, 250, 240, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(181, 138, 56, 0.12), transparent 34rem),
+    linear-gradient(135deg, rgba(33, 27, 20, 0.98), rgba(18, 15, 12, 0.98)),
+    url("../images/al-istiraha-pattern.svg");
+  background-color: var(--bg);
+  background-size: auto, auto, 220px;
 }
 
 body[data-theme="dark"] .sidebar,
@@ -674,6 +680,27 @@ body[data-theme="dark"] .input-group select,
 body[data-theme="dark"] #chat-input {
   background: rgba(255, 250, 240, 0.08);
   color: var(--ink);
+}
+
+.notification-toggle {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--rose);
+  background: rgba(155, 77, 69, 0.1);
+}
+
+.notification-toggle[aria-pressed="true"] {
+  color: var(--date);
+  background: rgba(31, 111, 99, 0.14);
+}
+
+.notification-toggle svg {
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 960px) {

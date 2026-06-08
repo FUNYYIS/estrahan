@@ -1,4 +1,4 @@
-const CACHE_NAME = 'al-istiraha-cache-v13';
+const CACHE_NAME = 'al-istiraha-cache-v14';
 
 const urlsToCache = [
   '/',
@@ -28,8 +28,7 @@ const urlsToCache = [
   '/pages/prayer.html',
   '/pages/qibla.html',
   '/pages/matches.html',
-  '/pages/news.html',
-  '/pages/important-links.html'
+  '/pages/news.html'
 ];
 
 self.addEventListener('install', event => {

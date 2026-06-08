@@ -441,17 +441,24 @@ function setupNotificationToggles() {
             const nextValue = button.getAttribute('aria-pressed') !== 'true';
             localStorage.setItem(key, String(nextValue));
             setNotificationToggleState(button, nextValue);
+            if (nextValue) requestBrowserNotificationPermission();
         });
     });
+}
+
+async function requestBrowserNotificationPermission() {
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    try {
+        await Notification.requestPermission();
+    } catch (error) {
+        console.warn('Notification permission request failed:', error);
+    }
 }
 
 function setNotificationToggleState(button, enabled) {
     button.setAttribute('aria-pressed', String(enabled));
     button.setAttribute('aria-label', enabled ? 'إيقاف التنبيه' : 'تفعيل التنبيه');
-    const icon = button.querySelector('i, svg');
-    if (icon) {
-        icon.setAttribute('data-lucide', enabled ? 'toggle-right' : 'toggle-left');
-    }
+    button.innerHTML = `<i data-lucide="${enabled ? 'toggle-right' : 'toggle-left'}"></i><span>${enabled ? 'شغّال' : 'مقفّل'}</span>`;
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
     }

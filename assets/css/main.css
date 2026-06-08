@@ -683,14 +683,17 @@ body[data-theme="dark"] #chat-input {
 }
 
 .notification-toggle {
-  width: 48px;
-  height: 48px;
-  display: inline-grid;
-  place-items: center;
+  min-width: 92px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   border: 1px solid var(--line);
-  border-radius: 50%;
+  border-radius: 999px;
   color: var(--rose);
   background: rgba(155, 77, 69, 0.1);
+  font-weight: 800;
 }
 
 .notification-toggle[aria-pressed="true"] {
@@ -699,8 +702,13 @@ body[data-theme="dark"] #chat-input {
 }
 
 .notification-toggle svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+}
+
+.notification-toggle span {
+  color: currentColor;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 960px) {

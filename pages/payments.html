@@ -1,48 +1,76 @@
-<section class="panel payment-panel">
-    <div class="panel-head">
-        <h2><i data-lucide="credit-card"></i> دفع القطة</h2>
-        <span class="badge scheduled">يوم 27</span>
-    </div>
-    <div class="payment-card">
-        <div class="payment-bank">
-            <span>البنك</span>
-            <strong>بنك الراجحي</strong>
+<section class="payment-screen">
+    <div class="payment-secure">
+        <div>
+            <strong>دفع آمن ومشفّر</strong>
+            <span>100%</span>
         </div>
-        <div class="payment-iban">
-            <span>رقم الآيبان</span>
-            <strong id="iban">SA00 ... 7890</strong>
-        </div>
-        <button id="copy-iban-button" class="btn payment-copy" type="button">انسخ الآيبان</button>
+        <i data-lucide="shield-check"></i>
     </div>
-    <div class="payment-methods">
-        <div class="payment-method">
-            <div class="payment-method-label">
-                <span class="payment-mark apple-method-mark" aria-hidden="true">Pay</span>
-                <span class="payment-method-name">Apple Pay</span>
+
+    <article class="payment-plan-card">
+        <div class="plan-crown" aria-hidden="true"><i data-lucide="crown"></i></div>
+        <div class="plan-copy">
+            <h2>القطة الشهرية</h2>
+            <p>تابع الدفع وسجل المطانيخ بطريقة مرتبة وآمنة.</p>
+            <div class="plan-perks">
+                <span><i data-lucide="calendar-check"></i> تذكير يوم 27</span>
+                <span><i data-lucide="receipt"></i> سجل القطة</span>
+                <span><i data-lucide="bell"></i> تنبيهات</span>
             </div>
-            <button class="payment-button apple-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
-                <span class="apple-pay-button-mark" aria-hidden="true">Pay</span>
+        </div>
+        <div class="plan-price">
+            <strong>قريبا</strong>
+            <span>طرق دفع إلكترونية</span>
+        </div>
+    </article>
+
+    <section class="payment-options">
+        <h2>اختر طريقة الدفع</h2>
+        <div class="payment-methods">
+            <div class="payment-method selected">
+                <div class="payment-method-label">
+                    <span class="payment-brand apple-brand" aria-hidden="true">Apple Pay</span>
+                    <span>
+                        <strong>Apple Pay</strong>
+                        <small>ادفع بسهولة وأمان باستخدام Apple Pay</small>
+                    </span>
+                </div>
+                <button class="payment-radio" type="button" disabled aria-disabled="true" title="قريبا"><span></span></button>
+            </div>
+            <div class="payment-method">
+                <div class="payment-method-label">
+                    <span class="payment-brand stc-brand" aria-hidden="true">stc <b>pay</b></span>
+                    <span>
+                        <strong>stc pay</strong>
+                        <small>ادفع بسرعة وأمان عبر stc pay</small>
+                    </span>
+                </div>
+                <button class="payment-radio" type="button" disabled aria-disabled="true" title="قريبا"><span></span></button>
+            </div>
+            <div class="payment-method">
+                <div class="payment-method-label">
+                    <span class="payment-brand card-brand" aria-hidden="true"><i data-lucide="credit-card"></i></span>
+                    <span>
+                        <strong>البطاقة البنكية</strong>
+                        <small>مدى، فيزا أو ماستركارد</small>
+                    </span>
+                </div>
+                <button class="payment-radio" type="button" disabled aria-disabled="true" title="قريبا"><span></span></button>
+            </div>
+        </div>
+
+        <div class="payment-total-card">
+            <div>
+                <span>المبلغ الإجمالي</span>
+                <strong>قريبا</strong>
+                <small>خيارات الدفع الإلكتروني تحت التجهيز</small>
+            </div>
+            <button class="pay-now-button" type="button" disabled aria-disabled="true">
+                <i data-lucide="lock"></i>
+                ادفع الآن
             </button>
         </div>
-        <div class="payment-method">
-            <div class="payment-method-label">
-                <span class="payment-mark stc-pay-mark" aria-hidden="true">stc</span>
-                <span class="payment-method-name">STC Pay</span>
-            </div>
-            <button class="payment-button stc-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
-                <span class="stc-pay-button-mark" aria-hidden="true">pay</span>
-            </button>
-        </div>
-        <div class="payment-method">
-            <div class="payment-method-label">
-                <span class="payment-mark card-pay-mark" aria-hidden="true"><span></span></span>
-                <span class="payment-method-name">الدفع بالبطاقة</span>
-            </div>
-            <button class="payment-button card-pay-button" type="button" disabled aria-disabled="true" title="قريبا">
-                <i data-lucide="credit-card"></i>
-            </button>
-        </div>
-    </div>
+    </section>
 </section>
 
 <section class="panel">

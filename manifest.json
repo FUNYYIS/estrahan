@@ -8,8 +8,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8f1e5",
-  "theme_color": "#b58a38",
+  "background_color": "#02080d",
+  "theme_color": "#02080d",
   "icons": [
     {
       "src": "/assets/images/al-istiraha-icon.svg",

@@ -1075,17 +1075,16 @@ async function loadMatches(container, limit = 10) {
     
     container.innerHTML = `<p class="text-center">جاري تحميل المباريات...</p>`;
     
-    const API_KEY = '48988b2765msh20399a4a297b4f2p13ddc8jsn272009bee0d7';
+    const API_KEY = '14929df2f67189681a83746b9009038a';
     const SAUDI_LEAGUE_ID = '307';
     const season = new Date().getFullYear();
     const today = new Date().toISOString().slice(0, 10);
 
-    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${SAUDI_LEAGUE_ID}&season=${season}&date=${today}`;
+    const url = `https://v3.football.api-sports.io/fixtures?league=${SAUDI_LEAGUE_ID}&season=${season}&date=${today}`;
     const options = {
         method: 'GET',
         headers: {
-            'x-rapidapi-key': API_KEY,
-            'x-rapidapi-host': 'api-football-v1.p.rapidapi.com'
+            'x-apisports-key': API_KEY
         }
     };
 
@@ -1097,6 +1096,12 @@ async function loadMatches(container, limit = 10) {
         }
         
         const data = await response.json();
+
+        if (data.errors && Object.keys(data.errors).length > 0) {
+            const apiMessage = data.errors.plan || data.errors.requests || data.errors.season || 'تعذر جلب بيانات المباريات من مزود الخدمة.';
+            container.innerHTML = `<p class="text-center">${escapeHtml(apiMessage)}</p>`;
+            return;
+        }
         
         if (!data.response || !Array.isArray(data.response)) {
             throw new Error('Invalid API response structure');

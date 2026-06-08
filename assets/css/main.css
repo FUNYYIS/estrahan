@@ -88,6 +88,13 @@ button { cursor: pointer; }
   margin-top: 1rem;
 }
 
+.nav-divider {
+  margin: 0.55rem 0.85rem 0.15rem;
+  color: var(--gold-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .nav button, .install {
   min-height: 44px;
   border: 0;

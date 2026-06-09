@@ -1,30 +1,3 @@
-// استيراد الوظائف اللازمة من حزم Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { 
-    getAuth, 
-    RecaptchaVerifier,
-    signInWithPhoneNumber,
-    signOut, 
-    onAuthStateChanged,
-    PhoneAuthProvider,
-    signInWithCredential
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    doc, 
-    setDoc, 
-    getDoc,
-    collection,
-    addDoc,
-    query,
-    onSnapshot,
-    serverTimestamp,
-    updateDoc,
-    getDocs,
-    orderBy,
-    limit
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
 // إعدادات Firebase الخاصة بتطبيقك
 const firebaseConfig = {
   apiKey: "AIzaSyCoIy5Yf3nvkpbp9l43590snBZui86uSXY",
@@ -35,12 +8,71 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-
-// تهيئة Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
+
+let app;
+let auth;
+let db;
+let RecaptchaVerifier;
+let signInWithPhoneNumber;
+let signOut;
+let onAuthStateChanged;
+let PhoneAuthProvider;
+let signInWithCredential;
+let doc;
+let setDoc;
+let getDoc;
+let collection;
+let addDoc;
+let query;
+let onSnapshot;
+let serverTimestamp;
+let updateDoc;
+let getDocs;
+let orderBy;
+let limit;
+let firebaseReadyPromise;
+let authWatcherPromise;
+
+async function loadFirebase() {
+    if (firebaseReadyPromise) return firebaseReadyPromise;
+
+    firebaseReadyPromise = Promise.all([
+        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+    ]).then(([appModule, authModule, firestoreModule]) => {
+        app = appModule.initializeApp(firebaseConfig);
+        auth = authModule.getAuth(app);
+        ({
+            RecaptchaVerifier,
+            signInWithPhoneNumber,
+            signOut,
+            onAuthStateChanged,
+            PhoneAuthProvider,
+            signInWithCredential
+        } = authModule);
+        ({
+            getFirestore: firestoreModule.getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            addDoc,
+            query,
+            onSnapshot,
+            serverTimestamp,
+            updateDoc,
+            getDocs,
+            orderBy,
+            limit
+        } = firestoreModule);
+        db = firestoreModule.getFirestore(app);
+        return { app, auth, db };
+    });
+
+    return firebaseReadyPromise;
+}
 
 // --- عناصر واجهة المستخدم ---
 const pageContent = document.getElementById('page-content');
@@ -380,12 +412,6 @@ function attachEventListeners(hash) {
         const codeForm = document.getElementById('code-form');
         if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
         if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
-        
-        // Setup recaptcha with validation
-        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');
-        if (!recaptchaSetupSuccess) {
-            console.error('Failed to set up reCAPTCHA on login page');
-        }
     }
     
     if (pageId === 'register') {
@@ -398,12 +424,6 @@ function attachEventListeners(hash) {
         const registerCodeForm = document.getElementById('register-code-form');
         if (registerForm) registerForm.addEventListener('submit', (e) => handleSendCode(e, true));
         if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
-        
-        // Setup recaptcha with validation
-        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
-        if (!recaptchaSetupSuccess) {
-            console.error('Failed to set up reCAPTCHA on register page');
-        }
     }
     
     if (pageId === 'settings') {
@@ -565,6 +585,7 @@ function setAuthStatus(isRegister, phase, message) {
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
     console.log(`handleSendCode called (isRegister=${isRegister})`);
+    await loadFirebase();
     
     const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
     const phoneInput = document.getElementById(phoneInputId);
@@ -602,12 +623,14 @@ async function handleSendCode(e, isRegister = false) {
         }
     }
 
-    // Get recaptcha verifier
-    const appVerifier = window.recaptchaVerifier;
+    const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
+    let appVerifier = window.recaptchaVerifier;
     if (!appVerifier) {
-        console.error('reCAPTCHA verifier not initialized');
-        showAlert('يتم تحضير التحقق... حاول مرة أخرى بعد قليل.');
-        return;
+        setAuthStatus(isRegister, 'phone', 'نجهز التحقق...');
+        if (!setupRecaptcha(containerId)) {
+            return;
+        }
+        appVerifier = window.recaptchaVerifier;
     }
 
     console.log(`Sending verification code to: ${phoneNumber}`);
@@ -658,7 +681,6 @@ async function handleSendCode(e, isRegister = false) {
         setAuthStatus(isRegister, 'phone', '');
         
         // Reset recaptcha and try to recreate it
-        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
         recaptchaManager.destroy(containerId);
         
         // Wait a moment then recreate
@@ -674,6 +696,7 @@ async function handleSendCode(e, isRegister = false) {
 
 async function handleVerifyCode(e, isRegister = false) {
     e.preventDefault();
+    await loadFirebase();
     console.log(`handleVerifyCode called (isRegister=${isRegister})`);
     
     const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
@@ -758,7 +781,21 @@ async function handleVerifyCode(e, isRegister = false) {
         
         setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');
-        // onAuthStateChanged will handle navigation
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        currentUser = {
+            uid: user.uid,
+            ...(userDoc.exists() ? userDoc.data() : {
+                name: user.phoneNumber || 'مطناخ جديد',
+                phone: user.phoneNumber,
+                paymentStatus: 'late'
+            })
+        };
+        document.body.classList.add('is-authenticated');
+        syncShellUserState();
+        await renderPage('#home');
+        startAuthWatcher().catch((watcherError) => {
+            console.error('✗ Failed to start auth watcher after login:', watcherError);
+        });
     } catch (error) {
         console.error("✗ Verification Error:", error);
         console.error("Error code:", error.code);
@@ -781,10 +818,16 @@ async function handleVerifyCode(e, isRegister = false) {
 }
 
 async function handleLogout() {
+    await loadFirebase();
     if(unsubscribeChat) unsubscribeChat();
     if(unsubscribeMembers) unsubscribeMembers();
     if(unsubscribePayments) unsubscribePayments();
     await signOut(auth);
+    currentUser = null;
+    document.body.classList.remove('is-authenticated');
+    sidebar?.classList.remove('open');
+    syncShellUserState();
+    await renderPage('#login');
 }
 
 // --- Firestore Data Loading & Realtime Updates ---
@@ -1348,17 +1391,14 @@ async function loadNews(container, limit = 10) {
 }
 
 
-// --- App Initialization ---
-function initApp() {
-    console.log('Initializing app...');
-    setOnlineState();
-    
-    try {
-        loadTheme();
-    } catch (error) {
-        console.error('Error loading theme:', error);
-    }
+async function startAuthWatcher() {
+    if (authWatcherPromise) return authWatcherPromise;
+    authWatcherPromise = startAuthWatcherInternal();
+    return authWatcherPromise;
+}
 
+async function startAuthWatcherInternal() {
+    await loadFirebase();
     onAuthStateChanged(auth, async (user) => {
         try {
             if (user) {
@@ -1406,6 +1446,31 @@ function initApp() {
             await renderPage(currentPublicRoute());
         }
     });
+}
+
+// --- App Initialization ---
+function initApp() {
+    console.log('Initializing app...');
+    setOnlineState();
+
+    try {
+        loadTheme();
+    } catch (error) {
+        console.error('Error loading theme:', error);
+    }
+
+    currentUser = null;
+    document.body.classList.remove('is-authenticated');
+    sidebar?.classList.remove('open');
+    syncShellUserState();
+    renderPage(currentPublicRoute());
+
+    const requestedHash = normalizeHash(window.location.hash);
+    if (routes[requestedHash] && !publicRoutes.includes(requestedHash)) {
+        startAuthWatcher().catch((error) => {
+            console.error('✗ Failed to start auth watcher:', error);
+        });
+    }
 
         // Splash Screen Logic
     const splash = document.getElementById('splash');
@@ -1432,11 +1497,11 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 500);
+                }, 180);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }
-        }, 3000);
+        }, 350);
     }
 
     window.addEventListener('hashchange', () => {

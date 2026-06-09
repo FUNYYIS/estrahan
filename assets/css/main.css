@@ -2179,16 +2179,14 @@ body[data-theme="dark"] .alert-content {
   --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
-body:has(.dashboard-home),
-body:has(.auth-layout) {
+body {
   background:
     linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.9)),
     url("../images/riyadh-skyline-bg.jpg") center bottom / cover fixed no-repeat,
     #F5F3EE;
 }
 
-body:has(.dashboard-home) .main,
-body:has(.auth-layout) .main {
+.main {
   background: transparent;
 }
 
@@ -2356,7 +2354,7 @@ body:has(.auth-layout) .auth-layout .content-body {
 }
 
 @media (max-width: 960px) {
-  body:has(.dashboard-home) {
+  body {
     background-attachment: scroll;
   }
 

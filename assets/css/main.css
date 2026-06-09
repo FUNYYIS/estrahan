@@ -2180,13 +2180,44 @@ body[data-theme="dark"] .alert-content {
 }
 
 body {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.9)),
-    url("../images/riyadh-skyline-bg.jpg") center bottom / cover fixed no-repeat,
-    #F5F3EE;
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  background: #F5F3EE;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: -2;
+  background: url("../images/riyadh-skyline-bg.jpg") center bottom / cover no-repeat;
+}
+
+body::after {
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .main {
+  background: transparent;
+}
+
+.app-shell,
+.view,
+.page-content-container,
+.section-stack,
+.home-grid,
+.chat-page,
+.payment-screen,
+.service-grid,
+.cards-grid,
+.stats-grid {
   background: transparent;
 }
 
@@ -2347,17 +2378,20 @@ body:has(.auth-layout) .auth-layout .content-body {
 .list-item-card,
 .content-body,
 #chat-box,
+.match-card,
+.news-card,
+.modal,
+.alert-content,
 .payment-options,
 .payment-total-card {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: var(--glass-shadow);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 @media (max-width: 960px) {
-  body {
-    background-attachment: scroll;
-  }
-
   .dashboard-home .welcome-panorama {
     min-height: 360px;
   }

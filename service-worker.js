@@ -1,4 +1,4 @@
-const CACHE_NAME = 'al-istiraha-cache-v33';
+const CACHE_NAME = 'al-istiraha-cache-v34';
 
 const urlsToCache = [
   '/',

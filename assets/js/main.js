@@ -1,3 +1,30 @@
+// استيراد الوظائف اللازمة من حزم Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import {
+    getAuth,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
+    signOut,
+    onAuthStateChanged,
+    PhoneAuthProvider,
+    signInWithCredential
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    collection,
+    addDoc,
+    query,
+    onSnapshot,
+    serverTimestamp,
+    updateDoc,
+    getDocs,
+    orderBy,
+    limit
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 // إعدادات Firebase الخاصة بتطبيقك
 const firebaseConfig = {
   apiKey: "AIzaSyCoIy5Yf3nvkpbp9l43590snBZui86uSXY",
@@ -8,71 +35,12 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
+
+// تهيئة Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
-
-let app;
-let auth;
-let db;
-let RecaptchaVerifier;
-let signInWithPhoneNumber;
-let signOut;
-let onAuthStateChanged;
-let PhoneAuthProvider;
-let signInWithCredential;
-let doc;
-let setDoc;
-let getDoc;
-let collection;
-let addDoc;
-let query;
-let onSnapshot;
-let serverTimestamp;
-let updateDoc;
-let getDocs;
-let orderBy;
-let limit;
-let firebaseReadyPromise;
-let authWatcherPromise;
-
-async function loadFirebase() {
-    if (firebaseReadyPromise) return firebaseReadyPromise;
-
-    firebaseReadyPromise = Promise.all([
-        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
-        import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
-    ]).then(([appModule, authModule, firestoreModule]) => {
-        app = appModule.initializeApp(firebaseConfig);
-        auth = authModule.getAuth(app);
-        ({
-            RecaptchaVerifier,
-            signInWithPhoneNumber,
-            signOut,
-            onAuthStateChanged,
-            PhoneAuthProvider,
-            signInWithCredential
-        } = authModule);
-        ({
-            getFirestore: firestoreModule.getFirestore,
-            doc,
-            setDoc,
-            getDoc,
-            collection,
-            addDoc,
-            query,
-            onSnapshot,
-            serverTimestamp,
-            updateDoc,
-            getDocs,
-            orderBy,
-            limit
-        } = firestoreModule);
-        db = firestoreModule.getFirestore(app);
-        return { app, auth, db };
-    });
-
-    return firebaseReadyPromise;
-}
 
 // --- عناصر واجهة المستخدم ---
 const pageContent = document.getElementById('page-content');
@@ -92,7 +60,7 @@ const profileName = document.querySelector('.profile-copy strong');
 const profileSince = document.querySelector('.profile-copy small');
 
 // --- حالة التطبيق ---
-let currentUser = null; 
+let currentUser = null;
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 
@@ -152,7 +120,7 @@ function cleanupRealtimeListeners() {
 // --- RecaptchaVerifier Manager ---
 const recaptchaManager = {
     verifiers: new Map(), // Map<containerId, RecaptchaVerifier>
-    
+
     getOrCreate(containerId) {
         // Check if verifier already exists and is valid
         if (this.verifiers.has(containerId)) {
@@ -166,14 +134,14 @@ const recaptchaManager = {
                 this.verifiers.delete(containerId);
             }
         }
-        
+
         // Create new verifier
         const container = document.getElementById(containerId);
         if (!container) {
             console.error(`✗ Container ${containerId} not found in DOM`);
             return null;
         }
-        
+
         try {
             console.log(`Creating new RecaptchaVerifier for ${containerId}...`);
             const verifier = new RecaptchaVerifier(auth, containerId, {
@@ -190,7 +158,7 @@ const recaptchaManager = {
                     this.verifiers.delete(containerId);
                 }
             });
-            
+
             this.verifiers.set(containerId, verifier);
             console.log(`✓ RecaptchaVerifier created successfully for ${containerId}`);
             return verifier;
@@ -199,7 +167,7 @@ const recaptchaManager = {
             return null;
         }
     },
-    
+
     destroy(containerId) {
         if (this.verifiers.has(containerId)) {
             try {
@@ -215,7 +183,7 @@ const recaptchaManager = {
             }
         }
     },
-    
+
     destroyAll() {
         for (const [containerId] of this.verifiers) {
             this.destroy(containerId);
@@ -358,7 +326,7 @@ async function renderPage(hash) {
         ? '#home'
         : routes[requestedHash] && (currentUser || isPublicRoute) ? requestedHash : defaultPage;
     const pageFile = routes[currentHash];
-    
+
     if (pageFile) {
         try {
             const response = await fetch(`pages/${pageFile}`);
@@ -367,7 +335,7 @@ async function renderPage(hash) {
             }
             const pageHtml = await response.text();
             pageContent.innerHTML = pageHtml;
-            
+
             // Create lucide icons with retry logic
             const safeCreateIcons = () => {
                 if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -401,42 +369,54 @@ async function renderPage(hash) {
 
 function attachEventListeners(hash) {
     const pageId = hash.substring(1); // remove '#'
-    
+
     if (pageId === 'login') {
         console.log('Setting up login page event listeners');
-        
+
         // Clean up old verifier if switching pages
         recaptchaManager.destroy('recaptcha-container');
-        
+
         const phoneForm = document.getElementById('phone-form');
         const codeForm = document.getElementById('code-form');
         if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
         if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
+
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on login page');
+        }
     }
-    
+
     if (pageId === 'register') {
         console.log('Setting up register page event listeners');
-        
+
         // Clean up old verifier if switching pages
         recaptchaManager.destroy('recaptcha-container-register');
-        
+
         const registerForm = document.getElementById('register-form');
         const registerCodeForm = document.getElementById('register-code-form');
         if (registerForm) registerForm.addEventListener('submit', (e) => handleSendCode(e, true));
         if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
+
+        // Setup recaptcha with validation
+        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
+        if (!recaptchaSetupSuccess) {
+            console.error('Failed to set up reCAPTCHA on register page');
+        }
     }
-    
+
     if (pageId === 'settings') {
         const logoutBtn = document.getElementById('logout-button');
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-        
+
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
             themeToggle.checked = (localStorage.getItem('al-istiraha-theme') === 'dark');
             themeToggle.addEventListener('change', toggleTheme);
         }
     }
-    
+
     if (pageId === 'chat') {
         const chatForm = document.getElementById('chat-form');
         if (chatForm) chatForm.addEventListener('submit', handleSendMessage);
@@ -498,11 +478,11 @@ function setNotificationToggleState(button, enabled) {
 function loadPageData(pageId) {
     // Normalize page ID (remove '-page' suffix if present)
     const normalizedPageId = pageId.replace('-page', '');
-    
+
     if (!currentUser && !['login', 'register'].includes(normalizedPageId)) {
         return;
     }
-    
+
     cleanupRealtimeListeners();
 
     try {
@@ -585,24 +565,23 @@ function setAuthStatus(isRegister, phase, message) {
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
     console.log(`handleSendCode called (isRegister=${isRegister})`);
-    await loadFirebase();
-    
+
     const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
     const phoneInput = document.getElementById(phoneInputId);
-    
+
     if (!phoneInput) {
         showAlert('خانة الجوال مو موجودة، حدّث الصفحة.');
         return;
     }
-    
+
     let phoneNumber = phoneInput.value.trim();
-    
+
     // Validate phone number format
     if (!phoneNumber) {
         showAlert('الرجاء إدخال رقم جوال صحيح.');
         return;
     }
-    
+
     // Convert Saudi format to international format
     if (phoneNumber.startsWith('05')) {
         phoneNumber = '+966' + phoneNumber.substring(1);
@@ -623,24 +602,22 @@ async function handleSendCode(e, isRegister = false) {
         }
     }
 
-    const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
-    let appVerifier = window.recaptchaVerifier;
+    // Get recaptcha verifier
+    const appVerifier = window.recaptchaVerifier;
     if (!appVerifier) {
-        setAuthStatus(isRegister, 'phone', 'نجهز التحقق...');
-        if (!setupRecaptcha(containerId)) {
-            return;
-        }
-        appVerifier = window.recaptchaVerifier;
+        console.error('reCAPTCHA verifier not initialized');
+        showAlert('يتم تحضير التحقق... حاول مرة أخرى بعد قليل.');
+        return;
     }
 
     console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
     setAuthStatus(isRegister, 'phone', 'نجهز التحقق ونرسل لك الرمز...');
-    
+
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
         console.log('✓ Verification code sent successfully');
-        
+
         // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         if (isRegister) {
@@ -664,9 +641,9 @@ async function handleSendCode(e, isRegister = false) {
         console.error("✗ SMS Error:", error);
         console.error("Error code:", error.code);
         console.error("Error message:", error.message);
-        
+
         let errorMsg = 'ما قدرنا نرسل الرمز. تأكد من الرقم.';
-        
+
         if (error.code === 'auth/invalid-phone-number') {
             errorMsg = 'صيغة الرقم ما هي صحيحة. استخدم +966XXXXXXXXX';
         } else if (error.code === 'auth/too-many-requests') {
@@ -676,13 +653,14 @@ async function handleSendCode(e, isRegister = false) {
         } else if (error.code === 'auth/captcha-check-failed') {
             errorMsg = 'ما ضبط تحقق reCAPTCHA. جرّب مرة ثانية.';
         }
-        
+
         showAlert(errorMsg);
         setAuthStatus(isRegister, 'phone', '');
-        
+
         // Reset recaptcha and try to recreate it
+        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
         recaptchaManager.destroy(containerId);
-        
+
         // Wait a moment then recreate
         setTimeout(() => {
             const success = setupRecaptcha(containerId);
@@ -696,24 +674,23 @@ async function handleSendCode(e, isRegister = false) {
 
 async function handleVerifyCode(e, isRegister = false) {
     e.preventDefault();
-    await loadFirebase();
     console.log(`handleVerifyCode called (isRegister=${isRegister})`);
-    
+
     const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
     const codeInput = document.getElementById(codeInputId);
-    
+
     if (!codeInput) {
         showAlert('خانة الرمز مو موجودة، حدّث الصفحة.');
         return;
     }
-    
+
     const code = codeInput.value.trim();
-    
+
     if (!code) {
         showAlert('اكتب رمز الدخول يا ذيب.');
         return;
     }
-    
+
     // Get verification ID from sessionStorage
     const verificationId = sessionStorage.getItem('firebaseVerificationId');
 
@@ -733,17 +710,17 @@ async function handleVerifyCode(e, isRegister = false) {
         }
         return;
     }
-    
+
     console.log('Verifying code...');
     setFormLoading(e.currentTarget, true, 'جاري التحقق...');
     setAuthStatus(isRegister, 'code', 'نتأكد من الرمز...');
-    
+
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
         const result = await signInWithCredential(auth, credential);
         const user = result.user;
         console.log('✓ Phone verification successful');
-        
+
         if (isRegister) {
             const name = sessionStorage.getItem('tempName');
             if (!name) {
@@ -774,35 +751,21 @@ async function handleVerifyCode(e, isRegister = false) {
                 console.log('✓ Missing user profile repaired after login');
             }
         }
-        
+
         // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
         sessionStorage.removeItem('tempName');
-        
+
         setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        currentUser = {
-            uid: user.uid,
-            ...(userDoc.exists() ? userDoc.data() : {
-                name: user.phoneNumber || 'مطناخ جديد',
-                phone: user.phoneNumber,
-                paymentStatus: 'late'
-            })
-        };
-        document.body.classList.add('is-authenticated');
-        syncShellUserState();
-        await renderPage('#home');
-        startAuthWatcher().catch((watcherError) => {
-            console.error('✗ Failed to start auth watcher after login:', watcherError);
-        });
+        // onAuthStateChanged will handle navigation
     } catch (error) {
         console.error("✗ Verification Error:", error);
         console.error("Error code:", error.code);
         console.error("Error message:", error.message);
-        
+
         let errorMsg = 'رمز الدخول غير صحيح.';
-        
+
         if (error.code === 'auth/invalid-verification-code') {
             errorMsg = 'الرمز اللي دخلته غير صحيح. تأكد وجرب.';
         } else if (error.code === 'auth/code-expired') {
@@ -810,7 +773,7 @@ async function handleVerifyCode(e, isRegister = false) {
         } else if (error.code === 'auth/invalid-credential') {
             errorMsg = 'بيانات التحقق ما هي صحيحة.';
         }
-        
+
         showAlert(errorMsg);
         setAuthStatus(isRegister, 'code', '');
         setFormLoading(e.currentTarget, false);
@@ -818,16 +781,10 @@ async function handleVerifyCode(e, isRegister = false) {
 }
 
 async function handleLogout() {
-    await loadFirebase();
     if(unsubscribeChat) unsubscribeChat();
     if(unsubscribeMembers) unsubscribeMembers();
     if(unsubscribePayments) unsubscribePayments();
     await signOut(auth);
-    currentUser = null;
-    document.body.classList.remove('is-authenticated');
-    sidebar?.classList.remove('open');
-    syncShellUserState();
-    await renderPage('#login');
 }
 
 // --- Firestore Data Loading & Realtime Updates ---
@@ -850,27 +807,27 @@ function loadMembers() {
         console.warn('members-list element not found');
         return;
     }
-    
+
     try {
         const membersCollection = collection(db, "users");
         unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
             membersList.innerHTML = '';
-            
+
             if (snapshot.empty) {
                 membersList.innerHTML = '<p class="text-center">ما فيه مطانيخ للحين.</p>';
                 return;
             }
-            
+
             snapshot.forEach(doc => {
                 const member = doc.data();
                 const memberId = doc.id;
                 const div = document.createElement('div');
                 div.className = 'list-item-card';
-                
+
                 const statusIcon = member.paymentStatus === 'paid'
                     ? `<span class="font-bold" style="color: #5cb85c;">✅ مدفوع</span>`
                     : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
-                
+
                 let adminControls = '';
                 if (auth.currentUser?.uid === ADMIN_UID) {
                     adminControls = `
@@ -921,10 +878,10 @@ function loadPaymentLog() {
         console.warn('payment-log-list element not found');
         return;
     }
-    
+
     try {
         unsubscribePayments = onSnapshot(
-            query(collection(db, "payments"), orderBy("date", "desc")), 
+            query(collection(db, "payments"), orderBy("date", "desc")),
             (snapshot) => {
                 logList.innerHTML = '';
                 if (snapshot.empty) {
@@ -935,8 +892,8 @@ function loadPaymentLog() {
                     const payment = doc.data();
                     const div = document.createElement('div');
                     div.className = 'list-item-card text-sm';
-                    const date = payment.date 
-                        ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA') 
+                    const date = payment.date
+                        ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA')
                         : 'غير محدد';
                     div.innerHTML = `
                         <span class="font-bold">${payment.userName || 'بدون اسم'}</span>
@@ -963,10 +920,10 @@ function loadChat() {
         console.warn('chat-box element not found');
         return;
     }
-    
+
     try {
         unsubscribeChat = onSnapshot(
-            query(collection(db, "chat"), orderBy("createdAt")), 
+            query(collection(db, "chat"), orderBy("createdAt")),
             (snapshot) => {
                 chatBox.innerHTML = '';
                 snapshot.forEach(doc => {
@@ -974,10 +931,10 @@ function loadChat() {
                     const div = document.createElement('div');
                     const isMe = msg.userId === auth.currentUser?.uid;
                     div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-                    
+
                     const userDisplayName = msg.userName || 'مستخدم';
                     const messageText = escapeHtml(msg.text || '');
-                    
+
                     div.innerHTML = `
                         <div class="text-xs mb-1 mx-2" style="color: var(--muted);">${escapeHtml(userDisplayName)}</div>
                         <div class="message ${isMe ? 'mine' : ''}">
@@ -1001,20 +958,20 @@ function loadChat() {
 
 async function handleSendMessage(e) {
     e.preventDefault();
-    
+
     const input = document.getElementById('chat-input');
     if (!input) {
         showAlert('عنصر الإدخال غير موجود.');
         return;
     }
-    
+
     const text = input.value.trim();
-    
+
     if (!text) {
         showAlert('اكتب سالفتك أول.');
         return;
     }
-    
+
     if (!currentUser) {
         showAlert('لازم تقلط أول.');
         return;
@@ -1036,10 +993,10 @@ async function handleSendMessage(e) {
 
 function loadProfileData() {
     if (!currentUser) return;
-    
+
     const nameElement = document.getElementById('profile-name');
     const phoneElement = document.getElementById('profile-phone');
-    
+
     if (nameElement) nameElement.textContent = currentUser.name || 'بدون اسم';
     if (phoneElement) phoneElement.textContent = currentUser.phone || 'بدون رقم';
 }
@@ -1074,14 +1031,14 @@ function prayerCards(timings, keys) {
 async function loadHomePrayerAndDate() {
     const hijriContainer = document.getElementById('hijri-date-container');
     const prayerContainer = document.getElementById('home-prayer-times');
-    
+
     if (!hijriContainer || !prayerContainer) return;
 
     const todayGregorian = new Date();
-    
+
     try {
         hijriContainer.innerHTML = `<p class="font-bold text-lg">${todayGregorian.toLocaleDateString('ar-SA-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>`;
-        
+
         const response = await fetch(`https://api.aladhan.com/v1/gToH?date=${todayGregorian.getDate()}-${todayGregorian.getMonth()+1}-${todayGregorian.getFullYear()}`);
         if (response.ok) {
             const data = await response.json();
@@ -1100,7 +1057,7 @@ async function loadHomePrayerAndDate() {
                 const { latitude, longitude } = position.coords;
                 const data = await getPrayerData(latitude, longitude);
                 const timings = data.data.timings;
-                
+
                 prayerContainer.innerHTML = prayerCards(timings, ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
                 console.error('Error fetching prayer times:', error);
@@ -1129,7 +1086,7 @@ async function loadHomeNews() {
 async function loadPrayerTimes() {
     const container = document.getElementById('prayer-times-container');
     if (!container) return;
-    
+
     container.innerHTML = `<p class="text-center w-full">اسمح بالموقع عشان نجيب المواقيت...</p>`;
 
     navigator.geolocation.getCurrentPosition(
@@ -1137,11 +1094,11 @@ async function loadPrayerTimes() {
             try {
                 const { latitude, longitude } = position.coords;
                 const data = await getPrayerData(latitude, longitude);
-                
+
                 if (!data.data || !data.data.timings) {
                     throw new Error('Invalid prayer data structure');
                 }
-                
+
                 const timings = data.data.timings;
                 container.innerHTML = prayerCards(timings, ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
             } catch (error) {
@@ -1159,30 +1116,30 @@ async function initQibla() {
     const container = document.getElementById('qibla-container');
     const status = document.getElementById('qibla-status');
     const compass = document.getElementById('compass');
-    
+
     if (!container || !status || !compass) {
         console.warn('Qibla elements not found');
         return;
     }
-    
+
     status.textContent = "اسمح بالموقع عشان نحدد القبلة...";
-    
+
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             try {
                 const { latitude, longitude } = position.coords;
                 const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch qibla direction');
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (!data.data || data.data.direction === undefined) {
                     throw new Error('Invalid qibla data structure');
                 }
-                
+
                 const qiblaAngle = data.data.direction;
 
                 status.textContent = "حرك جوالك وبتضبط معك القبلة";
@@ -1229,9 +1186,9 @@ async function initQibla() {
 async function loadMatches(container, limit = 10) {
     if (!container) container = document.getElementById('matches-list');
     if (!container) return;
-    
+
     container.innerHTML = `<p class="text-center">جاري تحميل المباريات...</p>`;
-    
+
     const THE_SPORTS_DB_KEY = '3';
     const SAUDI_LEAGUE_ID = '4668';
     const today = getLocalDateKey();
@@ -1244,16 +1201,16 @@ async function loadMatches(container, limit = 10) {
             fetch(todayUrl),
             fetch(seasonUrl)
         ]);
-        
+
         if (!todayResponse.ok || !seasonResponse.ok) {
             throw new Error(`API returned status ${todayResponse.status}/${seasonResponse.status}`);
         }
-        
+
         const [todayData, seasonData] = await Promise.all([
             todayResponse.json(),
             seasonResponse.json()
         ]);
-        
+
         if (!seasonData.events || !Array.isArray(seasonData.events)) {
             container.innerHTML = `<p class="text-center">ما فيه مباريات متاحة للدوري السعودي حالياً.</p>`;
             return;
@@ -1335,7 +1292,7 @@ function renderSportsDbMatchCard(event) {
 async function loadNews(container, limit = 10) {
     if (!container) container = document.getElementById('news-list');
     if (!container) return;
-    
+
     container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
 
     const API_KEY = 'fed169451378413e924ac29dca024540';
@@ -1344,11 +1301,11 @@ async function loadNews(container, limit = 10) {
 
     try {
         const response = await fetch(proxyUrl);
-        
+
         if (!response.ok) {
             throw new Error(`Proxy returned status ${response.status}`);
         }
-        
+
         const data = await response.json();
 
         if (!data || data.status !== 'ok') {
@@ -1368,7 +1325,7 @@ async function loadNews(container, limit = 10) {
                 const url = safeExternalUrl(article.url, '#');
                 const source = article.source?.name || 'مصدر';
                 const image = safeExternalUrl(article.urlToImage, 'assets/images/al-istiraha-news-service.svg');
-                
+
                 const newsCard = `
                     <article class="news-card card">
                         <img src="${image}" alt="" loading="lazy">
@@ -1391,14 +1348,17 @@ async function loadNews(container, limit = 10) {
 }
 
 
-async function startAuthWatcher() {
-    if (authWatcherPromise) return authWatcherPromise;
-    authWatcherPromise = startAuthWatcherInternal();
-    return authWatcherPromise;
-}
+// --- App Initialization ---
+function initApp() {
+    console.log('Initializing app...');
+    setOnlineState();
 
-async function startAuthWatcherInternal() {
-    await loadFirebase();
+    try {
+        loadTheme();
+    } catch (error) {
+        console.error('Error loading theme:', error);
+    }
+
     onAuthStateChanged(auth, async (user) => {
         try {
             if (user) {
@@ -1446,31 +1406,6 @@ async function startAuthWatcherInternal() {
             await renderPage(currentPublicRoute());
         }
     });
-}
-
-// --- App Initialization ---
-function initApp() {
-    console.log('Initializing app...');
-    setOnlineState();
-
-    try {
-        loadTheme();
-    } catch (error) {
-        console.error('Error loading theme:', error);
-    }
-
-    currentUser = null;
-    document.body.classList.remove('is-authenticated');
-    sidebar?.classList.remove('open');
-    syncShellUserState();
-    renderPage(currentPublicRoute());
-
-    const requestedHash = normalizeHash(window.location.hash);
-    if (routes[requestedHash] && !publicRoutes.includes(requestedHash)) {
-        startAuthWatcher().catch((error) => {
-            console.error('✗ Failed to start auth watcher:', error);
-        });
-    }
 
         // Splash Screen Logic
     const splash = document.getElementById('splash');
@@ -1497,11 +1432,11 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 180);
+                }, 500);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }
-        }, 350);
+        }, 3000);
     }
 
     window.addEventListener('hashchange', () => {
@@ -1510,7 +1445,7 @@ function initApp() {
         recaptchaManager.destroyAll();
         renderPage(window.location.hash);
     });
-    
+
     console.log('✓ App initialization complete');
 }
 

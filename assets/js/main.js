@@ -1423,7 +1423,7 @@ function initApp() {
 
         setTimeout(() => {
             if (splash) {
-                splash.style.opacity = '0';
+                splash.classList.add('done');
 
                 setTimeout(() => {
                     splash.style.display = 'none';
@@ -1432,11 +1432,11 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 500);
+                }, 420);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }
-        }, 3000);
+        }, 1200);
     }
 
     window.addEventListener('hashchange', () => {

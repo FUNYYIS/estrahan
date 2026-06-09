@@ -244,8 +244,8 @@ function setOnlineState() {
 function syncShellUserState() {
     if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
-    if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : 'أهلاً سالم';
-    if (profileSince) profileSince.textContent = currentUser ? 'عضو منذ يناير 2024' : 'حياك الأمير';
+    if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
+    if (profileSince) profileSince.textContent = currentUser ? 'عضو منذ يناير 2024' : '';
 }
 
 menuBtn?.addEventListener('click', () => {

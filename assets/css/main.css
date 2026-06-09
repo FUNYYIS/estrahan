@@ -2197,11 +2197,14 @@ body::after {
 body::before {
   z-index: 0;
   background: url("../images/riyadh-skyline-bg.jpg") center bottom / cover no-repeat;
+  filter: sepia(0.36) saturate(1.55) hue-rotate(86deg) contrast(1.08);
 }
 
 body::after {
   z-index: 0;
-  background: rgba(255, 255, 255, 0.62);
+  background:
+    linear-gradient(rgba(31, 90, 70, 0.08), rgba(31, 90, 70, 0.08)),
+    rgba(255, 255, 255, 0.58);
 }
 
 .app-shell,

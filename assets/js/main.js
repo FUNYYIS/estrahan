@@ -1238,19 +1238,19 @@ async function loadMatches(container, limit = 10) {
         container.innerHTML = `
             <div class="panel">
                 <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">TheSportsDB</span></div>
-                <div class="cards-grid">
+                <div class="cards-grid matches-grid">
                     ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
                 </div>
             </div>
             <div class="panel">
                 <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">League 4668</span></div>
-                <div class="cards-grid">
+                <div class="cards-grid matches-grid">
                     ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
                 </div>
             </div>
             <div class="panel">
                 <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">League 4429 + GitHub fallback</span></div>
-                <div class="cards-grid">
+                <div class="cards-grid matches-grid">
                     ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
                 </div>
             </div>
@@ -1296,8 +1296,8 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
         strSource: 'GitHub schedule',
         strHomeTeam: home?.name_en || 'TBD',
         strAwayTeam: away?.name_en || 'TBD',
-        strHomeTeamBadge: '',
-        strAwayTeamBadge: '',
+        strHomeTeamBadge: safeFlagUrl(home?.iso2 || home?.fifa_code),
+        strAwayTeamBadge: safeFlagUrl(away?.iso2 || away?.fifa_code),
         intHomeScore: isFinished ? Number(match.home_score || 0) : null,
         intAwayScore: isFinished ? Number(match.away_score || 0) : null,
         dateEvent: dateParts.date,
@@ -1339,6 +1339,12 @@ function compareSportsDbEvents(a, b) {
     return `${getEventDateKey(a)} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${getEventDateKey(b)} ${b.strTimeLocal || b.strTime || ''}`);
 }
 
+function safeFlagUrl(code) {
+    const normalized = String(code || '').trim().toLowerCase();
+    if (!/^[a-z]{2,3}(?:-[a-z]{3})?$/.test(normalized)) return '';
+    return `https://flagcdn.com/w80/${normalized}.png`;
+}
+
 async function getSaudiLeagueSeason(apiKey, leagueId) {
     const response = await fetch(`https://www.thesportsdb.com/api/v1/json/${apiKey}/lookupleague.php?id=${leagueId}`);
     if (!response.ok) return '2025-2026';
@@ -1366,21 +1372,35 @@ function renderSportsDbMatchCard(event) {
     const score = isFinished
         ? `${event.intHomeScore ?? 0} - ${event.intAwayScore ?? 0}`
         : (event.strTimeLocal || event.strTime || '--:--').slice(0, 5);
-    const homeLogo = safeExternalUrl(event.strHomeTeamBadge, 'assets/images/al-istiraha-icon.svg');
-    const awayLogo = safeExternalUrl(event.strAwayTeamBadge, 'assets/images/al-istiraha-icon.svg');
+    const homeLogo = safeExternalUrl(event.strHomeTeamBadge, '');
+    const awayLogo = safeExternalUrl(event.strAwayTeamBadge, '');
+    const homeMark = renderTeamMark(homeLogo, event.strHomeTeam);
+    const awayMark = renderTeamMark(awayLogo, event.strAwayTeam);
 
     return `
         <article class="match-card card">
             <span class="badge ${statusClass}">${statusLabel}</span>
             <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}${event.strSource ? ` · ${escapeHtml(event.strSource)}` : ''}</p>
             <div class="match-teams">
-                <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
-                <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
+                <span>${homeMark} ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
+                <span>${awayMark} ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
             </div>
             <div class="match-score">${escapeHtml(score)}</div>
             <p class="muted">${escapeHtml(getEventDateKey(event))}</p>
         </article>
     `;
+}
+
+function renderTeamMark(src, teamName = '') {
+    if (src) {
+        return `<img src="${escapeHtml(src)}" alt="" class="team-logo" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+    }
+    return `<span class="team-logo team-initial">${escapeHtml(getTeamInitial(teamName))}</span>`;
+}
+
+function getTeamInitial(teamName = '') {
+    const clean = String(teamName || '').trim();
+    return clean ? clean.slice(0, 2).toUpperCase() : 'FC';
 }
 
 async function loadNews(container, limit = 10) {
@@ -1389,33 +1409,18 @@ async function loadNews(container, limit = 10) {
 
     container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
 
-    const API_KEY = 'fed169451378413e924ac29dca024540';
-    const url = `https://newsapi.org/v2/top-headlines?country=sa&category=sports&language=ar&apiKey=${API_KEY}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-
     try {
-        const response = await fetch(proxyUrl);
+        const articles = await fetchFootballNews(limit);
 
-        if (!response.ok) {
-            throw new Error(`Proxy returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data || data.status !== 'ok') {
-            throw new Error(data?.message || 'ما قدرنا نجيب الأخبار');
-        }
-
-        if (!Array.isArray(data.articles) || data.articles.length === 0) {
-            container.innerHTML = `<p class="text-center">ما فيه أخبار حالياً.</p>`;
+        if (!articles.length) {
+            container.innerHTML = `<p class="text-center">ما فيه أخبار كروية متاحة حالياً.</p>`;
             return;
         }
 
         container.innerHTML = '';
-        data.articles.slice(0, limit).forEach(article => {
+        articles.slice(0, limit).forEach(article => {
             try {
                 const title = article.title || 'بدون عنوان';
-                const description = article.description || article.content || '';
                 const url = safeExternalUrl(article.url, '#');
                 const source = article.source?.name || 'مصدر';
                 const image = safeExternalUrl(article.urlToImage, 'assets/images/al-istiraha-news-service.svg');
@@ -1424,7 +1429,6 @@ async function loadNews(container, limit = 10) {
                     <article class="news-card card">
                         <img src="${image}" alt="" loading="lazy">
                         <h3>${escapeHtml(title.substring(0, 100))}</h3>
-                        <p class="muted">${escapeHtml(description.substring(0, 150))}</p>
                         <span class="text-xs opacity-70">${escapeHtml(source)}</span>
                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="primary">قراءة المزيد</a>
                     </article>
@@ -1437,8 +1441,94 @@ async function loadNews(container, limit = 10) {
 
     } catch (error) {
         console.error("Error fetching news:", error);
-        container.innerHTML = `<p class="text-center">ما قدرنا نجيب الأخبار. جرّب مرة ثانية.</p>`;
+        container.innerHTML = `<p class="text-center">ما قدرنا نجيب أخبار الكورة حالياً. بنحاول لاحقاً.</p>`;
     }
+}
+
+async function fetchFootballNews(limit = 10) {
+    const sources = [
+        { name: 'BBC Football', url: 'https://feeds.bbci.co.uk/sport/football/rss.xml' },
+        { name: 'ESPN Soccer', url: 'https://www.espn.com/espn/rss/soccer/news' }
+    ];
+    const requests = sources.map((source) => fetchRssNewsSource(source));
+    const settled = await Promise.allSettled(requests);
+    const articles = settled
+        .flatMap((result) => result.status === 'fulfilled' ? result.value : [])
+        .filter((article) => article.title && article.url);
+
+    return dedupeNewsArticles(articles)
+        .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
+        .slice(0, limit);
+}
+
+async function fetchRssNewsSource(source) {
+    const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.url)}`;
+    try {
+        const response = await fetch(rssJsonUrl);
+        if (!response.ok) {
+            throw new Error(`${source.name} rss2json returned ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.status !== 'ok' || !Array.isArray(data.items)) {
+            throw new Error(`${source.name} rss2json returned invalid data`);
+        }
+        return data.items.map((item) => ({
+            title: sanitizePlainText(item.title),
+            url: item.link || '',
+            urlToImage: safeExternalUrl(item.thumbnail || item.enclosure?.link, 'assets/images/al-istiraha-news-service.svg'),
+            publishedAt: item.pubDate,
+            source: { name: source.name }
+        }));
+    } catch (primaryError) {
+        console.warn(`${source.name} rss2json unavailable, trying RSS fallback:`, primaryError);
+    }
+
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) {
+        throw new Error(`${source.name} returned ${response.status}`);
+    }
+
+    const xmlText = await response.text();
+    const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+    if (doc.querySelector('parsererror')) {
+        throw new Error(`${source.name} returned invalid RSS`);
+    }
+
+    return Array.from(doc.querySelectorAll('item')).map((item) => ({
+        title: sanitizePlainText(readRssText(item, 'title')),
+        url: readRssText(item, 'link'),
+        urlToImage: extractRssImage(item),
+        publishedAt: readRssText(item, 'pubDate'),
+        source: { name: source.name }
+    }));
+}
+
+function sanitizePlainText(value = '') {
+    const template = document.createElement('template');
+    template.innerHTML = String(value);
+    return (template.content.textContent || '').trim();
+}
+
+function readRssText(item, tagName) {
+    return item.querySelector(tagName)?.textContent?.trim() || '';
+}
+
+function extractRssImage(item) {
+    const mediaContent = item.getElementsByTagName('media:content')[0] || item.getElementsByTagName('media:thumbnail')[0];
+    const enclosure = item.querySelector('enclosure[type^="image"]');
+    const mediaUrl = mediaContent?.getAttribute('url') || enclosure?.getAttribute('url') || '';
+    return safeExternalUrl(mediaUrl, 'assets/images/al-istiraha-news-service.svg');
+}
+
+function dedupeNewsArticles(articles) {
+    const seen = new Set();
+    return articles.filter((article) => {
+        const key = safeExternalUrl(article.url, '').toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 

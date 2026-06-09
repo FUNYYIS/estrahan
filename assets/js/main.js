@@ -1432,11 +1432,11 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 420);
+                }, 460);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }
-        }, 1200);
+        }, 1300);
     }
 
     window.addEventListener('hashchange', () => {

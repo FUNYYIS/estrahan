@@ -1280,8 +1280,8 @@ function renderSportsDbMatchCard(event) {
             <span class="badge ${statusClass}">${statusLabel}</span>
             <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}</p>
             <div class="match-teams">
-                <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
-                <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1"> ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
+                <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
+                <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
             </div>
             <div class="match-score">${escapeHtml(score)}</div>
             <p class="muted">${escapeHtml(getEventDateKey(event))}</p>

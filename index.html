@@ -14,6 +14,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="assets/images/al-istiraha-icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/images/al-istiraha-icon.svg">
+    <link rel="preload" href="assets/images/riyadh-header.webp" as="image" type="image/webp" fetchpriority="high">
     <meta name="theme-color" content="#1F5A46">
 
     <link rel="stylesheet" href="assets/css/main.css">
@@ -24,7 +25,7 @@
 
 <body>
     <div id="splash" class="splash" aria-hidden="true">
-        <img src="assets/images/al-istiraha-icon.svg" alt="">
+        <img src="assets/images/al-istiraha-icon.svg" alt="" loading="eager" decoding="async">
         <strong>Al Istiraha</strong>
         <span>استراحة المطانيخ</span>
     </div>
@@ -32,7 +33,7 @@
     <div id="main-content" class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="#home" aria-label="Al Istiraha home">
-                <img id="app-logo" src="assets/images/al-istiraha-icon.svg" alt="Al Istiraha" class="logo">
+                <img id="app-logo" src="assets/images/al-istiraha-icon.svg" alt="Al Istiraha" class="logo" loading="eager" decoding="async">
                 <span>
                     <strong>Al Istiraha</strong>
                     <small>مجتمع المطانيخ الخاص</small>
@@ -66,7 +67,7 @@
                         <span>3</span>
                     </button>
                     <div class="profile-avatar">
-                        <img src="assets/images/logo.png" alt="">
+                        <img src="assets/images/logo.png" alt="" loading="lazy" decoding="async">
                     </div>
                     <div class="profile-copy">
                         <strong></strong>

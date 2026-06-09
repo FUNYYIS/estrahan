@@ -1191,50 +1191,67 @@ async function loadMatches(container, limit = 10) {
 
     const THE_SPORTS_DB_KEY = '3';
     const SAUDI_LEAGUE_ID = '4668';
+    const WORLD_CUP_LEAGUE_ID = '4429';
+    const WORLD_CUP_SEASON = '2026';
     const today = getLocalDateKey();
 
     try {
-        const season = await getSaudiLeagueSeason(THE_SPORTS_DB_KEY, SAUDI_LEAGUE_ID);
+        const saudiSeason = await getSaudiLeagueSeason(THE_SPORTS_DB_KEY, SAUDI_LEAGUE_ID);
         const todayUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsday.php?d=${today}&s=Soccer`;
-        const seasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(season)}`;
-        const [todayResponse, seasonResponse] = await Promise.all([
+        const saudiSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(saudiSeason)}`;
+        const worldCupSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${WORLD_CUP_LEAGUE_ID}&s=${WORLD_CUP_SEASON}`;
+        const [todayResponse, saudiResponse, worldCupResponse, githubWorldCup] = await Promise.all([
             fetch(todayUrl),
-            fetch(seasonUrl)
+            fetch(saudiSeasonUrl),
+            fetch(worldCupSeasonUrl),
+            fetchWorldCupGithubFixtures().catch((error) => {
+                console.warn('World Cup GitHub fallback unavailable:', error);
+                return [];
+            })
         ]);
 
-        if (!todayResponse.ok || !seasonResponse.ok) {
-            throw new Error(`API returned status ${todayResponse.status}/${seasonResponse.status}`);
+        if (!todayResponse.ok || !saudiResponse.ok || !worldCupResponse.ok) {
+            throw new Error(`API returned status ${todayResponse.status}/${saudiResponse.status}/${worldCupResponse.status}`);
         }
 
-        const [todayData, seasonData] = await Promise.all([
+        const [todayData, saudiData, worldCupData] = await Promise.all([
             todayResponse.json(),
-            seasonResponse.json()
+            saudiResponse.json(),
+            worldCupResponse.json()
         ]);
 
-        if (!seasonData.events || !Array.isArray(seasonData.events)) {
-            container.innerHTML = `<p class="text-center">ما فيه مباريات متاحة للدوري السعودي حالياً.</p>`;
-            return;
-        }
-
-        const sortedEvents = seasonData.events
+        const saudiEvents = (saudiData.events || [])
             .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
             .sort((a, b) => `${a.dateEventLocal || a.dateEvent} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${b.dateEventLocal || b.dateEvent} ${b.strTimeLocal || b.strTime || ''}`));
         const todayMatches = (todayData.events || [])
-            .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
+            .filter((event) => [SAUDI_LEAGUE_ID, WORLD_CUP_LEAGUE_ID].includes(event.idLeague))
             .slice(0, limit);
-        const upcomingMatches = sortedEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
+        const saudiUpcoming = saudiEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
+        const sportsDbWorldCup = (worldCupData.events || [])
+            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID)
+            .map((event) => ({ ...event, strSource: 'TheSportsDB' }));
+        const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
+            .filter((event) => getEventDateKey(event) >= today)
+            .sort(compareSportsDbEvents)
+            .slice(0, limit);
 
         container.innerHTML = `
             <div class="panel">
-                <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">${escapeHtml(season)}</span></div>
+                <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">TheSportsDB</span></div>
                 <div class="cards-grid">
                     ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-head"><h2>المباريات الجاية</h2><span class="badge scheduled">Saudi Pro League</span></div>
+                <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">League 4668</span></div>
                 <div class="cards-grid">
-                    ${upcomingMatches.length ? upcomingMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية حالياً.</div>'}
+                    ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">League 4429 + GitHub fallback</span></div>
+                <div class="cards-grid">
+                    ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
                 </div>
             </div>
         `;
@@ -1243,6 +1260,83 @@ async function loadMatches(container, limit = 10) {
         console.error("Error fetching matches:", error);
         container.innerHTML = `<p class="text-center">ما قدرنا نجيب المباريات. جرّب مرة ثانية.</p>`;
     }
+}
+
+async function fetchWorldCupGithubFixtures() {
+    const [matchesResponse, teamsResponse] = await Promise.all([
+        fetch('https://raw.githubusercontent.com/rezarahiminia/worldcup2026/main/football.matches.json'),
+        fetch('https://raw.githubusercontent.com/rezarahiminia/worldcup2026/main/football.teams.json')
+    ]);
+
+    if (!matchesResponse.ok || !teamsResponse.ok) {
+        throw new Error(`GitHub World Cup fixtures returned ${matchesResponse.status}/${teamsResponse.status}`);
+    }
+
+    const [matches, teams] = await Promise.all([
+        matchesResponse.json(),
+        teamsResponse.json()
+    ]);
+    const teamsById = new Map((teams || []).map((team) => [String(team.id), team]));
+
+    return (matches || []).map((match) => normalizeGithubWorldCupMatch(match, teamsById));
+}
+
+function normalizeGithubWorldCupMatch(match, teamsById) {
+    const home = teamsById.get(String(match.home_team_id));
+    const away = teamsById.get(String(match.away_team_id));
+    const dateParts = parseWorldCupLocalDate(match.local_date);
+    const isFinished = String(match.finished).toUpperCase() === 'TRUE';
+    const isLive = match.time_elapsed && !['notstarted', 'finished'].includes(String(match.time_elapsed).toLowerCase());
+
+    return {
+        idEvent: `github-wc2026-${match.id}`,
+        idLeague: '4429',
+        strLeague: 'FIFA World Cup 2026',
+        strSeason: '2026',
+        strSource: 'GitHub schedule',
+        strHomeTeam: home?.name_en || 'TBD',
+        strAwayTeam: away?.name_en || 'TBD',
+        strHomeTeamBadge: '',
+        strAwayTeamBadge: '',
+        intHomeScore: isFinished ? Number(match.home_score || 0) : null,
+        intAwayScore: isFinished ? Number(match.away_score || 0) : null,
+        dateEvent: dateParts.date,
+        dateEventLocal: dateParts.date,
+        strTime: dateParts.time,
+        strTimeLocal: dateParts.time,
+        strStatus: isLive ? 'Live' : isFinished ? 'FT' : 'NS',
+        strGroup: match.group,
+        intRound: match.matchday
+    };
+}
+
+function parseWorldCupLocalDate(value = '') {
+    const [dateValue = '', timeValue = ''] = String(value).split(' ');
+    const [month, day, year] = dateValue.split('/');
+    const date = year && month && day
+        ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+        : '';
+    const time = timeValue ? `${timeValue}:00`.slice(0, 8) : '';
+    return { date, time };
+}
+
+function mergeWorldCupFixtures(primary = [], fallback = []) {
+    const merged = new Map();
+    fallback.forEach((event) => merged.set(getWorldCupMatchKey(event), event));
+    primary.forEach((event) => merged.set(getWorldCupMatchKey(event), event));
+    return Array.from(merged.values());
+}
+
+function getWorldCupMatchKey(event) {
+    return [
+        getEventDateKey(event),
+        (event.strHomeTeam || '').toLowerCase(),
+        (event.strAwayTeam || '').toLowerCase()
+    ].join('|');
+}
+
+function compareSportsDbEvents(a, b) {
+    return `${getEventDateKey(a)} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${getEventDateKey(b)} ${b.strTimeLocal || b.strTime || ''}`);
 }
 
 async function getSaudiLeagueSeason(apiKey, leagueId) {
@@ -1278,7 +1372,7 @@ function renderSportsDbMatchCard(event) {
     return `
         <article class="match-card card">
             <span class="badge ${statusClass}">${statusLabel}</span>
-            <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}</p>
+            <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}${event.strSource ? ` · ${escapeHtml(event.strSource)}` : ''}</p>
             <div class="match-teams">
                 <span><img src="${homeLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
                 <span><img src="${awayLogo}" alt="" class="w-10 h-10 mb-1" loading="lazy" decoding="async"> ${escapeHtml(event.strAwayTeam || 'فريق')}</span>

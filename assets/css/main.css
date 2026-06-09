@@ -856,14 +856,14 @@ tr:last-child td { border-bottom: 0; }
 
 .riyadh-header-art {
   position: absolute;
-  inset-inline: 225px 1.2rem;
+  inset-inline: 220px 0.5rem;
   bottom: 0.35rem;
-  width: calc(100% - 246px);
-  height: min(235px, 72%);
+  width: calc(100% - 230px);
+  height: min(250px, 78%);
   z-index: 1;
   object-fit: contain;
   object-position: bottom center;
-  opacity: 0.96;
+  opacity: 1;
   pointer-events: none;
 }
 

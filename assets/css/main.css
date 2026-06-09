@@ -2183,7 +2183,7 @@ body {
   position: relative;
   min-height: 100vh;
   isolation: isolate;
-  background: #F5F3EE;
+  background: transparent;
 }
 
 body::before,
@@ -2195,13 +2195,20 @@ body::after {
 }
 
 body::before {
-  z-index: -2;
+  z-index: 0;
   background: url("../images/riyadh-skyline-bg.jpg") center bottom / cover no-repeat;
 }
 
 body::after {
-  z-index: -1;
-  background: rgba(255, 255, 255, 0.88);
+  z-index: 0;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.app-shell,
+.custom-alert,
+.modal-backdrop {
+  position: relative;
+  z-index: 1;
 }
 
 .main {

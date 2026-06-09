@@ -1,16 +1,16 @@
 :root {
   color-scheme: light;
-  --bg: #f5efe3;
-  --surface: rgba(255, 251, 243, 0.9);
-  --surface-strong: #efe7d8;
-  --ink: #123d31;
-  --muted: #746f63;
-  --gold: #174f3e;
-  --gold-strong: #103b2f;
-  --date: #1c6b52;
+  --bg: #F5F3EE;
+  --surface: #fffdf8;
+  --surface-strong: #eeeae1;
+  --ink: #1C2B24;
+  --muted: #6f746d;
+  --gold: #1F5A46;
+  --gold-strong: #164535;
+  --date: #2E7A5E;
   --rose: #b86243;
-  --line: rgba(23, 79, 62, 0.13);
-  --shadow: 0 18px 45px rgba(54, 43, 28, 0.12);
+  --line: #E4E1D8;
+  --shadow: 0 14px 36px rgba(31, 50, 42, 0.09);
   --radius: 14px;
   font-family: "Tajawal", "Cairo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -1237,18 +1237,16 @@ tr:last-child td { border-bottom: 0; }
 .w-1\/3 { width: 33.333%; }
 
 body[data-theme="dark"] {
-  --bg: #f5efe3;
-  --surface: rgba(255, 251, 243, 0.9);
-  --surface-strong: #efe7d8;
-  --ink: #123d31;
+  --bg: #F5F3EE;
+  --surface: #fffdf8;
+  --surface-strong: #EEEAE1;
+  --ink: #1C2B24;
   --muted: #746f63;
-  --line: rgba(23, 79, 62, 0.13);
+  --line: #E4E1D8;
   background:
-    radial-gradient(circle at 14% 12%, rgba(23, 79, 62, 0.12), transparent 28rem),
-    linear-gradient(135deg, rgba(250, 246, 238, 0.98), rgba(239, 231, 216, 0.98)),
-    url("../images/al-istiraha-pattern.svg");
+    linear-gradient(135deg, rgba(245, 243, 238, 0.98), rgba(245, 243, 238, 0.98));
   background-color: var(--bg);
-  background-size: auto, auto, 230px;
+  background-size: auto;
 }
 
 body[data-theme="dark"] .sidebar,
@@ -1377,4 +1375,415 @@ body[data-theme="dark"] .topbar {
   .chat-form { grid-template-columns: 1fr; }
   .hero h2 { font-size: 2.6rem; }
   #chat-form { grid-template-columns: 1fr; }
+}
+
+/* Reference dashboard skin */
+body {
+  background: #F5F3EE;
+  background-image: none;
+  color: #1C2B24;
+}
+
+.app-shell {
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 8px 8px 0;
+  height: calc(100vh - 16px);
+  padding: 28px 18px;
+  border-radius: 28px 0 0 28px;
+  background: linear-gradient(180deg, #1F5A46, #164535);
+  box-shadow: 0 20px 42px rgba(31, 90, 70, 0.22);
+}
+
+.brand {
+  min-height: 170px;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0 0 1.25rem;
+  color: #fffaf1;
+}
+
+.brand img {
+  width: 100px;
+  height: 100px;
+}
+
+.brand strong {
+  font-size: 1.55rem;
+}
+
+.brand small {
+  color: rgba(255, 250, 241, 0.82);
+  font-size: 0.95rem;
+}
+
+.nav {
+  gap: 0.72rem;
+  margin-top: 0.8rem;
+}
+
+.nav a {
+  min-height: 58px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  color: rgba(255, 250, 241, 0.9);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.nav a svg {
+  margin-inline-start: auto;
+  color: #d8d3b4;
+}
+
+.nav a.active {
+  color: #164535;
+  background: #F5F3EE;
+  box-shadow: none;
+}
+
+.sidebar-logout {
+  width: 100%;
+  min-height: 58px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 0 1rem;
+  border: 1px solid rgba(245, 243, 238, 0.18);
+  border-radius: 12px;
+  color: #fffaf1;
+  background: rgba(245, 243, 238, 0.08);
+  font-weight: 800;
+}
+
+.sidebar-logout svg {
+  color: #d8d3b4;
+}
+
+.main {
+  padding: 24px 32px 22px 34px;
+}
+
+.topbar {
+  direction: ltr;
+  position: relative;
+  min-height: 76px;
+  padding: 0 0 10px;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.top-profile {
+  direction: rtl;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.notify-bell {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  color: #164535;
+  background: transparent;
+}
+
+.notify-bell svg {
+  width: 30px;
+  height: 30px;
+}
+
+.notify-bell span {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #1F5A46;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.profile-avatar {
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #eee6d6;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-copy {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.profile-copy strong {
+  color: #1C2B24;
+  font-size: 1.15rem;
+}
+
+.profile-copy small {
+  color: #4f5c55;
+}
+
+.top-actions {
+  display: none;
+}
+
+.view {
+  padding-top: 0;
+}
+
+.dashboard-home {
+  gap: 14px;
+}
+
+.welcome-panorama {
+  direction: ltr;
+  min-height: 290px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.weather-tile {
+  direction: rtl;
+  width: 206px;
+  min-height: 206px;
+  align-self: end;
+  margin: 0 0 16px;
+  padding: 1rem;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #1F5A46, #164535);
+}
+
+.weather-tile strong {
+  font-size: 1.8rem;
+}
+
+.weather-row b {
+  font-size: 1.55rem;
+}
+
+.welcome-center {
+  direction: rtl;
+  grid-column: 2;
+  padding-top: 30px;
+}
+
+.welcome-center span {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #164535;
+}
+
+.welcome-center h2 {
+  font-size: 4.7rem;
+  color: #1F5A46;
+}
+
+.welcome-center p {
+  color: #164535;
+  font-size: 1.18rem;
+}
+
+.riyadh-header-art {
+  left: 205px;
+  right: 0;
+  bottom: 0;
+  width: calc(100% - 205px);
+  height: 255px;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.dashboard-shortcuts {
+  direction: ltr;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-shortcuts a {
+  direction: rtl;
+  min-height: 88px;
+  border: 1px solid #E4E1D8;
+  border-radius: 12px;
+  color: #164535;
+  background: rgba(255, 253, 248, 0.86);
+  box-shadow: 0 10px 24px rgba(31, 50, 42, 0.08);
+}
+
+.dashboard-shortcuts svg {
+  width: 31px;
+  height: 31px;
+}
+
+.dashboard-grid {
+  direction: ltr;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-card {
+  direction: rtl;
+  min-height: 188px;
+  border: 1px solid #E4E1D8;
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 50, 42, 0.08);
+  padding: 1rem;
+}
+
+.dashboard-card:nth-child(1),
+.dashboard-card:nth-child(2),
+.dashboard-card:nth-child(3) {
+  grid-column: span 4;
+  min-height: 306px;
+}
+
+.dashboard-card:nth-child(n+4) {
+  grid-column: span 3;
+}
+
+.qattah-summary {
+  background: linear-gradient(160deg, #1F5A46, #164535);
+  box-shadow: 0 14px 30px rgba(31, 90, 70, 0.22);
+}
+
+.qattah-meter {
+  width: 150px;
+}
+
+.dashboard-action {
+  min-height: 44px;
+  border-radius: 10px;
+  background: #EEEAE1;
+}
+
+.qattah-summary .dashboard-action {
+  background: rgba(255, 253, 248, 0.12);
+}
+
+.compact-feed .list-item-card,
+.compact-feed .match-card,
+.compact-feed .news-card {
+  border-color: #E4E1D8;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.panel,
+.card,
+.stat,
+.table-wrap,
+.chat-box,
+.list-item-card,
+.content-body,
+#chat-box {
+  border-color: #E4E1D8;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 50, 42, 0.08);
+}
+
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .stat,
+body[data-theme="dark"] .table-wrap,
+body[data-theme="dark"] .chat-box,
+body[data-theme="dark"] .list-item-card,
+body[data-theme="dark"] #chat-box,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .alert-content {
+  background: rgba(255, 253, 248, 0.9);
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    margin: 0;
+    border-radius: 24px 0 0 24px;
+  }
+
+  .top-actions {
+    display: none;
+  }
+
+  .welcome-panorama {
+    min-height: 410px;
+    grid-template-columns: 1fr;
+  }
+
+  .weather-tile {
+    margin: 0;
+    align-self: start;
+  }
+
+  .welcome-center {
+    grid-column: 1;
+  }
+
+  .riyadh-header-art {
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 170px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .dashboard-card:nth-child(n) {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 14px;
+  }
+
+  .topbar {
+    min-height: 64px;
+  }
+
+  .dashboard-shortcuts,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card:nth-child(n) {
+    grid-column: span 1;
+  }
+
+  .weather-tile {
+    width: 180px;
+    min-height: 180px;
+  }
+
+  .welcome-center h2 {
+    font-size: 3.2rem;
+  }
 }

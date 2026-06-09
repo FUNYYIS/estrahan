@@ -55,6 +55,9 @@ const onlineState = document.getElementById('onlineState');
 const notifyBtn = document.getElementById('notifyBtn');
 const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
+const logoutButton = document.getElementById('logout-button');
+const profileName = document.querySelector('.profile-copy strong');
+const profileSince = document.querySelector('.profile-copy small');
 
 // --- حالة التطبيق ---
 let currentUser = null; 
@@ -238,10 +241,18 @@ function setOnlineState() {
     onlineState.textContent = navigator.onLine ? 'متصل' : 'وضع عدم الاتصال';
 }
 
+function syncShellUserState() {
+    if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
+    if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
+    if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : 'أهلاً سالم';
+    if (profileSince) profileSince.textContent = currentUser ? 'عضو منذ يناير 2024' : 'حياك الأمير';
+}
+
 menuBtn?.addEventListener('click', () => {
     if (!currentUser) return;
     sidebar?.classList.toggle('open');
 });
+logoutButton?.addEventListener('click', handleLogout);
 notifyBtn?.addEventListener('click', async () => {
     if (!('Notification' in window)) {
         showAlert('متصفحك ما يدعم إشعارات الويب.');
@@ -780,15 +791,7 @@ async function handleLogout() {
 
 function loadHomePageData() {
     if (!currentUser) return;
-    
-    const welcomeMsg = document.getElementById('welcome-message');
-    if (welcomeMsg) {
-        const welcomeTitle = document.getElementById('home-welcome-title') || welcomeMsg.querySelector('h1, h2');
-        if (welcomeTitle) {
-            welcomeTitle.textContent = `أرحب يا ${currentUser.name || 'المطناخ'}`;
-        }
-    }
-    
+
     try {
         loadHomePrayerAndDate();
         loadHomeMatches();
@@ -1364,7 +1367,7 @@ function initApp() {
                 if (userDoc.exists()) {
                     currentUser = { uid: user.uid, ...userDoc.data() };
                     document.body.classList.add('is-authenticated');
-                    bottomNav.style.display = 'grid';
+                    syncShellUserState();
                     appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
@@ -1380,7 +1383,7 @@ function initApp() {
                     await setDoc(doc(db, "users", user.uid), repairedProfile);
                     currentUser = { uid: user.uid, ...repairedProfile };
                     document.body.classList.add('is-authenticated');
-                    bottomNav.style.display = 'grid';
+                    syncShellUserState();
                     appLogo.style.display = 'block';
                     await renderPage('#home');
                 }
@@ -1389,7 +1392,7 @@ function initApp() {
                 currentUser = null;
                 document.body.classList.remove('is-authenticated');
                 sidebar?.classList.remove('open');
-                bottomNav.style.display = 'none';
+                syncShellUserState();
                 appLogo.style.display = 'block';
                 await renderPage(currentPublicRoute());
             }
@@ -1398,7 +1401,7 @@ function initApp() {
             currentUser = null;
             document.body.classList.remove('is-authenticated');
             sidebar?.classList.remove('open');
-            bottomNav.style.display = 'none';
+            syncShellUserState();
             appLogo.style.display = 'block';
             await renderPage(currentPublicRoute());
         }

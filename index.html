@@ -14,7 +14,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="assets/images/al-istiraha-icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/images/al-istiraha-icon.svg">
-    <meta name="theme-color" content="#174f3e">
+    <meta name="theme-color" content="#1F5A46">
 
     <link rel="stylesheet" href="assets/css/main.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
@@ -40,30 +40,44 @@
             </a>
 
             <nav id="bottom-nav" class="nav" aria-label="Primary navigation" style="display: none;">
-                <a href="#home" class="nav-link"><i data-lucide="home"></i><span>المجلس</span></a>
-                <a href="#members" class="nav-link"><i data-lucide="users"></i><span>المطانيخ</span></a>
-                <a href="#payments" class="nav-link"><i data-lucide="credit-card"></i><span>القطة</span></a>
-                <a href="#chat" class="nav-link"><i data-lucide="message-square"></i><span>السوالف</span></a>
-                <span class="nav-divider">الخدمات</span>
-                <a href="#prayer" class="nav-link"><i data-lucide="moon-star"></i><span>مواقيت الصلاة</span></a>
-                <a href="#qibla" class="nav-link"><i data-lucide="compass"></i><span>القبلة</span></a>
+                <a href="#home" class="nav-link"><i data-lucide="home"></i><span>الرئيسية</span></a>
+                <a href="#payments" class="nav-link"><i data-lucide="wallet-cards"></i><span>القطة</span></a>
                 <a href="#matches" class="nav-link"><i data-lucide="trophy"></i><span>المباريات</span></a>
                 <a href="#news" class="nav-link"><i data-lucide="newspaper"></i><span>الأخبار</span></a>
-                <span class="nav-divider">الحساب</span>
-                <a href="#settings" class="nav-link"><i data-lucide="settings"></i><span>الضبط</span></a>
+                <a href="#chat" class="nav-link"><i data-lucide="message-square"></i><span>الدردشة</span></a>
+                <a href="#members" class="nav-link"><i data-lucide="users"></i><span>الأعضاء</span></a>
+                <a href="#prayer" class="nav-link"><i data-lucide="landmark"></i><span>الصلاة</span></a>
+                <a href="#services" class="nav-link"><i data-lucide="folder"></i><span>الملفات</span></a>
+                <a href="#settings" class="nav-link"><i data-lucide="settings"></i><span>الإعدادات</span></a>
             </nav>
+
+            <button id="logout-button" class="sidebar-logout" type="button">
+                <i data-lucide="log-out"></i>
+                <span>تسجيل خروج</span>
+            </button>
         </aside>
 
         <main class="main">
             <header class="topbar">
                 <button id="menuBtn" class="icon-btn mobile-only" type="button" aria-label="Open menu"><i data-lucide="menu"></i></button>
-                <div>
-                    <p id="todayLabel" class="eyebrow"></p>
-                    <h1 id="pageTitle">Al Istiraha</h1>
+                <div class="top-profile">
+                    <button id="notifyBtn" class="notify-bell" type="button" aria-label="Enable notifications">
+                        <i data-lucide="bell"></i>
+                        <span>3</span>
+                    </button>
+                    <div class="profile-avatar">
+                        <img src="assets/images/logo.png" alt="">
+                    </div>
+                    <div class="profile-copy">
+                        <strong>أهلاً سالم</strong>
+                        <small>عضو منذ يناير 2024</small>
+                    </div>
+                    <i data-lucide="chevron-down"></i>
                 </div>
                 <div class="top-actions">
+                    <p id="todayLabel" class="eyebrow"></p>
+                    <h1 id="pageTitle">Al Istiraha</h1>
                     <span id="onlineState" class="status-pill"></span>
-                    <button id="notifyBtn" class="icon-btn" type="button" aria-label="Enable notifications"><i data-lucide="bell"></i></button>
                 </div>
             </header>
 

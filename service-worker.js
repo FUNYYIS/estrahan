@@ -1,4 +1,4 @@
-const CACHE_NAME = 'al-istiraha-cache-v32';
+const CACHE_NAME = 'al-istiraha-cache-v33';
 
 const urlsToCache = [
   '/',
@@ -14,6 +14,7 @@ const urlsToCache = [
   '/assets/images/al-istiraha-majlis.svg',
   '/assets/images/al-istiraha-news-majlis.svg',
   '/assets/images/al-istiraha-news-service.svg',
+  '/assets/images/riyadh-header.svg',
   '/welcome.mp4',
   '/pages/login.html',
   '/pages/register.html',

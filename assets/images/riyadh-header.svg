@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Riyadh skyline and metro illustration">
+  <defs>
+    <linearGradient id="blueShade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#e8f0f5"/>
+      <stop offset="1" stop-color="#cddce7"/>
+    </linearGradient>
+    <style>
+      .line{fill:none;stroke:#202020;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+      .thin{fill:none;stroke:#202020;stroke-width:.8;stroke-linecap:round;stroke-linejoin:round}
+      .pale{fill:url(#blueShade);opacity:.8}
+      .green{fill:#59a766;stroke:#202020;stroke-width:1}
+      .white{fill:#f8f8f5;stroke:#202020;stroke-width:1.25;stroke-linejoin:round}
+      .glass{fill:#eef5f8;stroke:#202020;stroke-width:1.15;stroke-linejoin:round}
+    </style>
+  </defs>
+
+  <rect width="640" height="360" fill="#f8f8f5"/>
+  <path class="pale" d="M2 164 82 204 157 166 238 210 333 155 425 199 514 153 639 211v122H2z"/>
+
+  <g id="clouds">
+    <path class="thin" d="M18 72c5-12 20-8 22 2 8-9 22-2 20 9h-48c-3-8 2-12 6-11z"/>
+    <path class="thin" d="M177 85c5-10 19-7 20 1 8-8 21-1 19 9h-45c-2-7 2-10 6-10z"/>
+    <path class="thin" d="M307 160c4-8 15-5 16 1 6-6 16 0 14 8h-35c-2-5 1-8 5-9z"/>
+    <path class="thin" d="M598 63c4-9 17-6 18 1 7-7 19-1 17 8h-41c-3-6 1-9 6-9z"/>
+    <path class="thin" d="M18 95h33M184 105h26M604 82h23"/>
+  </g>
+
+  <g id="airplane" transform="translate(344 70) rotate(11)">
+    <path class="white" d="M0 25 88 6c10-2 18 0 25 7l-47 18-50 9z"/>
+    <path class="line" d="m38 18-24-17 42 12M65 22l-11 26 28-30M78 16l12 9"/>
+    <path class="thin" d="M24 25h9M39 22h8M54 18h8"/>
+  </g>
+
+  <g id="buildings">
+    <path class="glass" d="M23 79 84 109v220H23z"/>
+    <path class="line" d="M23 101h57M23 123h57M23 145h57M23 167h57M23 189h57M23 211h57M23 233h57M23 255h57M23 277h57M23 299h57"/>
+    <path class="white" d="M104 176 149 145v184h-45z"/>
+    <path class="line" d="m120 184 18-12v138M151 194h32l28 135h-60z"/>
+    <path class="thin" d="M166 205h14M168 226h17M172 247h17M177 268h18"/>
+
+    <path class="white" d="M248 97h65l-21 232h-68z"/>
+    <path class="line" d="M270 111c17 32 21 56 12 74-17-19-22-45-12-74z"/>
+    <path class="thin" d="M235 212h55M232 242h52M229 272h49"/>
+
+    <path class="white" d="M334 220h43v109h-43z"/>
+    <path class="line" d="M330 222h52M337 240h10M359 240h10M337 262h10M359 262h10M337 284h10M359 284h10"/>
+    <path class="white" d="M387 159h76v170h-76z"/>
+    <circle class="line" cx="424" cy="194" r="23"/>
+    <path class="line" d="M395 228h16M423 228h16M395 249h16M423 249h16M395 270h16M423 270h16"/>
+    <path class="white" d="M499 111 567 143v186h-68z"/>
+    <path class="line" d="M514 123v188M535 133v178M555 143v168M500 164h67M500 186h67M500 208h67M500 230h67M500 252h67M500 274h67"/>
+
+    <path class="white" d="M599 133h14v196h-14z"/>
+    <path class="line" d="M606 132V91M591 199h31M595 188c2-22 22-22 24 0"/>
+  </g>
+
+  <g id="dome">
+    <path class="white" d="M313 246h43v83h-43z"/>
+    <path class="line" d="M311 246c2-20 43-20 46 0M335 208v23M322 229h26"/>
+    <path class="thin" d="M321 264h8M340 264h8M321 285h8M340 285h8"/>
+  </g>
+
+  <g id="metro">
+    <path class="white" d="M76 268c76 0 161-2 263 3 85 4 154 15 219 43H91c-18-13-24-28-15-46z"/>
+    <path class="line" d="M79 268c134 1 274-3 406 22 31 6 57 14 75 24M94 312h451"/>
+    <path class="line" d="M116 276h48l18 29h-64zM196 277h52l18 28h-61zM279 278h58l12 31h-63zM363 281h68l6 29h-68zM455 288h54l16 22h-64z"/>
+    <path class="thin" d="M94 313v25M152 313v25M219 313v25M286 313v25M353 313v25M420 313v25M487 313v25"/>
+    <path class="thin" d="M66 338h88M178 338h63M280 338h105M420 338h83M533 338h64"/>
+  </g>
+
+  <path class="green" d="M31 319c17-3 29 2 36 15H31zM581 321c12-5 26-1 34 13h-37z"/>
+  <path class="thin" d="M0 333h640M37 349h71M139 349h33M206 349h83M332 349h101M473 349h73M578 349h42"/>
+</svg>

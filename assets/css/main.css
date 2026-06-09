@@ -791,8 +791,7 @@ tr:last-child td { border-bottom: 0; }
   padding: 1.4rem;
   border-radius: 0 0 24px 24px;
   background:
-    linear-gradient(180deg, rgba(255, 251, 243, 0.75), rgba(245, 239, 227, 0.92)),
-    radial-gradient(circle at 58% 58%, rgba(23, 79, 62, 0.12), transparent 21rem);
+    linear-gradient(180deg, rgba(255, 251, 243, 0.72), rgba(245, 239, 227, 0.86));
 }
 
 .welcome-center {
@@ -800,7 +799,8 @@ tr:last-child td { border-bottom: 0; }
   z-index: 2;
   text-align: center;
   align-self: start;
-  padding-top: 1.2rem;
+  padding-top: 0.6rem;
+  text-shadow: 0 1px 0 rgba(255, 251, 243, 0.68);
 }
 
 .welcome-center span {
@@ -854,39 +854,17 @@ tr:last-child td { border-bottom: 0; }
   font-size: 1.45rem;
 }
 
-.riyadh-skyline {
+.riyadh-header-art {
   position: absolute;
-  inset-inline: 250px 1rem;
-  bottom: 0.55rem;
-  height: 210px;
+  inset-inline: 225px 1.2rem;
+  bottom: 0.35rem;
+  width: calc(100% - 246px);
+  height: min(235px, 72%);
   z-index: 1;
-  opacity: 0.78;
-  border-bottom: 3px solid rgba(23, 79, 62, 0.36);
-}
-
-.tower {
-  position: absolute;
-  bottom: 0;
-  width: 46px;
-  border: 2px solid rgba(17, 61, 49, 0.45);
-  border-bottom: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(23,79,62,0.08));
-}
-
-.tower-1 { right: 8%; height: 188px; border-radius: 28px 28px 0 0; }
-.tower-2 { right: 24%; height: 128px; width: 36px; }
-.tower-3 { left: 22%; height: 154px; width: 52px; transform: skewX(-7deg); }
-.tower-4 { left: 8%; height: 96px; width: 32px; }
-
-.train-line {
-  position: absolute;
-  right: 23%;
-  bottom: 18px;
-  width: 42%;
-  height: 26px;
-  border: 3px solid rgba(23, 79, 62, 0.44);
-  border-radius: 999px 999px 4px 4px;
-  background: rgba(255, 251, 243, 0.68);
+  object-fit: contain;
+  object-position: bottom center;
+  opacity: 0.96;
+  pointer-events: none;
 }
 
 .dashboard-shortcuts {
@@ -1363,8 +1341,9 @@ body[data-theme="dark"] .topbar {
     align-self: start;
     justify-self: start;
   }
-  .riyadh-skyline {
+  .riyadh-header-art {
     inset-inline: 1rem;
+    width: calc(100% - 2rem);
     height: 170px;
   }
   .dashboard-shortcuts {

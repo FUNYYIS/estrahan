@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="الشقردية">
+  <defs>
+    <linearGradient id="bg" x1="28" y1="18" x2="162" y2="172" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2E7A5E"/>
+      <stop offset="1" stop-color="#164535"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="55" y1="45" x2="136" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0D68A"/>
+      <stop offset="1" stop-color="#B58A38"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="48" fill="#F5F3EE"/>
+  <rect x="18" y="18" width="156" height="156" rx="42" fill="url(#bg)"/>
+  <path d="M57 122c16 18 62 18 78 0 8-9 7-23-2-31-8-8-22-8-31 0l-6 6-6-6c-9-8-23-8-31 0-9 8-10 22-2 31Z" fill="#FFF8E8" opacity=".96"/>
+  <path d="M62 72c11-15 27-23 48-23 13 0 25 3 35 9-3 8-10 14-20 18-16-8-32-7-47 2-8 5-15 3-16-6Z" fill="url(#gold)"/>
+  <path d="M57 131c22 17 56 18 79 1" fill="none" stroke="url(#gold)" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="73" cy="105" r="5" fill="#164535"/>
+  <circle cx="119" cy="105" r="5" fill="#164535"/>
+</svg>

@@ -5,17 +5,24 @@
     </div>
     <div class="section-stack">
         <a href="#profile-settings" class="list-item-card">
-            <div class="flex items-center gap-4"><i data-lucide="user-circle-2"></i><span class="font-bold">بياناتك</span></div>
+            <div class="flex items-center gap-4"><i data-lucide="user-circle-2"></i><span class="font-bold">بياناتك وصورتك</span></div>
             <i data-lucide="chevron-left"></i>
         </a>
         <a href="#notifications-settings" class="list-item-card">
             <div class="flex items-center gap-4"><i data-lucide="bell"></i><span class="font-bold">تنبيهاتك</span></div>
             <i data-lucide="chevron-left"></i>
         </a>
-        <div class="list-item-card">
-            <div class="flex items-center gap-4"><i data-lucide="moon"></i><span class="font-bold">الوضع الليلي</span></div>
-            <label class="switch"><input type="checkbox" id="theme-toggle"><span class="slider"></span></label>
+        <a href="#prayer" class="list-item-card">
+            <div class="flex items-center gap-4"><i data-lucide="moon-star"></i><span class="font-bold">الصلاة والقبلة</span></div>
+            <i data-lucide="chevron-left"></i>
+        </a>
+        <div class="list-item-card theme-setting-card">
+            <div class="flex items-center gap-4"><i data-lucide="palette"></i><span class="font-bold">المظهر</span></div>
+            <div class="theme-choice" role="group" aria-label="اختيار المظهر">
+                <button type="button" data-theme-choice="light"><i data-lucide="sun"></i><span>نهاري</span></button>
+                <button type="button" data-theme-choice="dark"><i data-lucide="moon"></i><span>ليلي</span></button>
+            </div>
         </div>
     </div>
-    <button id="logout-button" class="btn btn-danger mt-8">اطلع</button>
+    <button id="settings-logout-button" class="btn btn-danger mt-8">اطلع</button>
 </section>

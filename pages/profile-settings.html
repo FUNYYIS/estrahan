@@ -1,20 +1,34 @@
-<section class="panel">
+<section class="panel profile-panel">
     <div class="panel-head">
         <h2><i data-lucide="user-circle-2"></i> بياناتك</h2>
         <a href="#settings" class="service-link">الضبط</a>
     </div>
-    <div class="cards-grid">
-        <article class="stat">
-            <span>اسمك</span>
-            <strong id="profile-name">...</strong>
-        </article>
-        <article class="stat">
-            <span>رقم الجوال</span>
-            <strong id="profile-phone">...</strong>
-        </article>
-        <article class="stat">
-            <span>الحالة</span>
-            <strong>من المطانيخ</strong>
-        </article>
+
+    <div class="profile-editor">
+        <div class="profile-photo-card">
+            <img id="profile-avatar-preview" src="assets/images/shagrdiyah-mark.svg" alt="" loading="lazy" decoding="async">
+            <label class="ghost upload-button" for="profile-avatar-input">
+                <i data-lucide="camera"></i>
+                غيّر الصورة
+            </label>
+            <input id="profile-avatar-input" type="file" accept="image/*" class="visually-hidden">
+            <p class="muted">اختر صورة خفيفة وواضحة عشان تطلع مرتبة بكل مكان.</p>
+        </div>
+
+        <form id="profile-form" class="profile-form">
+            <div class="input-group">
+                <label for="profile-name-input">اسمك</label>
+                <input type="text" id="profile-name-input" autocomplete="name" required>
+            </div>
+            <div class="input-group">
+                <label for="profile-phone-input">رقم جوالك</label>
+                <input type="tel" id="profile-phone-input" placeholder="05XXXXXXXX" autocomplete="tel">
+            </div>
+            <button type="submit" class="btn">
+                <i data-lucide="save"></i>
+                حفظ البيانات
+            </button>
+            <p id="profile-save-status" class="auth-status muted" aria-live="polite"></p>
+        </form>
     </div>
 </section>

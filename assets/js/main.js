@@ -58,6 +58,7 @@ const sidebar = document.querySelector('.sidebar');
 const logoutButton = document.getElementById('logout-button');
 const profileName = document.querySelector('.profile-copy strong');
 const profileSince = document.querySelector('.profile-copy small');
+const shellAvatar = document.getElementById('shell-avatar');
 
 // --- حالة التطبيق ---
 let currentUser = null;
@@ -68,13 +69,12 @@ const routeTitles = {
     '#login': 'أقلط',
     '#register': 'سجل معنا',
     '#home': 'المجلس',
-    '#members': 'المطانيخ',
+    '#members': 'الربع',
     '#payments': 'القطة الشهرية',
     '#chat': 'السوالف',
     '#settings': 'الضبط',
     '#profile-settings': 'بياناتك',
     '#notifications-settings': 'تنبيهاتك',
-    '#services': 'الخدمات',
     '#prayer': 'الصلاة',
     '#qibla': 'القبلة',
     '#matches': 'مباريات اليوم',
@@ -245,7 +245,8 @@ function syncShellUserState() {
     if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
-    if (profileSince) profileSince.textContent = currentUser ? 'عضو منذ يناير 2024' : '';
+    if (profileSince) profileSince.textContent = currentUser ? 'من الربع الشقردية' : '';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/shagrdiyah-mark.svg';
 }
 
 menuBtn?.addEventListener('click', () => {
@@ -261,9 +262,9 @@ notifyBtn?.addEventListener('click', async () => {
 
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-        new Notification('Al Istiraha', {
+        new Notification('الشقردية', {
             body: 'تم تشغيل التنبيهات يا ذيب.',
-            icon: 'assets/images/al-istiraha-icon.svg'
+            icon: 'assets/images/shagrdiyah-mark.svg'
         });
     }
 });
@@ -281,7 +282,6 @@ const routes = {
     '#settings': 'settings.html',
     '#profile-settings': 'profile-settings.html',
     '#notifications-settings': 'notifications-settings.html',
-    '#services': 'services.html',
     '#prayer': 'prayer.html',
     '#qibla': 'qibla.html',
     '#matches': 'matches.html',
@@ -307,7 +307,7 @@ function updateActiveNav(hash) {
         }
     });
 
-    if (pageTitle) pageTitle.textContent = routeTitles[hash] || 'Al Istiraha';
+    if (pageTitle) pageTitle.textContent = routeTitles[hash] || 'الشقردية';
     if (todayLabel) {
         todayLabel.textContent = new Intl.DateTimeFormat('ar-SA', {
             weekday: 'long',
@@ -407,7 +407,7 @@ function attachEventListeners(hash) {
     }
 
     if (pageId === 'settings') {
-        const logoutBtn = document.getElementById('logout-button');
+        const logoutBtn = document.getElementById('settings-logout-button');
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
         const themeToggle = document.getElementById('theme-toggle');
@@ -415,6 +415,7 @@ function attachEventListeners(hash) {
             themeToggle.checked = (localStorage.getItem('al-istiraha-theme') === 'dark');
             themeToggle.addEventListener('change', toggleTheme);
         }
+        setupThemeChoices();
     }
 
     if (pageId === 'chat') {
@@ -430,6 +431,10 @@ function attachEventListeners(hash) {
         updateThemeButtons();
     }
 
+    if (pageId === 'profile-settings') {
+        setupProfileEditor();
+    }
+
     if (pageId === 'payments') {
         const copyIbanButton = document.getElementById('copy-iban-button');
         if (copyIbanButton) {
@@ -440,6 +445,109 @@ function attachEventListeners(hash) {
     if (pageId === 'notifications-settings') {
         setupNotificationToggles();
     }
+}
+
+function setupThemeChoices() {
+    const currentTheme = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+        const theme = button.dataset.themeChoice === 'dark' ? 'dark' : 'light';
+        button.classList.toggle('active', theme === currentTheme);
+        button.addEventListener('click', () => {
+            localStorage.setItem('al-istiraha-theme', theme);
+            applyTheme(theme);
+            setupThemeChoices();
+        }, { once: true });
+    });
+}
+
+function setupProfileEditor() {
+    if (!currentUser) return;
+
+    const form = document.getElementById('profile-form');
+    const nameInput = document.getElementById('profile-name-input');
+    const phoneInput = document.getElementById('profile-phone-input');
+    const avatarInput = document.getElementById('profile-avatar-input');
+    const avatarPreview = document.getElementById('profile-avatar-preview');
+    const status = document.getElementById('profile-save-status');
+
+    if (nameInput) nameInput.value = currentUser.name || '';
+    if (phoneInput) phoneInput.value = currentUser.phone || '';
+    if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/shagrdiyah-mark.svg';
+
+    avatarInput?.addEventListener('change', async () => {
+        const file = avatarInput.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showAlert('اختر صورة صحيحة يا ذيب.');
+            return;
+        }
+
+        try {
+            if (status) status.textContent = 'نجهز الصورة...';
+            const avatarUrl = await resizeImageToDataUrl(file, 360);
+            await updateDoc(doc(db, "users", currentUser.uid), { avatarUrl });
+            currentUser = { ...currentUser, avatarUrl };
+            if (avatarPreview) avatarPreview.src = avatarUrl;
+            syncShellUserState();
+            if (status) status.textContent = 'تم تحديث الصورة.';
+        } catch (error) {
+            console.error('Avatar update failed:', error);
+            if (status) status.textContent = '';
+            showAlert('ما قدرنا نحدث الصورة. جرّب صورة أخف.');
+        }
+    });
+
+    form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const nextName = nameInput?.value.trim() || '';
+        const nextPhone = phoneInput?.value.trim() || '';
+
+        if (!nextName) {
+            showAlert('اكتب اسمك عشان نحفظ البيانات.');
+            return;
+        }
+
+        try {
+            setFormLoading(form, true, 'جاري الحفظ...');
+            if (status) status.textContent = 'نحفظ بياناتك...';
+            await updateDoc(doc(db, "users", currentUser.uid), {
+                name: nextName,
+                phone: nextPhone,
+                updatedAt: serverTimestamp()
+            });
+            currentUser = { ...currentUser, name: nextName, phone: nextPhone };
+            syncShellUserState();
+            if (status) status.textContent = 'تم حفظ بياناتك.';
+        } catch (error) {
+            console.error('Profile update failed:', error);
+            showAlert('ما قدرنا نحفظ البيانات. جرّب مرة ثانية.');
+            if (status) status.textContent = '';
+        } finally {
+            setFormLoading(form, false);
+        }
+    });
+}
+
+function resizeImageToDataUrl(file, maxSize = 360) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+            const image = new Image();
+            image.onerror = reject;
+            image.onload = () => {
+                const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.width * scale));
+                canvas.height = Math.max(1, Math.round(image.height * scale));
+                const context = canvas.getContext('2d');
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.78));
+            };
+            image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function setupNotificationToggles() {
@@ -794,6 +902,9 @@ function loadHomePageData() {
 
     try {
         loadHomePrayerAndDate();
+        loadHomeWeather();
+        loadHomeMembersSummary();
+        loadHomeChatPreview();
         loadHomeMatches();
         loadHomeNews();
     } catch (error) {
@@ -1070,10 +1181,136 @@ async function loadHomePrayerAndDate() {
     );
 }
 
+async function loadHomeWeather() {
+    const tempElement = document.getElementById('weather-temp');
+    const descElement = document.getElementById('weather-desc');
+    const locationElement = document.getElementById('weather-location');
+    if (!tempElement || !descElement) return;
+
+    const fallback = { latitude: 24.7136, longitude: 46.6753, label: 'الرياض' };
+    const coords = await getCurrentPositionSafe().catch(() => fallback);
+
+    try {
+        if (locationElement) locationElement.textContent = coords.label || 'موقعك';
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude}&longitude=${coords.longitude}&current=temperature_2m,weather_code&timezone=auto`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Open-Meteo returned ${response.status}`);
+        const data = await response.json();
+        const current = data.current || {};
+        tempElement.textContent = Number.isFinite(current.temperature_2m)
+            ? `${Math.round(current.temperature_2m)}°`
+            : '--°';
+        descElement.textContent = weatherCodeLabel(current.weather_code);
+    } catch (error) {
+        console.warn('Weather unavailable:', error);
+        tempElement.textContent = '--°';
+        descElement.textContent = 'الطقس غير متاح';
+    }
+}
+
+function getCurrentPositionSafe() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation unavailable'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                label: 'موقعك'
+            }),
+            reject,
+            { timeout: 4200, maximumAge: 600000 }
+        );
+    });
+}
+
+function weatherCodeLabel(code) {
+    const labels = {
+        0: 'صحو',
+        1: 'غالباً صافي',
+        2: 'غيم خفيف',
+        3: 'غائم',
+        45: 'ضباب',
+        48: 'ضباب كثيف',
+        51: 'رذاذ خفيف',
+        53: 'رذاذ',
+        55: 'رذاذ قوي',
+        61: 'مطر خفيف',
+        63: 'مطر',
+        65: 'مطر قوي',
+        80: 'زخات خفيفة',
+        81: 'زخات مطر',
+        82: 'زخات قوية',
+        95: 'رعد'
+    };
+    return labels[code] || 'طقس متغير';
+}
+
+async function loadHomeMembersSummary() {
+    const membersCount = document.getElementById('home-members-count');
+    const activeCount = document.getElementById('home-active-count');
+    const unpaidCount = document.getElementById('home-unpaid-count');
+    const percentElement = document.getElementById('home-qattah-percent');
+    const paidElement = document.getElementById('home-paid-count');
+    const lateElement = document.getElementById('home-late-count');
+    const meter = document.getElementById('home-qattah-meter');
+
+    if (!membersCount && !percentElement) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+        const members = snapshot.docs.map((item) => item.data());
+        const total = members.length;
+        const paid = members.filter((member) => member.paymentStatus === 'paid').length;
+        const late = Math.max(total - paid, 0);
+        const percent = total ? Math.round((paid / total) * 100) : 0;
+
+        if (membersCount) membersCount.textContent = total ? String(total) : '0';
+        if (activeCount) activeCount.textContent = `${paid} مسدد`;
+        if (unpaidCount) unpaidCount.textContent = `${late} متأخر`;
+        if (percentElement) percentElement.textContent = total ? `${percent}%` : '0%';
+        if (paidElement) paidElement.textContent = String(paid);
+        if (lateElement) lateElement.textContent = String(late);
+        if (meter) meter.style.setProperty('--value', `${percent}%`);
+    } catch (error) {
+        console.warn('Home member summary unavailable:', error);
+        if (membersCount) membersCount.textContent = '--';
+        if (percentElement) percentElement.textContent = '--';
+    }
+}
+
+async function loadHomeChatPreview() {
+    const container = document.getElementById('home-chat-preview');
+    if (!container) return;
+
+    try {
+        const snapshot = await getDocs(query(collection(db, "chat"), orderBy("createdAt", "desc"), limit(3)));
+        if (snapshot.empty) {
+            container.innerHTML = '<p class="text-center">ما فيه سوالف للحين.</p>';
+            return;
+        }
+
+        container.innerHTML = snapshot.docs.map((item) => {
+            const message = item.data();
+            return `
+                <span>
+                    ${escapeHtml(message.userName || 'واحد من الربع')}
+                    <b>${escapeHtml(message.text || '')}</b>
+                </span>
+            `;
+        }).join('');
+    } catch (error) {
+        console.warn('Home chat preview unavailable:', error);
+        container.innerHTML = '<p class="text-center">السوالف ما ظهرت حالياً.</p>';
+    }
+}
+
 async function loadHomeMatches() {
     const container = document.getElementById('home-matches-list');
     if (!container) return;
-    await loadMatches(container, 2);
+    await loadMatches(container, 3, true);
 }
 
 async function loadHomeNews() {
@@ -1183,7 +1420,7 @@ async function initQibla() {
     );
 }
 
-async function loadMatches(container, limit = 10) {
+async function loadMatches(container, limit = 10, compact = false) {
     if (!container) container = document.getElementById('matches-list');
     if (!container) return;
 
@@ -1234,6 +1471,18 @@ async function loadMatches(container, limit = 10) {
             .filter((event) => getEventDateKey(event) >= today)
             .sort(compareSportsDbEvents)
             .slice(0, limit);
+
+        if (compact) {
+            const compactMatches = [
+                ...todayMatches,
+                ...saudiUpcoming,
+                ...worldCupUpcoming
+            ].slice(0, limit);
+            container.innerHTML = compactMatches.length
+                ? compactMatches.map(renderSportsDbMatchCard).join('')
+                : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+            return;
+        }
 
         container.innerHTML = `
             <div class="panel">
@@ -1421,14 +1670,19 @@ async function loadNews(container, limit = 10) {
         articles.slice(0, limit).forEach(article => {
             try {
                 const title = article.title || 'بدون عنوان';
+                const description = article.description || 'خبر رياضي عربي من مصادر موثوقة، بدون صور مكسورة أو بطاقات فاضية.';
                 const url = safeExternalUrl(article.url, '#');
                 const source = article.source?.name || 'مصدر';
-                const image = safeExternalUrl(article.urlToImage, 'assets/images/al-istiraha-news-service.svg');
+                const image = safeExternalUrl(article.urlToImage, '');
+                const imageMarkup = image
+                    ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`
+                    : '';
 
                 const newsCard = `
                     <article class="news-card card">
-                        <img src="${image}" alt="" loading="lazy">
-                        <h3>${escapeHtml(title.substring(0, 100))}</h3>
+                        ${imageMarkup}
+                        <h3>${escapeHtml(title.substring(0, 110))}</h3>
+                        <p>${escapeHtml(description.substring(0, 160))}</p>
                         <span class="text-xs opacity-70">${escapeHtml(source)}</span>
                         <a href="${url}" target="_blank" rel="noopener noreferrer" class="primary">قراءة المزيد</a>
                     </article>
@@ -1447,14 +1701,13 @@ async function loadNews(container, limit = 10) {
 
 async function fetchFootballNews(limit = 10) {
     const sources = [
-        { name: 'BBC Football', url: 'https://feeds.bbci.co.uk/sport/football/rss.xml' },
-        { name: 'ESPN Soccer', url: 'https://www.espn.com/espn/rss/soccer/news' }
+        { name: 'الجزيرة رياضة', url: 'https://www.aljazeera.net/aljazeerarss/sports.xml' }
     ];
     const requests = sources.map((source) => fetchRssNewsSource(source));
     const settled = await Promise.allSettled(requests);
     const articles = settled
         .flatMap((result) => result.status === 'fulfilled' ? result.value : [])
-        .filter((article) => article.title && article.url);
+        .filter((article) => article.title && article.url && containsArabic(article.title));
 
     return dedupeNewsArticles(articles)
         .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
@@ -1474,8 +1727,9 @@ async function fetchRssNewsSource(source) {
         }
         return data.items.map((item) => ({
             title: sanitizePlainText(item.title),
+            description: sanitizePlainText(item.description || item.content || ''),
             url: item.link || '',
-            urlToImage: safeExternalUrl(item.thumbnail || item.enclosure?.link, 'assets/images/al-istiraha-news-service.svg'),
+            urlToImage: getValidImageUrl(item.thumbnail || item.enclosure?.link || extractFirstImageFromHtml(item.description || item.content || '')),
             publishedAt: item.pubDate,
             source: { name: source.name }
         }));
@@ -1497,6 +1751,7 @@ async function fetchRssNewsSource(source) {
 
     return Array.from(doc.querySelectorAll('item')).map((item) => ({
         title: sanitizePlainText(readRssText(item, 'title')),
+        description: sanitizePlainText(readRssText(item, 'description')),
         url: readRssText(item, 'link'),
         urlToImage: extractRssImage(item),
         publishedAt: readRssText(item, 'pubDate'),
@@ -1504,10 +1759,27 @@ async function fetchRssNewsSource(source) {
     }));
 }
 
+function containsArabic(value = '') {
+    return /[\u0600-\u06FF]/.test(String(value));
+}
+
 function sanitizePlainText(value = '') {
     const template = document.createElement('template');
     template.innerHTML = String(value);
     return (template.content.textContent || '').trim();
+}
+
+function extractFirstImageFromHtml(value = '') {
+    const template = document.createElement('template');
+    template.innerHTML = String(value);
+    return template.content.querySelector('img')?.getAttribute('src') || '';
+}
+
+function getValidImageUrl(value = '') {
+    const url = safeExternalUrl(value, '');
+    if (!url) return '';
+    if (/\.(mp4|m3u8|mov|webm)(\?|#|$)/i.test(url)) return '';
+    return url;
 }
 
 function readRssText(item, tagName) {
@@ -1518,7 +1790,7 @@ function extractRssImage(item) {
     const mediaContent = item.getElementsByTagName('media:content')[0] || item.getElementsByTagName('media:thumbnail')[0];
     const enclosure = item.querySelector('enclosure[type^="image"]');
     const mediaUrl = mediaContent?.getAttribute('url') || enclosure?.getAttribute('url') || '';
-    return safeExternalUrl(mediaUrl, 'assets/images/al-istiraha-news-service.svg');
+    return getValidImageUrl(mediaUrl);
 }
 
 function dedupeNewsArticles(articles) {

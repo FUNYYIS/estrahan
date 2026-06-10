@@ -1,29 +1,31 @@
 <section class="dashboard-home">
+    <button id="home-theme-toggle" class="floating-theme-toggle" type="button" aria-label="تبديل الوضع">
+        <i data-lucide="moon" data-theme-toggle-icon></i>
+    </button>
+
     <div class="welcome-panorama" id="welcome-message">
         <div class="weather-tile">
-            <span><i data-lucide="map-pin"></i> الرياض</span>
-            <strong>6:03 PM</strong>
+            <span><i data-lucide="map-pin"></i> <b id="weather-location">الرياض</b></span>
+            <strong id="weather-temp">--°</strong>
             <div class="weather-row">
                 <i data-lucide="cloud-sun"></i>
-                <b>27°</b>
+                <b id="weather-desc">جاري الطقس</b>
             </div>
             <p id="hijri-date-container">...</p>
         </div>
 
         <div class="welcome-center">
-            <span>مرحباً بك في</span>
-            <h2 id="home-welcome-title">الاستراحة</h2>
-            <p>بيت يجمعنا على المودة والمحبة</p>
+            <span>يالله حيّه في</span>
+            <h2 id="home-welcome-title">الشقردية</h2>
+            <p>جمعة الشقردية للربع الشقردية</p>
         </div>
-
-        <img class="riyadh-header-art" src="assets/images/riyadh-header.webp" alt="" aria-hidden="true" loading="eager" decoding="async" fetchpriority="high">
     </div>
 
-    <nav class="dashboard-shortcuts" aria-label="اختصارات الاستراحة">
+    <nav class="dashboard-shortcuts" aria-label="اختصارات الشقردية">
         <a href="#payments"><i data-lucide="wallet-cards"></i><span>القطة</span></a>
-        <a href="#matches"><i data-lucide="circle-dot"></i><span>المباريات</span></a>
+        <a href="#chat"><i data-lucide="messages-square"></i><span>السوالف</span></a>
+        <a href="#matches"><i data-lucide="trophy"></i><span>المباريات</span></a>
         <a href="#news"><i data-lucide="newspaper"></i><span>الأخبار</span></a>
-        <a href="#chat"><i data-lucide="messages-square"></i><span>الدردشة</span></a>
         <a href="#members"><i data-lucide="users"></i><span>الأعضاء</span></a>
         <a href="#prayer"><i data-lucide="landmark"></i><span>الصلاة</span></a>
     </nav>
@@ -32,21 +34,17 @@
         <article class="dashboard-card qattah-summary">
             <div class="panel-head">
                 <h2>ملخص القطة</h2>
-                <i data-lucide="shield-check"></i>
+                <i data-lucide="wallet-cards"></i>
             </div>
-            <div class="qattah-meter">
-                <strong>65%</strong>
+            <div class="qattah-meter" id="home-qattah-meter" style="--value: 0%;">
+                <strong id="home-qattah-percent">--</strong>
                 <span>مكتمل</span>
             </div>
             <div class="qattah-numbers">
-                <span>إجمالي المبلغ <b>1,500 ر.س</b></span>
-                <span>المتبقي <b>525 ر.س</b></span>
+                <span>المسددين <b id="home-paid-count">--</b></span>
+                <span>المتأخرين <b id="home-late-count">--</b></span>
             </div>
-            <div class="qattah-status">
-                <span class="paid">23 مسدد</span>
-                <span class="late">7 غير مسدد</span>
-            </div>
-            <a href="#payments" class="dashboard-action">عرض تفاصيل القطة</a>
+            <a href="#payments" class="dashboard-action">تفاصيل القطة</a>
         </article>
 
         <article class="dashboard-card">
@@ -57,7 +55,7 @@
             <div id="home-matches-list" class="section-stack compact-feed">
                 <p class="text-center">جاري تحميل المباريات...</p>
             </div>
-            <a href="#matches" class="dashboard-action">عرض جميع المباريات</a>
+            <a href="#matches" class="dashboard-action">كل المباريات</a>
         </article>
 
         <article class="dashboard-card">
@@ -68,18 +66,18 @@
             <div id="home-news-list" class="section-stack compact-feed">
                 <p class="text-center">جاري تحميل الأخبار...</p>
             </div>
-            <a href="#news" class="dashboard-action">عرض جميع الأخبار</a>
+            <a href="#news" class="dashboard-action">كل الأخبار</a>
         </article>
 
         <article class="dashboard-card prayer-widget">
             <div class="panel-head">
                 <h2>مواقيت الصلاة</h2>
-                <i data-lucide="shield-plus"></i>
+                <i data-lucide="moon-star"></i>
             </div>
             <div id="home-prayer-times" class="prayer-strip">
                 <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
             </div>
-            <a href="#qibla" class="dashboard-action">عرض اتجاه القبلة</a>
+            <a href="#qibla" class="dashboard-action">اتجاه القبلة</a>
         </article>
 
         <article class="dashboard-card members-widget">
@@ -87,40 +85,35 @@
                 <h2>الأعضاء</h2>
                 <i data-lucide="users"></i>
             </div>
-            <strong>30</strong>
+            <strong id="home-members-count">--</strong>
             <div class="member-counts">
-                <span>23 نشط</span>
-                <span>7 غير نشط</span>
+                <span id="home-active-count">-- نشط</span>
+                <span id="home-unpaid-count">-- متأخر</span>
             </div>
-            <a href="#members" class="dashboard-action">عرض جميع الأعضاء</a>
+            <a href="#members" class="dashboard-action">كل الأعضاء</a>
         </article>
 
         <article class="dashboard-card">
             <div class="panel-head">
-                <h2>آخر الرسائل</h2>
+                <h2>آخر السوالف</h2>
                 <i data-lucide="message-circle"></i>
             </div>
-            <div class="mini-messages">
-                <span>سالم العتيبي <b>تم تحويل مبلغ القطة</b></span>
-                <span>محمد الحربي <b>متى موعد المباراة؟</b></span>
-                <span>فيصل الموسى <b>أبشروا الليلة</b></span>
+            <div id="home-chat-preview" class="mini-messages">
+                <p class="text-center">جاري تحميل السوالف...</p>
             </div>
-            <a href="#chat" class="dashboard-action">فتح الدردشة</a>
+            <a href="#chat" class="dashboard-action">افتح السوالف</a>
         </article>
 
         <article class="dashboard-card quick-actions">
             <div class="panel-head">
-                <h2>اختصارات سريعة</h2>
+                <h2>اختصارات</h2>
                 <i data-lucide="zap"></i>
             </div>
             <div class="quick-grid">
                 <a href="#settings"><i data-lucide="settings"></i><span>الإعدادات</span></a>
                 <a href="#payments"><i data-lucide="wallet"></i><span>الدفع</span></a>
-                <a href="#chat"><i data-lucide="headphones"></i><span>الدعم</span></a>
-                <button id="home-theme-toggle" type="button" aria-label="الوضع الليلي" title="الوضع الليلي">
-                    <i data-lucide="moon" data-theme-toggle-icon></i>
-                    <span>الوضع</span>
-                </button>
+                <a href="#notifications-settings"><i data-lucide="bell"></i><span>التنبيهات</span></a>
+                <a href="#profile-settings"><i data-lucide="user-circle-2"></i><span>بياناتك</span></a>
             </div>
         </article>
     </section>

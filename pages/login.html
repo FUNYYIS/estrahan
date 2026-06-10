@@ -1,42 +1,39 @@
 <div class="auth-layout">
     <div class="auth-brand">
+        <img class="auth-logo" src="assets/images/shagrdiyah-mark.svg" alt="الشقردية" loading="eager" decoding="async">
         <span>يالله حيّه</span>
+        <h2>الشقردية</h2>
         <p>جمعة الشقردية<br>للربع الشقردية</p>
-        <img class="auth-hero-image" src="assets/images/riyadh-header.webp" alt="" loading="eager" decoding="async" fetchpriority="high">
     </div>
-```
-<div class="content-body">
-    <h2>أقلط</h2>
 
-    <form id="phone-form">
-        <div class="input-group">
-            <label for="phone-number">رقم الجوال</label>
-            <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
-        </div>
+    <div class="content-body">
+        <img class="auth-form-logo" src="assets/images/shagrdiyah-mark.svg" alt="الشقردية" loading="lazy" decoding="async">
+        <h2>أقلط علينا</h2>
 
-        <button type="submit" class="btn">أرسل الرمز</button>
+        <form id="phone-form">
+            <div class="input-group">
+                <label for="phone-number">رقم جوالك</label>
+                <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
+            </div>
 
-        <p id="login-status" class="auth-status muted" aria-live="polite"></p>
+            <button type="submit" class="btn">أرسل رمز الدخول</button>
+            <p id="login-status" class="auth-status muted" aria-live="polite"></p>
+            <div id="recaptcha-container" class="mt-4"></div>
+        </form>
 
-        <div id="recaptcha-container" class="mt-4"></div>
-    </form>
+        <form id="code-form" style="display: none;">
+            <div class="input-group">
+                <label for="verification-code">رمز الدخول</label>
+                <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
+            </div>
 
-    <form id="code-form" style="display: none;">
-        <div class="input-group">
-            <label for="verification-code">رمز الدخول</label>
-            <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
-        </div>
+            <button type="submit" class="btn">تحقق واقلط</button>
+            <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
+        </form>
 
-        <button type="submit" class="btn">تحقق واقلط</button>
-
-        <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
-    </form>
-
-    <p class="link-text">
-        أول مرة معنا؟
-        <a href="#register">سجل حساب جديد</a>
-    </p>
-</div>
-```
-
+        <p class="link-text">
+            أول مرة معنا؟
+            <a href="#register">سجل حساب جديد</a>
+        </p>
+    </div>
 </div>

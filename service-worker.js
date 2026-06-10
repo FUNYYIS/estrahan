@@ -1,22 +1,12 @@
-const CACHE_NAME = 'al-istiraha-cache-v57';
+const CACHE_NAME = 'shagrdiyah-cache-v61';
 
 const urlsToCache = [
   '/',
   '/index.html',
   '/assets/css/main.css',
   '/assets/js/main.js',
-  '/assets/images/logo.png',
-  '/assets/images/favicon.png',
-  '/assets/images/icon-192.png',
-  '/assets/images/icon-512.png',
-  '/assets/images/al-istiraha-icon.svg',
-  '/assets/images/al-istiraha-splash.jpg',
+  '/assets/images/shagrdiyah-mark.svg',
   '/assets/images/riyadh-skyline-bg.jpg',
-  '/assets/images/al-istiraha-pattern.svg',
-  '/assets/images/al-istiraha-majlis.svg',
-  '/assets/images/al-istiraha-news-majlis.svg',
-  '/assets/images/al-istiraha-news-service.svg',
-  '/assets/images/riyadh-header.webp',
   '/welcome.mp4',
   '/pages/login.html',
   '/pages/register.html',
@@ -27,7 +17,6 @@ const urlsToCache = [
   '/pages/settings.html',
   '/pages/profile-settings.html',
   '/pages/notifications-settings.html',
-  '/pages/services.html',
   '/pages/prayer.html',
   '/pages/qibla.html',
   '/pages/matches.html',

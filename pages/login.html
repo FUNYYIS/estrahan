@@ -1,30 +1,42 @@
 <div class="auth-layout">
     <div class="auth-brand">
-        <span>مرحباً بك في</span>
-        <h2>الاستراحة</h2>
-        <p>بيت يجمعنا على المودة والمحبة</p>
+        <span>يالله حيّه</span>
+        <p>جمعة الشقردية<br>للربع الشقردية</p>
         <img class="auth-hero-image" src="assets/images/riyadh-header.webp" alt="" loading="eager" decoding="async" fetchpriority="high">
     </div>
+```
+<div class="content-body">
+    <h2>أقلط</h2>
 
-    <div class="content-body">
-        <h2>أقلط</h2>
-        <form id="phone-form">
-            <div class="input-group">
-                <label for="phone-number">رقم الجوال</label>
-                <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
-            </div>
-            <button type="submit" class="btn">أرسل الرمز</button>
-            <p id="login-status" class="auth-status muted" aria-live="polite"></p>
-            <div id="recaptcha-container" class="mt-4"></div>
-        </form>
-        <form id="code-form" style="display: none;">
-            <div class="input-group">
-                <label for="verification-code">رمز الدخول</label>
-                <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
-            </div>
-            <button type="submit" class="btn">تحقق واقلط</button>
-            <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
-        </form>
-        <p class="link-text">ما عندك حساب؟ <a href="#register">سجل معنا يا ذيب</a></p>
-    </div>
+    <form id="phone-form">
+        <div class="input-group">
+            <label for="phone-number">رقم الجوال</label>
+            <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
+        </div>
+
+        <button type="submit" class="btn">أرسل الرمز</button>
+
+        <p id="login-status" class="auth-status muted" aria-live="polite"></p>
+
+        <div id="recaptcha-container" class="mt-4"></div>
+    </form>
+
+    <form id="code-form" style="display: none;">
+        <div class="input-group">
+            <label for="verification-code">رمز الدخول</label>
+            <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
+        </div>
+
+        <button type="submit" class="btn">تحقق واقلط</button>
+
+        <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
+    </form>
+
+    <p class="link-text">
+        أول مرة معنا؟
+        <a href="#register">سجل حساب جديد</a>
+    </p>
+</div>
+```
+
 </div>

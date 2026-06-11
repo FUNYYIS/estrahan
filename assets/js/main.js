@@ -251,7 +251,7 @@ function syncShellUserState() {
 
 menuBtn?.addEventListener('click', () => {
     if (!currentUser) return;
-    sidebar?.classList.toggle('open');
+    window.location.hash = '#settings';
 });
 logoutButton?.addEventListener('click', handleLogout);
 notifyBtn?.addEventListener('click', async () => {

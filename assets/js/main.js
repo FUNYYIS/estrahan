@@ -59,6 +59,7 @@ const logoutButton = document.getElementById('logout-button');
 const profileName = document.querySelector('.profile-copy strong');
 const profileSince = document.querySelector('.profile-copy small');
 const shellAvatar = document.getElementById('shell-avatar');
+const topProfile = document.getElementById('top-profile');
 
 // --- حالة التطبيق ---
 let currentUser = null;
@@ -266,6 +267,19 @@ notifyBtn?.addEventListener('click', async () => {
             body: 'تم تشغيل التنبيهات يا ذيب.',
             icon: 'assets/images/shagrdiyah-mark.png'
         });
+    }
+});
+
+topProfile?.addEventListener('click', (event) => {
+    if (event.target.closest('#notifyBtn')) return;
+    if (!currentUser) return;
+    window.location.hash = '#profile-settings';
+});
+
+topProfile?.addEventListener('keydown', (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && currentUser) {
+        event.preventDefault();
+        window.location.hash = '#profile-settings';
     }
 });
 window.addEventListener('online', setOnlineState);

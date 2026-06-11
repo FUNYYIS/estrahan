@@ -4813,3 +4813,214 @@ body:not(.is-authenticated) .view {
 #main-content {
   display: none;
 }
+
+
+/* =========================================================
+   SHAGRDIYAH DARK + DESERT PATCH V210
+   إصلاح الخلفية الأصلية + تحسين الوضع الليلي + إرجاع الشعار
+   ========================================================= */
+
+:root {
+  --desert-bg-url: url("../images/shagrdiyah-desert-bg.png");
+}
+
+/* الخلفية الأصلية الصح */
+body::before {
+  z-index: 0 !important;
+  background: var(--desert-bg-url) center bottom / cover no-repeat !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+body::after {
+  z-index: 0 !important;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255,255,255,.30), transparent 28rem),
+    linear-gradient(180deg, rgba(255,250,242,.44), rgba(255,250,242,.25) 48%, rgba(255,250,242,.42)) !important;
+}
+
+/* وضع ليلي واضح ومقروء بدون ما يدفن النص */
+body[data-theme="dark"] {
+  --bg: #061812 !important;
+  --surface: #10251d !important;
+  --surface-strong: #173428 !important;
+  --ink: #ffffff !important;
+  --muted: #d8d8d8 !important;
+  --line: rgba(255,255,255,.14) !important;
+
+  --app-bg: #061812 !important;
+  --app-ink: #ffffff !important;
+  --app-muted: #d8d8d8 !important;
+  --app-green: #7de2b6 !important;
+  --app-green-2: #ffffff !important;
+  --app-line: rgba(255,255,255,.14) !important;
+  --app-card: rgba(12, 31, 24, .78) !important;
+  --app-card-strong: rgba(16, 41, 32, .92) !important;
+  --app-nav: rgba(12, 31, 24, .92) !important;
+
+  color: #fff !important;
+  background: #061812 !important;
+}
+
+body[data-theme="dark"]::before {
+  background: var(--desert-bg-url) center bottom / cover no-repeat !important;
+  filter: brightness(.38) saturate(.82) contrast(1.02) !important;
+}
+
+body[data-theme="dark"]::after {
+  background:
+    radial-gradient(circle at 50% 4%, rgba(31,90,70,.26), transparent 28rem),
+    linear-gradient(180deg, rgba(6,24,18,.72), rgba(6,24,18,.83) 50%, rgba(6,24,18,.72)) !important;
+}
+
+/* كل النصوص المهمة بالليلي */
+body[data-theme="dark"] h1,
+body[data-theme="dark"] h2,
+body[data-theme="dark"] h3,
+body[data-theme="dark"] p,
+body[data-theme="dark"] strong,
+body[data-theme="dark"] .profile-copy strong,
+body[data-theme="dark"] .top-actions h1,
+body[data-theme="dark"] .welcome-center h2,
+body[data-theme="dark"] .welcome-center p,
+body[data-theme="dark"] .welcome-center span,
+body[data-theme="dark"] .home-hero-main h2,
+body[data-theme="dark"] .home-hero-main p,
+body[data-theme="dark"] .home-eyebrow,
+body[data-theme="dark"] .home-card-head h3,
+body[data-theme="dark"] .panel-head h2 {
+  color: #fff !important;
+}
+
+body[data-theme="dark"] .muted,
+body[data-theme="dark"] .profile-copy small,
+body[data-theme="dark"] .mini-messages b,
+body[data-theme="dark"] .match-card .muted,
+body[data-theme="dark"] .news-card .muted,
+body[data-theme="dark"] .payment-method-label small,
+body[data-theme="dark"] .payment-total-card small,
+body[data-theme="dark"] .payment-total-card span {
+  color: #d8d8d8 !important;
+}
+
+/* كروت الليل */
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .stat,
+body[data-theme="dark"] .table-wrap,
+body[data-theme="dark"] .chat-box,
+body[data-theme="dark"] .list-item-card,
+body[data-theme="dark"] .content-body,
+body[data-theme="dark"] #chat-box,
+body[data-theme="dark"] .dashboard-card,
+body[data-theme="dark"] .home-card,
+body[data-theme="dark"] .home-hero-card,
+body[data-theme="dark"] .payment-options,
+body[data-theme="dark"] .payment-total-card,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .alert-content {
+  color: #fff !important;
+  border-color: rgba(255,255,255,.14) !important;
+  background: rgba(12, 31, 24, .78) !important;
+  box-shadow: 0 18px 46px rgba(0,0,0,.32) !important;
+}
+
+body[data-theme="dark"] .compact-feed .match-card,
+body[data-theme="dark"] .compact-feed .news-card,
+body[data-theme="dark"] .compact-feed .list-item-card,
+body[data-theme="dark"] .quick-grid a,
+body[data-theme="dark"] .quick-grid button,
+body[data-theme="dark"] .prayer-strip .stat,
+body[data-theme="dark"] .dashboard-action {
+  color: #fff !important;
+  background: rgba(255,255,255,.07) !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+
+/* إرجاع الشعار داخل الهيرو */
+.home-hero-logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  margin-bottom: .55rem;
+  filter: drop-shadow(0 14px 22px rgba(15, 79, 60, .14));
+}
+
+body[data-theme="dark"] .home-hero-logo {
+  filter: drop-shadow(0 14px 24px rgba(0,0,0,.35));
+}
+
+.home-hero-main,
+.welcome-center {
+  padding-block: 1rem !important;
+}
+
+/* تحسين صندوق المستخدم والجرس */
+.top-profile {
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.top-profile:hover,
+.notify-bell:hover,
+.floating-theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.notify-bell,
+.floating-theme-toggle,
+.theme-moon-btn,
+.icon-btn {
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+body[data-theme="dark"] .top-profile,
+body[data-theme="dark"] .notify-bell,
+body[data-theme="dark"] .floating-theme-toggle,
+body[data-theme="dark"] .theme-moon-btn,
+body[data-theme="dark"] .icon-btn {
+  color: #fff !important;
+  background: rgba(12, 31, 24, .82) !important;
+  border-color: rgba(255,255,255,.14) !important;
+}
+
+body[data-theme="dark"] .notify-bell span {
+  color: #061812 !important;
+  background: #f6e3a8 !important;
+}
+
+/* تحسين شريط التنقل السفلي بالليلي */
+body[data-theme="dark"] #bottom-nav.nav {
+  background: rgba(12, 31, 24, .94) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+body[data-theme="dark"] #bottom-nav.nav a {
+  color: #d8d8d8 !important;
+}
+
+body[data-theme="dark"] #bottom-nav.nav a.active {
+  color: #061812 !important;
+  background: linear-gradient(160deg, #fff3c9, #d7bb76) !important;
+}
+
+/* لا تخلي بطاقات الأخبار والمباريات باهتة */
+body[data-theme="dark"] .match-teams,
+body[data-theme="dark"] .match-score,
+body[data-theme="dark"] .news-card h3,
+body[data-theme="dark"] .news-card h2 {
+  color: #fff !important;
+}
+
+body[data-theme="dark"] .badge {
+  color: #fff3c9 !important;
+  background: rgba(255,243,201,.10) !important;
+}
+
+@media (max-width: 640px) {
+  .home-hero-logo {
+    width: 72px;
+    height: 72px;
+  }
+}
+

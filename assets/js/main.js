@@ -255,18 +255,14 @@ menuBtn?.addEventListener('click', () => {
     window.location.hash = '#settings';
 });
 logoutButton?.addEventListener('click', handleLogout);
-notifyBtn?.addEventListener('click', async () => {
-    if (!('Notification' in window)) {
-        showAlert('متصفحك ما يدعم إشعارات الويب.');
-        return;
-    }
+notifyBtn?.addEventListener('click', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!currentUser) return;
+    window.location.hash = '#notifications-settings';
 
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-        new Notification('الشقردية', {
-            body: 'تم تشغيل التنبيهات يا ذيب.',
-            icon: 'assets/images/shagrdiyah-mark.png'
-        });
+    if ('Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch (error) { console.warn('Notification permission failed:', error); }
     }
 });
 

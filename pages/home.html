@@ -1,17 +1,10 @@
-<section class="dashboard-home home-v2">
+<section class="dashboard-home home-v2 home-v212">
     <button id="home-theme-toggle" class="floating-theme-toggle" type="button" aria-label="تبديل الوضع">
         <i data-lucide="moon" data-theme-toggle-icon></i>
     </button>
 
-    <section class="home-hero-card">
-        <div class="home-hero-main">
-            <img class="home-hero-logo" src="assets/images/shagrdiyah-mark.png?v=210" alt="الشقردية" loading="eager" decoding="async">
-            <span class="home-eyebrow">يالله حيّه في</span>
-            <h2 id="home-welcome-title">الشقردية</h2>
-            <p>جمعة الشقردية للربع الشقردية</p>
-        </div>
-
-        <div class="home-weather-card">
+    <section class="home-top-widgets" aria-label="الطقس ومواقيت الصلاة">
+        <article class="home-weather-card">
             <div>
                 <span><i data-lucide="map-pin"></i> <b id="weather-location">الرياض</b></span>
                 <strong id="weather-temp">--°</strong>
@@ -24,6 +17,31 @@
                 </span>
                 <p id="hijri-date-container">...</p>
             </div>
+        </article>
+
+        <article class="home-card home-prayer-card prayer-widget">
+            <div class="home-card-head">
+                <div>
+                    <span>مواقيت</span>
+                    <h3>الصلاة اليوم</h3>
+                </div>
+                <i data-lucide="moon-star"></i>
+            </div>
+
+            <div id="home-prayer-times" class="prayer-strip">
+                <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
+            </div>
+
+            <a href="#qibla" class="dashboard-action">اتجاه القبلة</a>
+        </article>
+    </section>
+
+    <section class="home-hero-card">
+        <div class="home-hero-main">
+            <img class="home-hero-logo" src="assets/images/shagrdiyah-mark.png?v=212" alt="الشقردية" loading="eager" decoding="async">
+            <span class="home-eyebrow">يالله حيّه في</span>
+            <h2 id="home-welcome-title">الشقردية</h2>
+            <p>جمعة الشقردية للربع الشقردية</p>
         </div>
     </section>
 
@@ -121,22 +139,6 @@
     </section>
 
     <section class="home-bottom-grid">
-        <article class="home-card home-prayer-card prayer-widget">
-            <div class="home-card-head">
-                <div>
-                    <span>مواقيت</span>
-                    <h3>الصلاة</h3>
-                </div>
-                <i data-lucide="moon-star"></i>
-            </div>
-
-            <div id="home-prayer-times" class="prayer-strip">
-                <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
-            </div>
-
-            <a href="#qibla" class="dashboard-action">اتجاه القبلة</a>
-        </article>
-
         <article class="home-card home-shortcuts-card quick-actions">
             <div class="home-card-head">
                 <div>

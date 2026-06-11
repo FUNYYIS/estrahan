@@ -5,7 +5,7 @@ const urlsToCache = [
   '/index.html',
   '/assets/css/main.css',
   '/assets/js/main.js',
-  '/assets/images/shagrdiyah-mark.svg',
+  '/assets/images/shagrdiyah-mark.png',
   '/assets/images/riyadh-skyline-bg.jpg',
   '/welcome.mp4',
   '/pages/login.html',

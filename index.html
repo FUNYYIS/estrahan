@@ -11,31 +11,34 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=block">
+
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="assets/images/shagrdiyah-mark.svg?v=61" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="assets/images/shagrdiyah-mark.svg?v=61">
+    <link rel="icon" href="assets/images/shagrdiyah-mark.png?v=62" type="image/png">
+    <link rel="apple-touch-icon" href="assets/images/shagrdiyah-mark.png?v=62">
+
+    <link rel="preload" href="assets/images/shagrdiyah-mark.png?v=62" as="image" fetchpriority="high">
     <link rel="preload" href="assets/images/riyadh-skyline-bg.jpg" as="image" fetchpriority="high">
+
     <meta name="theme-color" content="#1F5A46">
 
-    <link rel="stylesheet" href="assets/css/main.css?v=61">
+    <link rel="stylesheet" href="assets/css/main.css?v=62">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"></noscript>
 </head>
 
 <body>
     <div id="splash" class="splash" aria-hidden="true">
         <div class="splash-card">
-            <img src="assets/images/shagrdiyah-mark.svg?v=61" alt="" loading="eager" decoding="async">
+            <img src="assets/images/shagrdiyah-mark.png?v=62" alt="" loading="eager" decoding="async" fetchpriority="high">
             <strong>الشقردية</strong>
-            <span>يالله حيّه في جمعة الشقردية</span>
+            <span>يالله حيّه في جمعة الشقردية للربع الشقردية</span>
         </div>
     </div>
 
     <div id="main-content" class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="#home" aria-label="الشقردية">
-                <img id="app-logo" src="assets/images/shagrdiyah-mark.svg?v=61" alt="الشقردية" class="logo" loading="eager" decoding="async">
+                <img id="app-logo" src="assets/images/shagrdiyah-mark.png?v=62" alt="الشقردية" class="logo" loading="eager" decoding="async" fetchpriority="high">
                 <span>
                     <strong>الشقردية</strong>
                     <small>يالله حيّه</small>
@@ -61,21 +64,28 @@
 
         <main class="main">
             <header class="topbar">
-                <button id="menuBtn" class="icon-btn mobile-only" type="button" aria-label="Open menu"><i data-lucide="menu"></i></button>
+                <button id="menuBtn" class="icon-btn mobile-only" type="button" aria-label="فتح القائمة">
+                    <i data-lucide="menu"></i>
+                </button>
+
                 <div class="top-profile">
-                    <button id="notifyBtn" class="notify-bell" type="button" aria-label="Enable notifications">
+                    <button id="notifyBtn" class="notify-bell" type="button" aria-label="تفعيل التنبيهات">
                         <i data-lucide="bell"></i>
                         <span>3</span>
                     </button>
+
                     <div class="profile-avatar">
-                        <img id="shell-avatar" src="assets/images/shagrdiyah-mark.svg?v=61" alt="" loading="lazy" decoding="async">
+                        <img id="shell-avatar" src="assets/images/shagrdiyah-mark.png?v=62" alt="" loading="lazy" decoding="async">
                     </div>
+
                     <div class="profile-copy">
                         <strong></strong>
                         <small></small>
                     </div>
+
                     <i data-lucide="chevron-down"></i>
                 </div>
+
                 <div class="top-actions">
                     <p id="todayLabel" class="eyebrow"></p>
                     <h1 id="pageTitle">الشقردية</h1>
@@ -96,6 +106,6 @@
         </div>
     </div>
 
-    <script type="module" src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/main.js?v=62"></script>
 </body>
 </html>

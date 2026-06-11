@@ -246,7 +246,7 @@ function syncShellUserState() {
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من الربع الشقردية' : '';
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/shagrdiyah-mark.svg';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/shagrdiyah-mark.png';
 }
 
 menuBtn?.addEventListener('click', () => {
@@ -264,7 +264,7 @@ notifyBtn?.addEventListener('click', async () => {
     if (permission === 'granted') {
         new Notification('الشقردية', {
             body: 'تم تشغيل التنبيهات يا ذيب.',
-            icon: 'assets/images/shagrdiyah-mark.svg'
+            icon: 'assets/images/shagrdiyah-mark.png'
         });
     }
 });
@@ -472,7 +472,7 @@ function setupProfileEditor() {
 
     if (nameInput) nameInput.value = currentUser.name || '';
     if (phoneInput) phoneInput.value = currentUser.phone || '';
-    if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/shagrdiyah-mark.svg';
+    if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/shagrdiyah-mark.png';
 
     avatarInput?.addEventListener('change', async () => {
         const file = avatarInput.files?.[0];
@@ -1888,7 +1888,7 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 460);
+                }, 4500);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }

@@ -35,6 +35,8 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
+const APP_ASSET_VERSION = '238';
+
 
 // تهيئة Firebase
 const app = initializeApp(firebaseConfig);
@@ -53,6 +55,7 @@ const pageTitle = document.getElementById('pageTitle');
 const todayLabel = document.getElementById('todayLabel');
 const onlineState = document.getElementById('onlineState');
 const notifyBtn = document.getElementById('notifyBtn');
+const notificationCount = document.querySelector('.notification-count');
 const menuBtn = document.getElementById('menuBtn');
 const sidebar = document.querySelector('.sidebar');
 const logoutButton = document.getElementById('logout-button');
@@ -69,15 +72,15 @@ let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
 const routeTitles = {
     '#login': 'أقلط',
     '#register': 'سجل معنا',
-    '#home': 'المجلس',
+    '#home': 'الصفحة الرئيسية',
     '#members': 'الربع',
     '#payments': 'القطة الشهرية',
-    '#chat': 'السوالف',
+    '#chat': 'الدردشة',
     '#settings': 'الضبط',
     '#profile-settings': 'بياناتك',
     '#notifications-settings': 'تنبيهاتك',
-    '#prayer': 'الصلاة',
-    '#qibla': 'القبلة',
+    '#prayer': 'مواقيت الصلاة والقبلة',
+    '#qibla': 'مواقيت الصلاة والقبلة',
     '#matches': 'مباريات اليوم',
     '#news': 'الأخبار',
 };
@@ -212,7 +215,9 @@ window.copyToClipboard = copyToClipboard;
 
 // --- إدارة الوضع الليلي ---
 function applyTheme(theme) {
-    document.body.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+    const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', normalizedTheme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', normalizedTheme === 'dark' ? '#101413' : '#78915a');
     updateThemeButtons();
 }
 
@@ -223,7 +228,7 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
+    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'dark';
     applyTheme(savedTheme);
 }
 
@@ -247,7 +252,16 @@ function syncShellUserState() {
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من الربع الشقردية' : '';
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/shagrdiyah-mark.png';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
+    updateNotificationBadge(0);
+}
+
+function updateNotificationBadge(count = 0) {
+    if (!notificationCount) return;
+    const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+    notificationCount.textContent = safeCount > 99 ? '99+' : String(safeCount);
+    notificationCount.classList.toggle('hidden', safeCount <= 0);
+    notificationCount.setAttribute('aria-hidden', safeCount <= 0 ? 'true' : 'false');
 }
 
 menuBtn?.addEventListener('click', () => {
@@ -339,7 +353,7 @@ async function renderPage(hash) {
 
     if (pageFile) {
         try {
-            const response = await fetch(`pages/${pageFile}`);
+            const response = await fetch(`pages/${pageFile}?v=${APP_ASSET_VERSION}`, { cache: 'no-store' });
             if (!response.ok) {
                 throw new Error(`Page fetch failed with status ${response.status}`);
             }
@@ -482,7 +496,7 @@ function setupProfileEditor() {
 
     if (nameInput) nameInput.value = currentUser.name || '';
     if (phoneInput) phoneInput.value = currentUser.phone || '';
-    if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/shagrdiyah-mark.png';
+    if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/estraha-logo.svg';
 
     avatarInput?.addEventListener('change', async () => {
         const file = avatarInput.files?.[0];
@@ -509,32 +523,7 @@ function setupProfileEditor() {
 
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const nextName = nameInput?.value.trim() || '';
-        const nextPhone = phoneInput?.value.trim() || '';
-
-        if (!nextName) {
-            showAlert('اكتب اسمك عشان نحفظ البيانات.');
-            return;
-        }
-
-        try {
-            setFormLoading(form, true, 'جاري الحفظ...');
-            if (status) status.textContent = 'نحفظ بياناتك...';
-            await updateDoc(doc(db, "users", currentUser.uid), {
-                name: nextName,
-                phone: nextPhone,
-                updatedAt: serverTimestamp()
-            });
-            currentUser = { ...currentUser, name: nextName, phone: nextPhone };
-            syncShellUserState();
-            if (status) status.textContent = 'تم حفظ بياناتك.';
-        } catch (error) {
-            console.error('Profile update failed:', error);
-            showAlert('ما قدرنا نحفظ البيانات. جرّب مرة ثانية.');
-            if (status) status.textContent = '';
-        } finally {
-            setFormLoading(form, false);
-        }
+        showAlert('الاسم ورقم الجوال يديرها المسؤول فقط.');
     });
 }
 
@@ -766,6 +755,8 @@ async function handleSendCode(e, isRegister = false) {
             errorMsg = 'صيغة الرقم ما هي صحيحة. استخدم +966XXXXXXXXX';
         } else if (error.code === 'auth/too-many-requests') {
             errorMsg = 'كثرت الطلبات شوي. جرّب بعدين.';
+        } else if (error.code === 'auth/unauthorized-domain') {
+            errorMsg = 'نطاق المعاينة غير مصرح في Firebase. أضف 127.0.0.1 أو الدومين من إعدادات Firebase Authentication.';
         } else if (error.code === 'auth/invalid-app-credential') {
             errorMsg = 'في مشكلة بالتحقق. تأكد من إعدادات النطاق.';
         } else if (error.code === 'auth/captcha-check-failed') {
@@ -1068,12 +1059,12 @@ function loadChat() {
             },
             error => {
                 console.error('Error loading chat:', error);
-                chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل السوالف.</p>';
+                chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل الدردشة.</p>';
             }
         );
     } catch (error) {
         console.error('Error setting up chat listener:', error);
-        chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل السوالف.</p>';
+        chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل الدردشة.</p>';
     }
 }
 
@@ -1089,7 +1080,7 @@ async function handleSendMessage(e) {
     const text = input.value.trim();
 
     if (!text) {
-        showAlert('اكتب سالفتك أول.');
+        showAlert('اكتب رسالتك أول.');
         return;
     }
 
@@ -1197,8 +1188,14 @@ async function loadHomeWeather() {
     const locationElement = document.getElementById('weather-location');
     if (!tempElement || !descElement) return;
 
-    const fallback = { latitude: 24.7136, longitude: 46.6753, label: 'الرياض' };
-    const coords = await getCurrentPositionSafe().catch(() => fallback);
+    const coords = await getCurrentPositionSafe().catch(() => null);
+
+    if (!coords) {
+        tempElement.textContent = '--°';
+        descElement.textContent = 'فعّل الموقع لعرض الطقس';
+        if (locationElement) locationElement.textContent = 'الموقع غير محدد';
+        return;
+    }
 
     try {
         if (locationElement) locationElement.textContent = coords.label || 'موقعك';
@@ -1298,7 +1295,7 @@ async function loadHomeChatPreview() {
     try {
         const snapshot = await getDocs(query(collection(db, "chat"), orderBy("createdAt", "desc"), limit(3)));
         if (snapshot.empty) {
-            container.innerHTML = '<p class="text-center">ما فيه سوالف للحين.</p>';
+            container.innerHTML = '<p class="text-center">ما فيه رسائل للحين.</p>';
             return;
         }
 
@@ -1313,7 +1310,7 @@ async function loadHomeChatPreview() {
         }).join('');
     } catch (error) {
         console.warn('Home chat preview unavailable:', error);
-        container.innerHTML = '<p class="text-center">السوالف ما ظهرت حالياً.</p>';
+        container.innerHTML = '<p class="text-center">الدردشة ما ظهرت حالياً.</p>';
     }
 }
 
@@ -1366,6 +1363,11 @@ async function initQibla() {
 
     if (!container || !status || !compass) {
         console.warn('Qibla elements not found');
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        status.textContent = 'جهازك ما يدعم تحديد الموقع.';
         return;
     }
 
@@ -1496,19 +1498,19 @@ async function loadMatches(container, limit = 10, compact = false) {
 
         container.innerHTML = `
             <div class="panel">
-                <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">TheSportsDB</span></div>
+                <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">اليوم</span></div>
                 <div class="cards-grid matches-grid">
                     ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">League 4668</span></div>
+                <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">قادمة</span></div>
                 <div class="cards-grid matches-grid">
                     ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">League 4429 + GitHub fallback</span></div>
+                <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">الجدول</span></div>
                 <div class="cards-grid matches-grid">
                     ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
                 </div>

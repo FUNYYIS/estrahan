@@ -1,12 +1,15 @@
-const CACHE_NAME = 'shagrdiyah-cache-v61';
+const CACHE_NAME = 'estraha-cache-v238';
 
 const urlsToCache = [
   '/',
   '/index.html',
   '/assets/css/main.css',
   '/assets/js/main.js',
-  '/assets/images/shagrdiyah-mark.png',
+  '/assets/images/estraha-logo.svg',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
   '/assets/images/riyadh-skyline-bg.jpg',
+  '/assets/images/shagrdiyah-desert-bg.png',
   '/welcome.mp4',
   '/pages/login.html',
   '/pages/register.html',

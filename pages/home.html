@@ -1,159 +1,93 @@
-<section class="dashboard-home home-v2 home-v212">
-    <button id="home-theme-toggle" class="floating-theme-toggle" type="button" aria-label="تبديل الوضع">
-        <i data-lucide="moon" data-theme-toggle-icon></i>
-    </button>
+<section class="dashboard-home home-v2 home-v212 estraha-reference-home">
+    <header class="home-reference-topbar" aria-label="أدوات الصفحة الرئيسية">
+        <button id="home-theme-toggle" class="home-reference-icon-button" type="button" aria-label="تبديل الوضع">
+            <i data-lucide="moon" data-theme-toggle-icon></i>
+        </button>
+        <a class="home-reference-icon-button" href="#notifications-settings" aria-label="الإشعارات">
+            <i data-lucide="bell"></i>
+        </a>
+    </header>
 
-    <section class="home-top-widgets" aria-label="الطقس ومواقيت الصلاة">
-        <article class="home-weather-card">
-            <div>
-                <span><i data-lucide="map-pin"></i> <b id="weather-location">الرياض</b></span>
-                <strong id="weather-temp">--°</strong>
+    <section class="home-reference-hero" aria-label="تطبيق الاستراحة">
+        <img class="home-title-logo home-hero-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" width="145" loading="eager" decoding="async">
+        <h2 id="home-welcome-title">تطبيق الاستراحة</h2>
+        <p>إدارة خدمات الاستراحة والقطة والمباريات</p>
+    </section>
+
+    <section class="home-reference-widgets" aria-label="مواقيت الصلاة والطقس">
+        <article class="home-reference-card home-prayer-card prayer-widget">
+            <div class="home-reference-card-title">
+                <i data-lucide="landmark"></i>
+                <h3>مواقيت الصلاة</h3>
             </div>
-
-            <div>
-                <span class="weather-row">
-                    <i data-lucide="cloud-sun"></i>
-                    <b id="weather-desc">جاري الطقس</b>
-                </span>
-                <p id="hijri-date-container">...</p>
-            </div>
-        </article>
-
-        <article class="home-card home-prayer-card prayer-widget">
-            <div class="home-card-head">
-                <div>
-                    <span>مواقيت</span>
-                    <h3>الصلاة اليوم</h3>
-                </div>
-                <i data-lucide="moon-star"></i>
-            </div>
-
-            <div id="home-prayer-times" class="prayer-strip">
+            <div id="home-prayer-times" class="prayer-strip reference-prayer-strip">
                 <p class="text-center">جاري تحميل مواقيت الصلاة...</p>
             </div>
+            <a href="#prayer" class="reference-section-link"><i data-lucide="chevron-left"></i> عرض جميع المواقيت</a>
+        </article>
 
-            <a href="#qibla" class="dashboard-action">اتجاه القبلة</a>
+        <article class="home-reference-card home-weather-card">
+            <div class="home-reference-card-title">
+                <i data-lucide="cloud-sun"></i>
+                <h3>الطقس الآن</h3>
+            </div>
+            <div class="reference-weather-body">
+                <i class="reference-weather-icon" data-lucide="cloud-sun"></i>
+                <div>
+                    <strong id="weather-temp">--°</strong>
+                    <span id="weather-desc">جاري الطقس</span>
+                    <small><span id="weather-location">...</span> <i data-lucide="map-pin"></i></small>
+                </div>
+            </div>
+            <p id="hijri-date-container" class="reference-date">...</p>
         </article>
     </section>
 
-    <section class="home-hero-card">
-        <div class="home-hero-main">
-            <img class="home-hero-logo" src="assets/images/shagrdiyah-mark.png?v=212" alt="الشقردية" loading="eager" decoding="async">
-            <span class="home-eyebrow">يالله حيّه في</span>
-            <h2 id="home-welcome-title">الشقردية</h2>
-            <p>جمعة الشقردية للربع الشقردية</p>
-        </div>
+    <section class="reference-section-head">
+        <a href="#matches" class="reference-section-link"><i data-lucide="chevron-left"></i> عرض جميع المباريات</a>
+        <h3>المباريات القادمة</h3>
+    </section>
+    <section id="home-matches-list" class="home-reference-card reference-match-card compact-feed">
+        <p class="text-center">جاري تحميل المباريات...</p>
     </section>
 
-    <section class="home-primary-grid">
-        <article class="home-card home-qattah-card qattah-summary">
-            <div class="home-card-head">
-                <div>
-                    <span>القطة</span>
-                    <h3>ملخص القطة</h3>
-                </div>
-                <i data-lucide="wallet-cards"></i>
-            </div>
-
-            <div class="qattah-meter" id="home-qattah-meter" style="--value: 0%;">
+    <section class="reference-section-head">
+        <a href="#payments" class="reference-section-link"><i data-lucide="chevron-left"></i> عرض جميع القطة</a>
+        <h3>القطة</h3>
+    </section>
+    <section class="home-reference-card reference-qattah-grid">
+        <a href="#payments" class="reference-qattah-action">
+            <span><i data-lucide="paw-print"></i></span>
+            <strong>إضافة قطة</strong>
+            <small>سجل قطة جديدة</small>
+        </a>
+        <a href="#payments" class="reference-qattah-action">
+            <span><i data-lucide="clipboard-list"></i></span>
+            <strong>قطتي</strong>
+            <small>عرض تفاصيل قطتي</small>
+        </a>
+        <div class="reference-qattah-summary" aria-label="ملخص القطة">
+            <div id="home-qattah-meter" class="qattah-meter" style="--value: 0%;">
                 <strong id="home-qattah-percent">--</strong>
                 <span>مكتمل</span>
             </div>
-
             <div class="qattah-numbers">
                 <span>المسددين <b id="home-paid-count">--</b></span>
                 <span>المتأخرين <b id="home-late-count">--</b></span>
-            </div>
-
-            <a href="#payments" class="dashboard-action">تفاصيل القطة</a>
-        </article>
-
-        <article class="home-card home-mini-card members-widget">
-            <div class="home-card-head">
-                <div>
-                    <span>الربع</span>
-                    <h3>الأعضاء</h3>
-                </div>
-                <i data-lucide="users"></i>
-            </div>
-
-            <strong id="home-members-count">--</strong>
-
-            <div class="member-counts">
+                <span>الأعضاء <b id="home-members-count">--</b></span>
                 <span id="home-active-count">-- نشط</span>
                 <span id="home-unpaid-count">-- متأخر</span>
             </div>
-
-            <a href="#members" class="dashboard-action">كل الأعضاء</a>
-        </article>
-
-        <article class="home-card home-mini-card">
-            <div class="home-card-head">
-                <div>
-                    <span>السوالف</span>
-                    <h3>آخر السوالف</h3>
-                </div>
-                <i data-lucide="message-circle"></i>
-            </div>
-
-            <div id="home-chat-preview" class="mini-messages">
-                <p class="text-center">جاري تحميل السوالف...</p>
-            </div>
-
-            <a href="#chat" class="dashboard-action">افتح السوالف</a>
-        </article>
+        </div>
     </section>
 
-    <section class="home-content-grid">
-        <article class="home-card home-feed-card">
-            <div class="home-card-head">
-                <div>
-                    <span>اليوم</span>
-                    <h3>مباريات اليوم</h3>
-                </div>
-                <i data-lucide="trophy"></i>
-            </div>
-
-            <div id="home-matches-list" class="section-stack compact-feed">
-                <p class="text-center">جاري تحميل المباريات...</p>
-            </div>
-
-            <a href="#matches" class="dashboard-action">كل المباريات</a>
-        </article>
-
-        <article class="home-card home-feed-card">
-            <div class="home-card-head">
-                <div>
-                    <span>آخر جديد</span>
-                    <h3>الأخبار</h3>
-                </div>
-                <i data-lucide="newspaper"></i>
-            </div>
-
-            <div id="home-news-list" class="section-stack compact-feed">
-                <p class="text-center">جاري تحميل الأخبار...</p>
-            </div>
-
-            <a href="#news" class="dashboard-action">كل الأخبار</a>
-        </article>
+    <section class="reference-section-head">
+        <a href="#chat" class="reference-section-link"><i data-lucide="chevron-left"></i> عرض جميع المحادثات</a>
+        <h3>الدردشة العامة</h3>
+    </section>
+    <section id="home-chat-preview" class="home-reference-card reference-chat-list mini-messages">
+        <p class="text-center">جاري تحميل الدردشة...</p>
     </section>
 
-    <section class="home-bottom-grid">
-        <article class="home-card home-shortcuts-card quick-actions">
-            <div class="home-card-head">
-                <div>
-                    <span>اختصارات</span>
-                    <h3>تحتاجها بسرعة</h3>
-                </div>
-                <i data-lucide="zap"></i>
-            </div>
-
-            <div class="quick-grid">
-                <a href="#payments"><i data-lucide="wallet"></i><span>الدفع</span></a>
-                <a href="#chat"><i data-lucide="messages-square"></i><span>السوالف</span></a>
-                <a href="#profile-settings"><i data-lucide="user-circle-2"></i><span>بياناتك</span></a>
-                <a href="#settings"><i data-lucide="settings"></i><span>الإعدادات</span></a>
-            </div>
-        </article>
-    </section>
+    <section id="home-news-list" class="reference-hidden-feed" aria-label="الأخبار"></section>
 </section>

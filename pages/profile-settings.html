@@ -6,7 +6,7 @@
 
     <div class="profile-editor">
         <div class="profile-photo-card">
-            <img id="profile-avatar-preview" src="assets/images/shagrdiyah-mark.png" alt="" loading="lazy" decoding="async">
+            <img id="profile-avatar-preview" src="assets/images/estraha-logo.svg" alt="" loading="lazy" decoding="async">
             <label class="ghost upload-button" for="profile-avatar-input">
                 <i data-lucide="camera"></i>
                 غيّر الصورة
@@ -16,18 +16,17 @@
         </div>
 
         <form id="profile-form" class="profile-form">
+            <p class="profile-admin-note">
+                البيانات الأساسية يديرها المسؤول فقط. تقدر تغيّر صورتك، ولتعديل الاسم أو رقم الجوال تواصل مع الإدارة.
+            </p>
             <div class="input-group">
                 <label for="profile-name-input">اسمك</label>
-                <input type="text" id="profile-name-input" autocomplete="name" required>
+                <input type="text" id="profile-name-input" autocomplete="name" readonly>
             </div>
             <div class="input-group">
                 <label for="profile-phone-input">رقم جوالك</label>
-                <input type="tel" id="profile-phone-input" placeholder="05XXXXXXXX" autocomplete="tel">
+                <input type="tel" id="profile-phone-input" placeholder="05XXXXXXXX" autocomplete="tel" readonly>
             </div>
-            <button type="submit" class="btn">
-                <i data-lucide="save"></i>
-                حفظ البيانات
-            </button>
             <p id="profile-save-status" class="auth-status muted" aria-live="polite"></p>
         </form>
     </div>

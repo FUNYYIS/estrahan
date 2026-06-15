@@ -359,6 +359,88 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
   };
 }
 
+
+const TEAM_AR_NAMES = {
+  "Saudi Arabia":"السعودية",
+  "Qatar":"قطر",
+  "United Arab Emirates":"الإمارات",
+  "UAE":"الإمارات",
+  "Iraq":"العراق",
+  "Jordan":"الأردن",
+  "Oman":"عُمان",
+  "Bahrain":"البحرين",
+  "Kuwait":"الكويت",
+  "Yemen":"اليمن",
+
+  "Argentina":"الأرجنتين",
+  "Brazil":"البرازيل",
+  "Uruguay":"أوروغواي",
+  "Paraguay":"باراغواي",
+  "Chile":"تشيلي",
+  "Colombia":"كولومبيا",
+  "Ecuador":"الإكوادور",
+
+  "United States":"أمريكا",
+  "USA":"أمريكا",
+  "Mexico":"المكسيك",
+  "Canada":"كندا",
+
+  "England":"إنجلترا",
+  "France":"فرنسا",
+  "Spain":"إسبانيا",
+  "Germany":"ألمانيا",
+  "Italy":"إيطاليا",
+  "Portugal":"البرتغال",
+  "Netherlands":"هولندا",
+  "Belgium":"بلجيكا",
+  "Croatia":"كرواتيا",
+  "Switzerland":"سويسرا",
+
+  "Morocco":"المغرب",
+  "Tunisia":"تونس",
+  "Algeria":"الجزائر",
+  "Egypt":"مصر",
+  "Senegal":"السنغال",
+  "Cameroon":"الكاميرون",
+  "Nigeria":"نيجيريا",
+
+  "Japan":"اليابان",
+  "South Korea":"كوريا الجنوبية",
+  "Australia":"أستراليا",
+  "Iran":"إيران",
+  "Uzbekistan":"أوزبكستان",
+
+  "Al Hilal":"الهلال",
+  "Al Nassr":"النصر",
+  "Al Ittihad":"الاتحاد",
+  "Al Ahli":"الأهلي",
+  "Al Shabab":"الشباب",
+  "Al Ettifaq":"الاتفاق",
+  "Al Taawoun":"التعاون",
+  "Al Fateh":"الفتح",
+  "Al Fayha":"الفيحاء",
+  "Al Raed":"الرائد",
+  "Al Khaleej":"الخليج",
+  "Damac":"ضمك",
+  "Al Okhdood":"الأخدود",
+  "Al Wehda":"الوحدة",
+  "Al Riyadh":"الرياض",
+  "Al Qadsiah":"القادسية",
+  "Al Kholood":"الخلود",
+  "Al Orobah":"العروبة",
+
+  "Al-Ahli":"الأهلي",
+  "Al-Hilal":"الهلال",
+  "Al-Nassr":"النصر",
+  "Al-Ittihad":"الاتحاد"
+};
+
+function translateTeamName(name = "") {
+  const clean = String(name).trim();
+  return TEAM_AR_NAMES[clean] || clean;
+}
+
+
 function getMatchNotificationTeams(match = {}) {
   const homeTeam = cleanMatchTeamName(
     match.homeTeam ||
@@ -376,7 +458,10 @@ function getMatchNotificationTeams(match = {}) {
   );
 
   if (!homeTeam || !awayTeam) return null;
-  return { homeTeam, awayTeam };
+  return {
+    homeTeam: translateTeamName(homeTeam),
+    awayTeam: translateTeamName(awayTeam)
+  };
 }
 
 function cleanMatchTeamName(value) {

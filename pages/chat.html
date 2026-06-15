@@ -1,23 +1,20 @@
-<section class="chat-page">
-    <header class="app-page-header">
+<section class="chat-page clean-chat-page">
+    <div class="chat-title-row">
         <div>
-            <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
-            <div>
-                <span>تطبيق الاستراحة</span>
-                <h2>الدردشة</h2>
-            </div>
+            <h2>الدردشة</h2>
         </div>
         <span class="badge live">مباشر</span>
-    </header>
-    <div class="chat-toolbar" aria-label="تصفية الدردشة">
-        <label class="chat-search">
-            <i data-lucide="search"></i>
-            <input type="search" id="chat-search-input" placeholder="ابحث في الدردشة" autocomplete="off">
-        </label>
     </div>
+
+    <label class="chat-search">
+        <i data-lucide="search"></i>
+        <input type="search" id="chat-search-input" placeholder="ابحث في الدردشة" autocomplete="off">
+    </label>
+
     <div id="chat-box" class="messages">
         <p class="text-center">جاري تحميل الدردشة...</p>
     </div>
+
     <form id="chat-form">
         <input type="text" id="chat-input" placeholder="اكتب رسالتك..." autocomplete="off" required>
         <button type="submit" class="btn" aria-label="إرسال"><i data-lucide="send"></i></button>

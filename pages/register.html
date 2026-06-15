@@ -15,20 +15,11 @@
                 <input type="text" id="register-name" autocomplete="name" required>
             </div>
             <div class="input-group">
-                <label for="register-phone-number">رقم جوالك</label>
-                <input type="tel" id="register-phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
+                <label for="register-invite-code">رمز الدعوة</label>
+                <input type="text" id="register-invite-code" placeholder="اكتب رمز الدعوة" autocomplete="off" required>
             </div>
-            <button type="submit" class="btn">أرسل رمز التسجيل</button>
+            <button type="submit" class="btn">سجل وادخل</button>
             <p id="register-status" class="auth-status muted" aria-live="polite"></p>
-            <div id="recaptcha-container-register" class="mt-4"></div>
-        </form>
-        <form id="register-code-form" style="display: none;">
-            <div class="input-group">
-                <label for="register-verification-code">رمز الدخول</label>
-                <input type="text" id="register-verification-code" inputmode="numeric" autocomplete="one-time-code" required>
-            </div>
-            <button type="submit" class="btn">تحقق واقلط</button>
-            <p id="register-code-status" class="auth-status muted" aria-live="polite"></p>
         </form>
         <p class="link-text">عندك حساب؟ <a href="#login">أقلط</a></p>
     </div>

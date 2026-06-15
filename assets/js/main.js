@@ -557,7 +557,7 @@ function attachEventListeners(hash) {
 
         const registerForm = document.getElementById('register-form');
         const registerCodeForm = document.getElementById('register-code-form');
-        if (registerForm) registerForm.addEventListener('submit', (e) => handleSendCode(e, true));
+        if (registerForm) registerForm.addEventListener('submit', handleCompleteRegistration);
         if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
 
         // Setup recaptcha with validation
@@ -892,6 +892,60 @@ function setAuthStatus(isRegister, phase, message) {
     if (element) element.textContent = message || '';
 }
 
+
+async function handleCompleteRegistration(e) {
+    e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) {
+        showAlert('تحقق من رقم جوالك أولاً من صفحة الدخول.');
+        window.location.hash = '#login';
+        return;
+    }
+
+    const nameInput = document.getElementById('register-name');
+    const inviteInput = document.getElementById('register-invite-code');
+
+    const name = nameInput?.value.trim();
+    const inviteCode = inviteInput?.value.trim();
+
+    if (!name) {
+        showAlert('اكتب اسمك يا طويل العمر.');
+        return;
+    }
+
+    if (inviteCode !== 'Ss7905Ss') {
+        showAlert('رمز الدعوة غير صحيح.');
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, "users", user.uid), {
+            name,
+            phone: user.phoneNumber,
+            paymentStatus: 'late',
+            createdAt: serverTimestamp()
+        });
+
+        currentUser = {
+            uid: user.uid,
+            name,
+            phone: user.phoneNumber,
+            paymentStatus: 'late'
+        };
+
+        document.body.classList.add('is-authenticated');
+        syncShellUserState();
+        showAlert('تم تسجيلك بنجاح، حيّاك الله.');
+        window.location.hash = '#home';
+        await renderPage('#home');
+    } catch (error) {
+        console.error('Registration completion failed:', error);
+        showAlert('فشل التسجيل. حاول مرة ثانية.');
+    }
+}
+
+
 async function handleSendCode(e, isRegister = false) {
     e.preventDefault();
     console.log(`handleSendCode called (isRegister=${isRegister})`);
@@ -1073,14 +1127,10 @@ async function handleVerifyCode(e, isRegister = false) {
             const userDocRef = doc(db, "users", user.uid);
             const existingUserDoc = await getDoc(userDocRef);
             if (!existingUserDoc.exists()) {
-                await setDoc(userDocRef, {
-                    name: user.phoneNumber || 'مطناخ جديد',
-                    phone: user.phoneNumber,
-                    paymentStatus: 'late',
-                    createdAt: serverTimestamp(),
-                    autoCreatedFromLogin: true
-                });
-                console.log('✓ Missing user profile repaired after login');
+                showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
+                window.location.hash = '#register';
+                await renderPage('#register');
+                return;
             }
         }
 
@@ -2279,23 +2329,13 @@ function initApp() {
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
                 } else {
-                    console.log('✓ Auth user has no Firestore profile, creating a minimal member profile');
-                    const repairedProfile = {
-                        name: user.phoneNumber || 'مطناخ جديد',
-                        phone: user.phoneNumber,
-                        paymentStatus: 'late',
-                        createdAt: serverTimestamp(),
-                        autoCreatedFromLogin: true
-                    };
-                    await setDoc(doc(db, "users", user.uid), repairedProfile);
-                    currentUser = { uid: user.uid, ...repairedProfile };
-                    document.body.classList.add('is-authenticated');
+                    console.log('✓ Auth user has no Firestore profile, redirecting to registration');
+                    currentUser = null;
+                    document.body.classList.remove('is-authenticated');
                     syncShellUserState();
-                    initFirebaseMessaging()
-                        .then(() => syncFcmTokenWithPreferences())
-                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
                     appLogo.style.display = 'block';
-                    await renderPage('#home');
+                    window.location.hash = '#register';
+                    await renderPage('#register');
                 }
             } else {
                 console.log('✓ No user authenticated, showing login');

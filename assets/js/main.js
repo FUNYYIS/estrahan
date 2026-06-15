@@ -20,6 +20,7 @@ import {
     onSnapshot,
     serverTimestamp,
     updateDoc,
+    deleteDoc,
     getDocs,
     orderBy,
     limit
@@ -1167,6 +1168,8 @@ function loadMembers() {
                     adminControls = `
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
+                        <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تعديل الاسم</button>
+                        <button data-id="${memberId}" class="delete-member-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">حذف</button>
                     `;
                 }
 
@@ -1193,6 +1196,39 @@ function loadMembers() {
                     } catch (error) {
                         console.error('Error updating payment status:', error);
                         showAlert('فشل تحديث الحالة. حاول مرة أخرى.');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.edit-member-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const memberId = e.target.dataset.id;
+                    const oldName = e.target.dataset.name || '';
+                    const newName = prompt('اكتب الاسم الجديد:', oldName);
+                    if (!newName || !newName.trim()) return;
+
+                    try {
+                        await updateDoc(doc(db, "users", memberId), { name: newName.trim() });
+                        showAlert('تم تعديل اسم العضو بنجاح.');
+                    } catch (error) {
+                        console.error('Error updating member name:', error);
+                        showAlert('فشل تعديل اسم العضو.');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-member-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const memberId = e.target.dataset.id;
+                    const confirmed = confirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.');
+                    if (!confirmed) return;
+
+                    try {
+                        await deleteDoc(doc(db, "users", memberId));
+                        showAlert('تم حذف العضو بنجاح.');
+                    } catch (error) {
+                        console.error('Error deleting member:', error);
+                        showAlert('فشل حذف العضو.');
                     }
                 });
             });

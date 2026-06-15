@@ -24,6 +24,16 @@ import {
     orderBy,
     limit
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import {
+    getMessaging,
+    getToken,
+    onMessage,
+    isSupported as isMessagingSupported
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
+import {
+    getFunctions,
+    httpsCallable
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 // إعدادات Firebase الخاصة بتطبيقك
 const firebaseConfig = {
@@ -35,13 +45,15 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '238';
+const APP_ASSET_VERSION = '248';
+const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
 // تهيئة Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const functions = getFunctions(app, 'us-central1');
 const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
 
 // --- عناصر واجهة المستخدم ---
@@ -67,21 +79,32 @@ const topProfile = document.getElementById('top-profile');
 // --- حالة التطبيق ---
 let currentUser = null;
 let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
-let unsubscribeChat, unsubscribeMembers, unsubscribePayments;
+let unsubscribeChat, unsubscribeChatUsers, unsubscribeMembers, unsubscribePayments;
+let chatMessagesCache = [];
+let chatUsersCache = new Map();
+let firebaseMessaging = null;
+let firebaseMessagingReady = null;
+let foregroundMessageUnsubscribe = null;
+
+const MATCH_NOTIFICATION_TEMPLATES = [
+    '⚽ لا تروح بعيد {{homeTeam}} ضد {{awayTeam}} قربت',
+    '☕ جهزوا القهوة {{homeTeam}} ضد {{awayTeam}} بتبدا عقب شوي 😄'
+];
 
 const routeTitles = {
     '#login': 'أقلط',
-    '#register': 'سجل معنا',
+    '#register': 'سجل معنا يالذيب',
     '#home': 'الصفحة الرئيسية',
-    '#members': 'الربع',
+    '#members': 'الأعضاء',
     '#payments': 'القطة الشهرية',
     '#chat': 'الدردشة',
-    '#settings': 'الضبط',
+    '#settings': 'المزيد',
     '#profile-settings': 'بياناتك',
-    '#notifications-settings': 'تنبيهاتك',
-    '#prayer': 'مواقيت الصلاة والقبلة',
-    '#qibla': 'مواقيت الصلاة والقبلة',
-    '#matches': 'مباريات اليوم',
+    '#notifications-settings': 'الإشعارات',
+    '#admin-notifications': 'لوحة التحكم',
+    '#prayer': 'مواقيت الصلاة',
+    '#qibla': 'القبلة',
+    '#matches': 'المباريات',
     '#news': 'الأخبار',
 };
 
@@ -110,6 +133,10 @@ function cleanupRealtimeListeners() {
     if (unsubscribeChat) {
         unsubscribeChat();
         unsubscribeChat = null;
+    }
+    if (unsubscribeChatUsers) {
+        unsubscribeChatUsers();
+        unsubscribeChatUsers = null;
     }
     if (unsubscribeMembers) {
         unsubscribeMembers();
@@ -251,8 +278,11 @@ function syncShellUserState() {
     if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
-    if (profileSince) profileSince.textContent = currentUser ? 'من الربع الشقردية' : '';
+    if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
+    document.querySelectorAll('[data-admin-only]').forEach((element) => {
+        element.style.display = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) ? '' : 'none';
+    });
     updateNotificationBadge(0);
 }
 
@@ -262,6 +292,97 @@ function updateNotificationBadge(count = 0) {
     notificationCount.textContent = safeCount > 99 ? '99+' : String(safeCount);
     notificationCount.classList.toggle('hidden', safeCount <= 0);
     notificationCount.setAttribute('aria-hidden', safeCount <= 0 ? 'true' : 'false');
+}
+
+async function initFirebaseMessaging() {
+    if (firebaseMessagingReady) return firebaseMessagingReady;
+
+    firebaseMessagingReady = (async () => {
+        if (!('serviceWorker' in navigator)) {
+            console.warn('Firebase Cloud Messaging skipped: service workers are not supported.');
+            return null;
+        }
+
+        const supported = await isMessagingSupported().catch(() => false);
+        if (!supported) {
+            console.warn('Firebase Cloud Messaging skipped: this browser does not support FCM.');
+            return null;
+        }
+
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        firebaseMessaging = getMessaging(app);
+
+        if (!foregroundMessageUnsubscribe) {
+            foregroundMessageUnsubscribe = onMessage(firebaseMessaging, (payload) => {
+                console.log('Received foreground FCM message:', payload);
+                const title = payload.notification?.title || payload.data?.title;
+                const body = payload.notification?.body || payload.data?.body;
+                if (Notification.permission === 'granted' && title) {
+                    new Notification(title, {
+                        body,
+                        icon: 'assets/icons/icon-192.png',
+                        badge: 'assets/icons/icon-192.png',
+                        data: payload.data || {}
+                    });
+                }
+            });
+        }
+
+        return registration;
+    })();
+
+    return firebaseMessagingReady;
+}
+
+function getConfiguredVapidKey() {
+    const key = localStorage.getItem('firebase-vapid-key') || FCM_VAPID_KEY;
+    if (!key) {
+        console.warn('Firebase Cloud Messaging token skipped: add the Firebase Web Push VAPID key.');
+        return '';
+    }
+    return key;
+}
+
+async function syncFcmTokenWithPreferences() {
+    if (!currentUser || Notification.permission !== 'granted') return;
+
+    const vapidKey = getConfiguredVapidKey();
+    if (!vapidKey) return;
+
+    try {
+        const serviceWorkerRegistration = await initFirebaseMessaging();
+        if (!firebaseMessaging || !serviceWorkerRegistration) return;
+
+        const token = await getToken(firebaseMessaging, {
+            vapidKey,
+            serviceWorkerRegistration
+        });
+
+        if (!token) {
+            console.warn('Firebase Cloud Messaging token was not returned.');
+            return;
+        }
+
+        await saveFcmToken(token);
+    } catch (error) {
+        console.warn('Firebase Cloud Messaging token sync failed:', error);
+    }
+}
+
+async function saveFcmToken(token) {
+    const tokenId = btoa(token).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    await setDoc(doc(db, 'fcmTokens', tokenId), {
+        token,
+        uid: currentUser.uid,
+        topics: {
+            payments: localStorage.getItem('al-istiraha-payment-notification') !== 'false',
+            prayer: localStorage.getItem('al-istiraha-prayer-notification') !== 'false',
+            matches: localStorage.getItem('al-istiraha-matches-notification') === 'true',
+            chat: localStorage.getItem('al-istiraha-chat-notification') !== 'false'
+        },
+        userAgent: navigator.userAgent,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
 }
 
 menuBtn?.addEventListener('click', () => {
@@ -306,6 +427,7 @@ const routes = {
     '#settings': 'settings.html',
     '#profile-settings': 'profile-settings.html',
     '#notifications-settings': 'notifications-settings.html',
+    '#admin-notifications': 'admin-notifications.html',
     '#prayer': 'prayer.html',
     '#qibla': 'qibla.html',
     '#matches': 'matches.html',
@@ -324,14 +446,15 @@ function currentPublicRoute() {
 }
 
 function updateActiveNav(hash) {
+    const activeHash = getPrimaryNavHash(hash);
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('href') === hash) {
+        if (link.getAttribute('href') === activeHash) {
             link.classList.add('active');
         }
     });
 
-    if (pageTitle) pageTitle.textContent = routeTitles[hash] || 'الشقردية';
+    if (pageTitle) pageTitle.textContent = routeTitles[hash] || 'تطبيق الاستراحة';
     if (todayLabel) {
         todayLabel.textContent = new Intl.DateTimeFormat('ar-SA', {
             weekday: 'long',
@@ -342,6 +465,11 @@ function updateActiveNav(hash) {
     }
 }
 
+function getPrimaryNavHash(hash) {
+    if (['#home', '#chat', '#matches', '#payments'].includes(hash)) return hash;
+    return '#settings';
+}
+
 async function renderPage(hash) {
     const defaultPage = currentUser ? '#home' : '#login';
     const requestedHash = normalizeHash(hash || defaultPage);
@@ -349,6 +477,13 @@ async function renderPage(hash) {
     const currentHash = currentUser && isPublicRoute
         ? '#home'
         : routes[requestedHash] && (currentUser || isPublicRoute) ? requestedHash : defaultPage;
+
+    if (currentHash === '#admin-notifications' && (auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
+        showAlert('هذه الصفحة للمسؤول فقط.');
+        window.location.hash = '#settings';
+        return;
+    }
+
     const pageFile = routes[currentHash];
 
     if (pageFile) {
@@ -374,6 +509,7 @@ async function renderPage(hash) {
                 }
             };
             safeCreateIcons();
+            syncShellUserState();
 
             attachEventListeners(currentHash);
             // Normalize page ID for loadPageData
@@ -469,6 +605,10 @@ function attachEventListeners(hash) {
     if (pageId === 'notifications-settings') {
         setupNotificationToggles();
     }
+
+    if (pageId === 'admin-notifications') {
+        setupAdminNotifications();
+    }
 }
 
 function setupThemeChoices() {
@@ -559,18 +699,99 @@ function setupNotificationToggles() {
             const nextValue = button.getAttribute('aria-pressed') !== 'true';
             localStorage.setItem(key, String(nextValue));
             setNotificationToggleState(button, nextValue);
-            if (nextValue) requestBrowserNotificationPermission();
+            if (nextValue) {
+                requestBrowserNotificationPermission();
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+                syncFcmTokenWithPreferences();
+            }
         });
     });
 }
 
 async function requestBrowserNotificationPermission() {
-    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    if (!('Notification' in window)) return;
     try {
-        await Notification.requestPermission();
+        const permission = Notification.permission === 'default'
+            ? await Notification.requestPermission()
+            : Notification.permission;
+        if (permission === 'granted') {
+            await syncFcmTokenWithPreferences();
+        }
     } catch (error) {
         console.warn('Notification permission request failed:', error);
     }
+}
+
+function setupAdminNotifications() {
+    if ((auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
+        showAlert('هذه الصفحة للمسؤول فقط.');
+        window.location.hash = '#settings';
+        return;
+    }
+
+    const report = document.getElementById('admin-notification-report');
+    const successCount = document.getElementById('notification-success-count');
+    const failureCount = document.getElementById('notification-failure-count');
+    const status = document.getElementById('admin-notification-status');
+    const broadcastForm = document.getElementById('admin-broadcast-form');
+    const titleInput = document.getElementById('broadcast-title');
+    const messageInput = document.getElementById('broadcast-message');
+
+    const setStatus = (message = '') => {
+        if (status) status.textContent = message;
+    };
+
+    const renderReport = (result = {}) => {
+        if (report) report.hidden = false;
+        if (successCount) successCount.textContent = String(result.successCount || 0);
+        if (failureCount) failureCount.textContent = String(result.failureCount || 0);
+    };
+
+    document.querySelectorAll('[data-admin-test-notification]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const type = button.dataset.adminTestNotification;
+            button.disabled = true;
+            setStatus('جاري إرسال الاختبار...');
+            try {
+                const callable = httpsCallable(functions, 'sendAdminTestNotification');
+                const response = await callable({ type });
+                renderReport(response.data || {});
+                setStatus('تم إرسال اختبار الإشعار.');
+            } catch (error) {
+                console.error('Admin test notification failed:', error);
+                setStatus(error.message || 'فشل إرسال اختبار الإشعار.');
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+
+    broadcastForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = titleInput?.value.trim();
+        const message = messageInput?.value.trim();
+        if (!title || !message) {
+            showAlert('اكتب عنوان الإشعار والرسالة أولاً.');
+            return;
+        }
+
+        const submitButton = broadcastForm.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+        setStatus('جاري الإرسال للجميع...');
+
+        try {
+            const callable = httpsCallable(functions, 'sendAdminBroadcastNotification');
+            const response = await callable({ title, message });
+            renderReport(response.data || {});
+            setStatus('تم إرسال الإشعار للجميع.');
+            broadcastForm.reset();
+        } catch (error) {
+            console.error('Admin broadcast notification failed:', error);
+            setStatus(error.message || 'فشل إرسال الإشعار للجميع.');
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+        }
+    });
 }
 
 function setNotificationToggleState(button, enabled) {
@@ -601,6 +822,7 @@ function loadPageData(pageId) {
                 loadMembers();
                 break;
             case 'payments':
+                loadPaymentOverview();
                 loadPaymentLog();
                 break;
             case 'chat':
@@ -941,7 +1163,7 @@ function loadMembers() {
                     : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
 
                 let adminControls = '';
-                if (auth.currentUser?.uid === ADMIN_UID) {
+                if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
                     adminControls = `
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
@@ -1008,9 +1230,11 @@ function loadPaymentLog() {
                         ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA')
                         : 'غير محدد';
                     div.innerHTML = `
-                        <span class="font-bold">${payment.userName || 'بدون اسم'}</span>
-                        <span style="color: #5cb85c;">✅ مدفوع</span>
-                        <span>${date}</span>
+                        <div>
+                            <span class="font-bold">${escapeHtml(payment.userName || 'بدون اسم')}</span>
+                            <small>${escapeHtml(date)}</small>
+                        </div>
+                        <span class="status-badge paid">تم السداد</span>
                     `;
                     logList.appendChild(div);
                 });
@@ -1026,6 +1250,43 @@ function loadPaymentLog() {
     }
 }
 
+async function loadPaymentOverview() {
+    const paidCount = document.getElementById('payments-paid-count');
+    const lateCount = document.getElementById('payments-late-count');
+    const remainingCount = document.getElementById('payments-remaining-count');
+    const lateMembersList = document.getElementById('late-members-list');
+
+    if (!paidCount && !lateCount && !remainingCount && !lateMembersList) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+        const members = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        const paid = members.filter((member) => member.paymentStatus === 'paid');
+        const late = members.filter((member) => member.paymentStatus !== 'paid');
+
+        if (paidCount) paidCount.textContent = String(paid.length);
+        if (lateCount) lateCount.textContent = String(late.length);
+        if (remainingCount) remainingCount.textContent = String(late.length);
+
+        if (lateMembersList) {
+            lateMembersList.innerHTML = late.length
+                ? late.slice(0, 8).map((member) => `
+                    <div class="list-item-card text-sm">
+                        <div>
+                            <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
+                            <small>${escapeHtml(member.phone || 'بدون رقم')}</small>
+                        </div>
+                        <span class="status-badge overdue">متأخر</span>
+                    </div>
+                `).join('')
+                : '<p class="text-center">كل الأعضاء مسددين.</p>';
+        }
+    } catch (error) {
+        console.warn('Payment overview unavailable:', error);
+        if (lateMembersList) lateMembersList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل المتأخرين.</p>';
+    }
+}
+
 function loadChat() {
     const chatBox = document.getElementById('chat-box');
     if (!chatBox) {
@@ -1033,29 +1294,29 @@ function loadChat() {
         return;
     }
 
+    const searchInput = document.getElementById('chat-search-input');
+    if (searchInput && searchInput.dataset.bound !== 'true') {
+        searchInput.dataset.bound = 'true';
+        searchInput.addEventListener('input', () => renderChatMessages(chatBox));
+    }
+
     try {
+        unsubscribeChatUsers = onSnapshot(
+            collection(db, "users"),
+            (snapshot) => {
+                chatUsersCache = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
+                renderChatMessages(chatBox);
+            },
+            (error) => {
+                console.warn('Chat user avatars unavailable:', error);
+            }
+        );
+
         unsubscribeChat = onSnapshot(
             query(collection(db, "chat"), orderBy("createdAt")),
             (snapshot) => {
-                chatBox.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const msg = doc.data();
-                    const div = document.createElement('div');
-                    const isMe = msg.userId === auth.currentUser?.uid;
-                    div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-
-                    const userDisplayName = msg.userName || 'مستخدم';
-                    const messageText = escapeHtml(msg.text || '');
-
-                    div.innerHTML = `
-                        <div class="text-xs mb-1 mx-2" style="color: var(--muted);">${escapeHtml(userDisplayName)}</div>
-                        <div class="message ${isMe ? 'mine' : ''}">
-                            <p>${messageText}</p>
-                        </div>
-                    `;
-                    chatBox.appendChild(div);
-                });
-                chatBox.scrollTop = chatBox.scrollHeight;
+                chatMessagesCache = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+                renderChatMessages(chatBox);
             },
             error => {
                 console.error('Error loading chat:', error);
@@ -1065,6 +1326,80 @@ function loadChat() {
     } catch (error) {
         console.error('Error setting up chat listener:', error);
         chatBox.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل الدردشة.</p>';
+    }
+}
+
+function renderChatMessages(chatBox) {
+    const searchTerm = (document.getElementById('chat-search-input')?.value || '').trim().toLowerCase();
+    const messages = chatMessagesCache.filter((msg) => {
+        if (!searchTerm) return true;
+        return `${msg.userName || ''} ${msg.text || ''}`.toLowerCase().includes(searchTerm);
+    });
+
+    chatBox.innerHTML = '';
+
+    if (!messages.length) {
+        chatBox.innerHTML = '<p class="text-center">ما فيه رسائل مطابقة.</p>';
+        return;
+    }
+
+    messages.forEach(msg => {
+        const div = document.createElement('div');
+        const isMe = msg.userId === auth.currentUser?.uid;
+        div.className = `chat-message-row ${isMe ? 'is-me' : ''}`;
+
+        const userDisplayName = msg.userName || 'مستخدم';
+        const messageText = escapeHtml(msg.text || '');
+        const time = formatMessageTime(msg.createdAt);
+        const initials = getAvatarInitials(userDisplayName);
+        const profile = chatUsersCache.get(msg.userId) || {};
+        const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
+        const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
+
+        div.innerHTML = `
+            <div class="chat-avatar">${avatarContent}</div>
+            <div class="chat-message-stack">
+                <div class="chat-message-meta">
+                    <strong>${escapeHtml(userDisplayName)}</strong>
+                    <span>${escapeHtml(time)}</span>
+                </div>
+                <div class="message ${isMe ? 'mine' : ''}">
+                    <p>${messageText}</p>
+                </div>
+            </div>
+        `;
+        chatBox.appendChild(div);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function formatMessageTime(timestamp) {
+    if (!timestamp?.seconds) return '';
+    return new Date(timestamp.seconds * 1000).toLocaleTimeString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getAvatarInitials(name = '') {
+    return String(name || 'مستخدم')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0] || '')
+        .join('') || 'م';
+}
+
+function getSafeAvatarUrl(value = '') {
+    const url = String(value || '').trim();
+    if (!url) return '';
+    if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(url)) return url;
+
+    try {
+        const parsed = new URL(url, window.location.origin);
+        return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+    } catch {
+        return '';
     }
 }
 
@@ -1094,12 +1429,13 @@ async function handleSendMessage(e) {
             text: text,
             userId: currentUser.uid,
             userName: currentUser.name || 'مستخدم',
+            avatarUrl: currentUser.avatarUrl || '',
             createdAt: serverTimestamp()
         });
         input.value = '';
     } catch (error) {
         console.error('Error sending message:', error);
-        showAlert('ما قدرت أرسل السالفة: ' + (error.message || 'جرّب مرة ثانية'));
+        showAlert('ما قدرت أرسل الرسالة: ' + (error.message || 'جرّب مرة ثانية'));
     }
 }
 
@@ -1483,6 +1819,11 @@ async function loadMatches(container, limit = 10, compact = false) {
             .filter((event) => getEventDateKey(event) >= today)
             .sort(compareSportsDbEvents)
             .slice(0, limit);
+        queueNextMatchNotification([
+            ...todayMatches,
+            ...saudiUpcoming,
+            ...worldCupUpcoming
+        ]);
 
         if (compact) {
             const compactMatches = [
@@ -1622,6 +1963,65 @@ function getLocalDateKey(date = new Date()) {
 
 function getEventDateKey(event) {
     return event.dateEventLocal || event.dateEvent || '';
+}
+
+function queueNextMatchNotification(matches = []) {
+    if (localStorage.getItem('al-istiraha-matches-notification') !== 'true') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const nextMatch = [...matches]
+        .filter((event) => getEventDateKey(event) >= getLocalDateKey())
+        .filter((event) => !['FT', 'AET', 'PEN'].includes(String(event.strStatus || '').toUpperCase()))
+        .sort(compareSportsDbEvents)[0];
+
+    if (!nextMatch) return;
+
+    const teams = getMatchNotificationTeams(nextMatch);
+    if (!teams) {
+        console.log('Skipped match notification because team names are missing.');
+        return;
+    }
+
+    const notificationKey = `match-notification-${nextMatch.idEvent || getWorldCupMatchKey(nextMatch)}`;
+    if (sessionStorage.getItem(notificationKey) === 'sent') return;
+
+    const template = MATCH_NOTIFICATION_TEMPLATES[0];
+    const title = template
+        .replace('{{homeTeam}}', teams.homeTeam)
+        .replace('{{awayTeam}}', teams.awayTeam);
+
+    try {
+        new Notification(title);
+        sessionStorage.setItem(notificationKey, 'sent');
+    } catch (error) {
+        console.warn('Match notification failed:', error);
+    }
+}
+
+function getMatchNotificationTeams(match = {}) {
+    const homeTeam = cleanMatchTeamName(
+        match.homeTeam ||
+        match.teamHome ||
+        match.strHomeTeam ||
+        match.home_team ||
+        match.home?.name
+    );
+    const awayTeam = cleanMatchTeamName(
+        match.awayTeam ||
+        match.teamAway ||
+        match.strAwayTeam ||
+        match.away_team ||
+        match.away?.name
+    );
+
+    if (!homeTeam || !awayTeam) return null;
+    return { homeTeam, awayTeam };
+}
+
+function cleanMatchTeamName(value) {
+    const teamName = String(value || '').trim();
+    if (!teamName || /^(tbd|فريق|-|null|undefined|\[object Object\])$/i.test(teamName)) return '';
+    return teamName;
 }
 
 function renderSportsDbMatchCard(event) {
@@ -1836,6 +2236,9 @@ function initApp() {
                     currentUser = { uid: user.uid, ...userDoc.data() };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
+                    initFirebaseMessaging()
+                        .then(() => syncFcmTokenWithPreferences())
+                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
                     appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
@@ -1852,6 +2255,9 @@ function initApp() {
                     currentUser = { uid: user.uid, ...repairedProfile };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
+                    initFirebaseMessaging()
+                        .then(() => syncFcmTokenWithPreferences())
+                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
                     appLogo.style.display = 'block';
                     await renderPage('#home');
                 }
@@ -1919,3 +2325,28 @@ function initApp() {
 
 // Start the app
 initApp();
+
+// Fix internal hash links for auth pages and SPA navigation
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+
+    const hash = link.getAttribute('href');
+    if (!hash || hash === '#') return;
+
+    event.preventDefault();
+    window.location.hash = hash;
+    renderPage(hash);
+});
+
+document.addEventListener('click', async (event) => {
+  const link = event.target.closest('a[href="#login"], a[href="#register"]');
+  if (!link) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const hash = link.getAttribute('href');
+  window.location.hash = hash;
+  await renderPage(hash);
+}, true);

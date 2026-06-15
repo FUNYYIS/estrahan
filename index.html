@@ -7,7 +7,7 @@
     <meta name="description" content="تطبيق الاستراحة لإدارة خدمات الاستراحة والقطة والدردشة والمباريات ومواقيت الصلاة.">
     <meta name="robots" content="index, follow">
 
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://www.gstatic.com https://apis.google.com https://www.googleapis.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://challenges.cloudflare.com https://challenges-test.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://recaptcha.net https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://api.aladhan.com https://api.open-meteo.com https://www.thesportsdb.com https://raw.githubusercontent.com https://api.allorigins.win https://api.rss2json.com; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://flagcdn.com https://r2.thesportsdb.com https: https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; media-src 'self' blob:; frame-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net https://*.firebaseapp.com https://challenges.cloudflare.com https://challenges-test.cloudflare.com; child-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net; form-action 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; worker-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://www.gstatic.com https://apis.google.com https://www.googleapis.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://challenges.cloudflare.com https://challenges-test.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://recaptcha.net https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://api.aladhan.com https://api.open-meteo.com https://www.thesportsdb.com https://raw.githubusercontent.com https://api.allorigins.win https://api.rss2json.com; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://flagcdn.com https://r2.thesportsdb.com https: https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; media-src 'self' blob:; frame-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net https://*.firebaseapp.com https://challenges.cloudflare.com https://challenges-test.cloudflare.com; child-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net; form-action 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; worker-src 'self';">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,7 @@
     <meta name="apple-mobile-web-app-title" content="الاستراحة">
     <meta name="theme-color" content="#07130f">
 
-    <link rel="stylesheet" href="assets/css/main.css?v=238">
+    <link rel="stylesheet" href="assets/css/main.css?v=248">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 </head>
 
@@ -49,13 +49,13 @@
 
             <nav id="bottom-nav" class="nav" aria-label="التنقل الرئيسي" style="display: none;">
                 <a href="#home" class="nav-link"><i data-lucide="home"></i><span>الرئيسية</span></a>
-                <a href="#payments" class="nav-link"><i data-lucide="paw-print"></i><span>القطة</span></a>
                 <a href="#chat" class="nav-link"><i data-lucide="messages-square"></i><span>الدردشة</span></a>
                 <a href="#matches" class="nav-link"><i data-lucide="trophy"></i><span>المباريات</span></a>
+                <a href="#payments" class="nav-link"><i data-lucide="paw-print"></i><span>القطة</span></a>
                 <a href="#news" class="nav-link"><i data-lucide="newspaper"></i><span>الأخبار</span></a>
                 <a href="#members" class="nav-link"><i data-lucide="users"></i><span>الأعضاء</span></a>
                 <a href="#prayer" class="nav-link"><i data-lucide="landmark"></i><span>الصلاة</span></a>
-                <a href="#settings" class="nav-link"><i data-lucide="grid-2x2"></i><span>الإعدادات</span></a>
+                <a href="#settings" class="nav-link"><i data-lucide="grid-2x2"></i><span>المزيد</span></a>
             </nav>
 
             <button id="logout-button" class="sidebar-logout" type="button">
@@ -89,8 +89,11 @@
                 </div>
 
                 <div class="top-actions">
-                    <p id="todayLabel" class="eyebrow"></p>
-                    <h1 id="pageTitle">الشقردية</h1>
+                    <img class="topbar-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" loading="lazy" decoding="async">
+                    <div class="topbar-title-copy">
+                        <p id="todayLabel" class="eyebrow"></p>
+                        <h1 id="pageTitle">تطبيق الاستراحة</h1>
+                    </div>
                     <span id="onlineState" class="status-pill"></span>
                 </div>
             </header>
@@ -108,6 +111,6 @@
         </div>
     </div>
 
-    <script type="module" src="assets/js/main.js?v=238"></script>
+    <script type="module" src="assets/js/main.js?v=248"></script>
 </body>
 </html>

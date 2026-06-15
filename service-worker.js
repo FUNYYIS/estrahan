@@ -1,8 +1,9 @@
-const CACHE_NAME = 'estraha-cache-v238';
+const CACHE_NAME = 'estraha-cache-v248';
 
 const urlsToCache = [
   '/',
   '/index.html',
+  '/firebase-messaging-sw.js',
   '/assets/css/main.css',
   '/assets/js/main.js',
   '/assets/images/estraha-logo.svg',
@@ -20,6 +21,7 @@ const urlsToCache = [
   '/pages/settings.html',
   '/pages/profile-settings.html',
   '/pages/notifications-settings.html',
+  '/pages/admin-notifications.html',
   '/pages/prayer.html',
   '/pages/qibla.html',
   '/pages/matches.html',

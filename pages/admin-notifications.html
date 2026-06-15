@@ -1,0 +1,106 @@
+<header class="app-page-header">
+    <div>
+        <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
+        <div>
+            <span>إدارة الموقع</span>
+            <h2>لوحة التحكم</h2>
+        </div>
+    </div>
+    <a href="#settings" class="service-link">الإعدادات</a>
+</header>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="sliders-horizontal"></i> أدوات تحكم الموقع</h2>
+        <p class="text-sm">اختصارات سريعة لإدارة أقسام التطبيق</p>
+    </div>
+
+    <div class="cards-grid">
+        <a href="#members" class="service-card">
+            <i data-lucide="users"></i>
+            <strong>إدارة الأعضاء</strong>
+            <span>متابعة الأسماء وحالة السداد</span>
+        </a>
+        <a href="#payments" class="service-card">
+            <i data-lucide="paw-print"></i>
+            <strong>إدارة القطة</strong>
+            <span>مراجعة المدفوعات والمتأخرين</span>
+        </a>
+        <a href="#notifications-settings" class="service-card">
+            <i data-lucide="bell"></i>
+            <strong>إعدادات الإشعارات</strong>
+            <span>تفعيل وتنظيم التنبيهات</span>
+        </a>
+        <a href="#chat" class="service-card">
+            <i data-lucide="messages-square"></i>
+            <strong>متابعة الدردشة</strong>
+            <span>فتح دردشة الاستراحة العامة</span>
+        </a>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="bell-ring"></i> اختبار الإشعارات</h2>
+        <p class="text-sm">اختبر وصول الإشعارات قبل الاعتماد</p>
+    </div>
+
+    <div class="cards-grid">
+        <button type="button" class="btn" data-admin-test-notification="match">اختبار إشعار مباراة</button>
+        <button type="button" class="btn" data-admin-test-notification="payment">اختبار إشعار القطة</button>
+        <button type="button" class="btn" data-admin-test-notification="prayer">اختبار إشعار الصلاة</button>
+        <button type="button" class="btn" data-admin-test-notification="general">اختبار إشعار عام</button>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
+        <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
+    </div>
+
+    <form id="admin-broadcast-form" class="section-stack">
+        <div class="input-group">
+            <label for="broadcast-title">عنوان الإشعار</label>
+            <input id="broadcast-title" type="text" maxlength="120" autocomplete="off" placeholder="مثال: تنبيه مهم" required>
+        </div>
+
+        <div class="input-group">
+            <label for="broadcast-message">نص الإشعار</label>
+            <textarea id="broadcast-message" rows="4" maxlength="240" placeholder="اكتب نص التنبيه هنا" required></textarea>
+        </div>
+
+        <button type="submit" class="btn">إرسال للجميع</button>
+    </form>
+</section>
+
+<section id="admin-notification-report" class="panel" hidden>
+    <div class="panel-head">
+        <h2><i data-lucide="clipboard-check"></i> تقرير الإرسال</h2>
+    </div>
+
+    <div class="cards-grid">
+        <div class="stat-card">
+            <span>تم الإرسال بنجاح</span>
+            <strong id="notification-success-count">0</strong>
+        </div>
+
+        <div class="stat-card">
+            <span>فشل الإرسال</span>
+            <strong id="notification-failure-count">0</strong>
+        </div>
+    </div>
+
+    <p id="admin-notification-status" class="text-sm"></p>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="history"></i> سجل الإشعارات</h2>
+        <p class="text-sm">آخر التنبيهات المرسلة من لوحة الإدارة</p>
+    </div>
+
+    <div id="admin-notification-history" class="section-stack">
+        <p class="text-center">جاري تحميل سجل الإشعارات...</p>
+    </div>
+</section>

@@ -769,12 +769,14 @@ async function requestBrowserNotificationPermission() {
     }
 }
 
-function setupAdminNotifications() {
+async function setupAdminNotifications() {
     if ((auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
         window.location.hash = '#settings';
         return;
     }
+
+    await loadAppSettings();
 
     const report = document.getElementById('admin-notification-report');
     const successCount = document.getElementById('notification-success-count');

@@ -93,7 +93,7 @@ const MATCH_NOTIFICATION_TEMPLATES = [
 
 const routeTitles = {
     '#login': 'أقلط',
-    '#register': 'سجل معنا يالذيب',
+    '#register': 'إنشاء حساب',
     '#home': 'الصفحة الرئيسية',
     '#members': 'الأعضاء',
     '#payments': 'القطة الشهرية',

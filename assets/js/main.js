@@ -786,6 +786,47 @@ async function setupAdminNotifications() {
     const titleInput = document.getElementById('broadcast-title');
     const messageInput = document.getElementById('broadcast-message');
 
+    const appSettingsForm = document.getElementById('admin-app-settings-form');
+    const siteNameInput = document.getElementById('admin-site-name');
+    const siteDescriptionInput = document.getElementById('admin-site-description');
+    const inviteCodeInput = document.getElementById('admin-invite-code');
+    const homeAnnouncementInput = document.getElementById('admin-home-announcement');
+    const appSettingsStatus = document.getElementById('admin-app-settings-status');
+
+    if (siteNameInput) siteNameInput.value = appSettings.siteName || '';
+    if (siteDescriptionInput) siteDescriptionInput.value = appSettings.siteDescription || '';
+    if (inviteCodeInput) inviteCodeInput.value = appSettings.inviteCode || '';
+    if (homeAnnouncementInput) homeAnnouncementInput.value = appSettings.homeAnnouncement || '';
+
+    appSettingsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextSettings = {
+            siteName: siteNameInput?.value.trim() || DEFAULT_APP_SETTINGS.siteName,
+            siteDescription: siteDescriptionInput?.value.trim() || DEFAULT_APP_SETTINGS.siteDescription,
+            inviteCode: inviteCodeInput?.value.trim() || DEFAULT_APP_SETTINGS.inviteCode,
+            homeAnnouncement: homeAnnouncementInput?.value.trim() || ''
+        };
+
+        if (appSettingsStatus) appSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...DEFAULT_APP_SETTINGS, ...nextSettings };
+            if (appSettingsStatus) appSettingsStatus.textContent = 'تم حفظ إعدادات الموقع بنجاح.';
+            showAlert('تم حفظ إعدادات الموقع.');
+        } catch (error) {
+            console.error('App settings save failed:', error);
+            if (appSettingsStatus) appSettingsStatus.textContent = 'فشل حفظ الإعدادات.';
+            showAlert('فشل حفظ إعدادات الموقع.');
+        }
+    });
+
     const setStatus = (message = '') => {
         if (status) status.textContent = message;
     };

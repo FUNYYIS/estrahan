@@ -55,6 +55,38 @@
 
 <section class="panel">
     <div class="panel-head">
+        <h2><i data-lucide="settings-2"></i> إعدادات الموقع</h2>
+        <p class="text-sm">عدّل بيانات التطبيق ورمز الدعوة من هنا</p>
+    </div>
+
+    <form id="admin-app-settings-form" class="section-stack">
+        <div class="input-group">
+            <label for="admin-site-name">اسم الموقع</label>
+            <input id="admin-site-name" type="text" maxlength="80" autocomplete="off" placeholder="تطبيق الاستراحة">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-site-description">وصف الموقع</label>
+            <input id="admin-site-description" type="text" maxlength="160" autocomplete="off" placeholder="إدارة خدمات الاستراحة والقطة والمباريات">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-invite-code">رمز الدعوة</label>
+            <input id="admin-invite-code" type="text" maxlength="40" autocomplete="off" placeholder="Ss7905Ss">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-home-announcement">إعلان مثبت بالرئيسية</label>
+            <textarea id="admin-home-announcement" rows="3" maxlength="240" placeholder="اكتب إعلان يظهر في الصفحة الرئيسية"></textarea>
+        </div>
+
+        <button type="submit" class="btn">حفظ إعدادات الموقع</button>
+        <p id="admin-app-settings-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
         <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
         <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
     </div>

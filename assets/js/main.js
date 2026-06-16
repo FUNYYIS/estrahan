@@ -620,6 +620,10 @@ function attachEventListeners(hash) {
         if (chatForm) chatForm.addEventListener('submit', handleSendMessage);
     }
 
+    if (pageId === 'members') {
+        setupManualMemberForm();
+    }
+
     if (pageId === 'home') {
         const homeThemeToggle = document.getElementById('home-theme-toggle');
         const homeThemeIcon = homeThemeToggle?.querySelector('i');
@@ -1466,6 +1470,57 @@ async function loadHomePageData() {
     }
 }
 
+
+
+function setupManualMemberForm() {
+    const form = document.getElementById('manual-member-form');
+    if (!form) return;
+
+    const nameInput = document.getElementById('manual-member-name');
+    const phoneInput = document.getElementById('manual-member-phone');
+    const status = document.getElementById('manual-member-status');
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID) {
+            showAlert('هذه العملية للمسؤول فقط.');
+            return;
+        }
+
+        const name = nameInput?.value.trim();
+        const phone = phoneInput?.value.trim() || '';
+
+        if (!name) {
+            showAlert('اكتب اسم العضو أولاً.');
+            return;
+        }
+
+        if (status) status.textContent = 'جاري إضافة العضو...';
+
+        try {
+            await addDoc(collection(db, "users"), {
+                name,
+                phone,
+                paymentStatus: 'late',
+                disabled: false,
+                avatarUrl: '',
+                manual: true,
+                createdAt: serverTimestamp(),
+                createdBy: auth.currentUser?.uid || currentUser?.uid || ''
+            });
+
+            form.reset();
+            if (status) status.textContent = 'تمت إضافة العضو.';
+            showAlert('تمت إضافة العضو.');
+        } catch (error) {
+            console.error('Manual member add failed:', error);
+            if (status) status.textContent = 'فشلت إضافة العضو.';
+            showAlert('فشلت إضافة العضو.');
+        }
+    });
+}
+
 function loadMembers() {
     const membersList = document.getElementById('members-list');
     if (!membersList) {
@@ -1499,6 +1554,8 @@ function loadMembers() {
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
                         <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تعديل الاسم</button>
+                        <button data-id="${memberId}" data-disabled="${member.disabled === true ? 'true' : 'false'}" class="disable-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">${member.disabled === true ? 'تفعيل' : 'تعطيل'}</button>
+                        <button data-id="${memberId}" class="reset-avatar-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تصفير الصورة</button>
                         <button data-id="${memberId}" class="delete-member-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">حذف</button>
                     `;
                 }
@@ -1543,6 +1600,42 @@ function loadMembers() {
                     } catch (error) {
                         console.error('Error updating member name:', error);
                         showAlert('فشل تعديل اسم العضو.');
+                    }
+                });
+            });
+
+
+            document.querySelectorAll('.disable-member-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const memberId = e.target.dataset.id;
+                    const isDisabled = e.target.dataset.disabled === 'true';
+
+                    try {
+                        await updateDoc(doc(db, "users", memberId), {
+                            disabled: !isDisabled
+                        });
+                        showAlert(isDisabled ? 'تم تفعيل العضو.' : 'تم تعطيل العضو.');
+                    } catch (error) {
+                        console.error('Error toggling member disabled:', error);
+                        showAlert('فشل تحديث حالة العضو.');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.reset-avatar-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const memberId = e.target.dataset.id;
+                    const confirmed = confirm('متأكد تبي تصفر صورة هذا العضو؟');
+                    if (!confirmed) return;
+
+                    try {
+                        await updateDoc(doc(db, "users", memberId), {
+                            avatarUrl: ''
+                        });
+                        showAlert('تمت إعادة تعيين صورة العضو.');
+                    } catch (error) {
+                        console.error('Error resetting member avatar:', error);
+                        showAlert('فشل تصفير صورة العضو.');
                     }
                 });
             });

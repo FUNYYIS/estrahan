@@ -87,6 +87,56 @@
 
 <section class="panel">
     <div class="panel-head">
+        <h2><i data-lucide="home"></i> إدارة الصفحة الرئيسية</h2>
+        <p class="text-sm">اختر الأقسام اللي تظهر للأعضاء في الرئيسية</p>
+    </div>
+
+    <form id="admin-home-sections-form" class="section-stack">
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="cloud-sun"></i>
+                <span class="font-bold">إظهار الطقس</span>
+            </div>
+            <input id="admin-show-weather" type="checkbox">
+        </label>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="landmark"></i>
+                <span class="font-bold">إظهار الصلاة</span>
+            </div>
+            <input id="admin-show-prayer" type="checkbox">
+        </label>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="trophy"></i>
+                <span class="font-bold">إظهار المباريات</span>
+            </div>
+            <input id="admin-show-matches" type="checkbox">
+        </label>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="newspaper"></i>
+                <span class="font-bold">إظهار الأخبار</span>
+            </div>
+            <input id="admin-show-news" type="checkbox">
+        </label>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="messages-square"></i>
+                <span class="font-bold">إظهار الدردشة</span>
+            </div>
+            <input id="admin-show-chat" type="checkbox">
+        </label>
+
+        <button type="submit" class="btn">حفظ إدارة الرئيسية</button>
+        <p id="admin-home-sections-status" class="text-sm"></p>
+    </form>
+<section class="panel">
+    <div class="panel-head">
         <h2><i data-lucide="hand-coins"></i> إعدادات القطة والدفع</h2>
         <p class="text-sm">جهّز بيانات القطة والدفع بدون تفعيلها للأعضاء حالياً</p>
     </div>

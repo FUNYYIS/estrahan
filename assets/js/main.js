@@ -63,6 +63,12 @@ const DEFAULT_APP_SETTINGS = {
     inviteCode: 'Ss7905Ss',
     homeAnnouncement: '',
 
+    showWeather: true,
+    showPrayer: true,
+    showMatches: true,
+    showNews: true,
+    showChat: true,
+
     qattahAmount: 100,
     paymentEnabled: false,
 
@@ -810,6 +816,21 @@ async function setupAdminNotifications() {
     const paymentEnabledInput = document.getElementById('admin-payment-enabled');
     const paymentSettingsStatus = document.getElementById('admin-payment-settings-status');
 
+    const homeSectionsForm = document.getElementById('admin-home-sections-form');
+    const showWeatherInput = document.getElementById('admin-show-weather');
+    const showPrayerInput = document.getElementById('admin-show-prayer');
+    const showMatchesInput = document.getElementById('admin-show-matches');
+    const showNewsInput = document.getElementById('admin-show-news');
+    const showChatInput = document.getElementById('admin-show-chat');
+    const homeSectionsStatus = document.getElementById('admin-home-sections-status');
+
+    if (showWeatherInput) showWeatherInput.checked = appSettings.showWeather !== false;
+    if (showPrayerInput) showPrayerInput.checked = appSettings.showPrayer !== false;
+    if (showMatchesInput) showMatchesInput.checked = appSettings.showMatches !== false;
+    if (showNewsInput) showNewsInput.checked = appSettings.showNews !== false;
+    if (showChatInput) showChatInput.checked = appSettings.showChat !== false;
+
+
     if (siteNameInput) siteNameInput.value = appSettings.siteName || '';
     if (siteDescriptionInput) siteDescriptionInput.value = appSettings.siteDescription || '';
     if (inviteCodeInput) inviteCodeInput.value = appSettings.inviteCode || '';
@@ -821,6 +842,38 @@ async function setupAdminNotifications() {
     if (applePayTextInput) applePayTextInput.value = appSettings.applePayText || '';
     if (paymentQrUrlInput) paymentQrUrlInput.value = appSettings.paymentQrUrl || '';
     if (paymentEnabledInput) paymentEnabledInput.checked = appSettings.paymentEnabled === true;
+
+
+    homeSectionsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextHomeSettings = {
+            showWeather: showWeatherInput?.checked === true,
+            showPrayer: showPrayerInput?.checked === true,
+            showMatches: showMatchesInput?.checked === true,
+            showNews: showNewsInput?.checked === true,
+            showChat: showChatInput?.checked === true
+        };
+
+        if (homeSectionsStatus) homeSectionsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextHomeSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextHomeSettings };
+
+            if (homeSectionsStatus) homeSectionsStatus.textContent = 'تم حفظ إعدادات الرئيسية.';
+            showAlert('تم حفظ إعدادات الرئيسية.');
+        } catch (error) {
+            console.error('Home settings save failed:', error);
+            if (homeSectionsStatus) homeSectionsStatus.textContent = 'فشل الحفظ.';
+            showAlert('فشل حفظ إعدادات الرئيسية.');
+        }
+    });
 
     paymentSettingsForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -1321,18 +1374,45 @@ function applyHomeAppSettings() {
 }
 
 
+
+function applyHomeSectionVisibility() {
+    const weather = document.getElementById('weather-card');
+    const prayer = document.getElementById('prayer-card');
+    const matches = document.getElementById('matches-card');
+    const news = document.getElementById('news-card');
+    const chat = document.getElementById('chat-card');
+
+    if (weather) weather.style.display = appSettings.showWeather === false ? 'none' : '';
+    if (prayer) prayer.style.display = appSettings.showPrayer === false ? 'none' : '';
+    if (matches) matches.style.display = appSettings.showMatches === false ? 'none' : '';
+    if (news) news.style.display = appSettings.showNews === false ? 'none' : '';
+    if (chat) chat.style.display = appSettings.showChat === false ? 'none' : '';
+}
+
+
 async function loadHomePageData() {
     if (!currentUser) return;
 
     try {
         await loadAppSettings();
         applyHomeAppSettings();
-        loadHomePrayerAndDate();
-        loadHomeWeather();
+        if (appSettings.showPrayer !== false) {
+            loadHomePrayerAndDate();
+        }
+        if (appSettings.showWeather !== false) {
+            loadHomeWeather();
+        }
         loadHomeMembersSummary();
-        loadHomeChatPreview();
-        loadHomeMatches();
-        loadHomeNews();
+        if (appSettings.showChat !== false) {
+            loadHomeChatPreview();
+        }
+        if (appSettings.showMatches !== false) {
+            loadHomeMatches();
+        }
+        if (appSettings.showNews !== false) {
+            loadHomeNews();
+        }
+        applyHomeSectionVisibility();
     } catch (error) {
         console.error('Error loading home page data:', error);
     }

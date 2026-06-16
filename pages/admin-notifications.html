@@ -205,6 +205,26 @@
 
 <section class="panel">
     <div class="panel-head">
+        <h2><i data-lucide="messages-square"></i> إدارة الدردشة</h2>
+        <p class="text-sm">تحكم سريع بحالة الدردشة</p>
+    </div>
+
+    <form id="admin-chat-settings-form" class="section-stack">
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="power"></i>
+                <span class="font-bold">تشغيل الدردشة</span>
+            </div>
+            <input id="admin-chat-enabled" type="checkbox">
+        </label>
+
+        <button type="submit" class="btn">حفظ إعدادات الدردشة</button>
+        <p id="admin-chat-settings-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
         <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
         <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
     </div>

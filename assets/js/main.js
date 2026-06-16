@@ -69,6 +69,9 @@ const DEFAULT_APP_SETTINGS = {
     showNews: true,
     showChat: true,
 
+    chatEnabled: true,
+    mutedUserIds: [],
+
     qattahAmount: 100,
     paymentEnabled: false,
 
@@ -861,6 +864,13 @@ async function setupAdminNotifications() {
     const showChatInput = document.getElementById('admin-show-chat');
     const homeSectionsStatus = document.getElementById('admin-home-sections-status');
 
+    const chatSettingsForm = document.getElementById('admin-chat-settings-form');
+    const chatEnabledInput = document.getElementById('admin-chat-enabled');
+    const chatSettingsStatus = document.getElementById('admin-chat-settings-status');
+
+    if (chatEnabledInput) chatEnabledInput.checked = appSettings.chatEnabled !== false;
+
+
     if (showWeatherInput) showWeatherInput.checked = appSettings.showWeather !== false;
     if (showPrayerInput) showPrayerInput.checked = appSettings.showPrayer !== false;
     if (showMatchesInput) showMatchesInput.checked = appSettings.showMatches !== false;
@@ -909,6 +919,33 @@ async function setupAdminNotifications() {
             console.error('Home settings save failed:', error);
             if (homeSectionsStatus) homeSectionsStatus.textContent = 'فشل الحفظ.';
             showAlert('فشل حفظ إعدادات الرئيسية.');
+        }
+    });
+
+
+    chatSettingsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextChatSettings = {
+            chatEnabled: chatEnabledInput?.checked === true
+        };
+
+        if (chatSettingsStatus) chatSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextChatSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextChatSettings };
+            if (chatSettingsStatus) chatSettingsStatus.textContent = 'تم حفظ إعدادات الدردشة.';
+            showAlert('تم حفظ إعدادات الدردشة.');
+        } catch (error) {
+            console.error('Chat settings save failed:', error);
+            if (chatSettingsStatus) chatSettingsStatus.textContent = 'فشل حفظ إعدادات الدردشة.';
+            showAlert('فشل حفظ إعدادات الدردشة.');
         }
     });
 
@@ -1865,13 +1902,19 @@ function renderChatMessages(chatBox) {
         const profile = chatUsersCache.get(msg.userId) || {};
         const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
         const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
+        const adminChatControls = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)
+            ? `<button type="button" class="pin-chat-message-btn btn" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">تثبيت</button>
+               <button type="button" class="mute-chat-user-btn btn" data-user-id="${escapeHtml(msg.userId || '')}" style="width:auto; padding:4px 8px; font-size:11px;">كتم</button>
+               <button type="button" class="delete-chat-message-btn btn btn-danger" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">حذف</button>`
+            : '';
 
         div.innerHTML = `
             <div class="chat-avatar">${avatarContent}</div>
             <div class="chat-message-stack">
                 <div class="chat-message-meta">
-                    <strong>${escapeHtml(userDisplayName)}</strong>
+                    <strong>${appSettings.pinnedMessageId === msg.id ? '📌 ' : ''}${escapeHtml(userDisplayName)}</strong>
                     <span>${escapeHtml(time)}</span>
+                    ${adminChatControls}
                 </div>
                 <div class="message ${isMe ? 'mine' : ''}">
                     <p>${messageText}</p>
@@ -1880,6 +1923,77 @@ function renderChatMessages(chatBox) {
         `;
         chatBox.appendChild(div);
     });
+
+
+
+    document.querySelectorAll('.pin-chat-message-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const messageId = event.currentTarget.dataset.id;
+            if (!messageId) return;
+
+            try {
+                await setDoc(doc(db, 'settings', 'app'), {
+                    pinnedMessageId: messageId
+                }, { merge: true });
+
+                appSettings.pinnedMessageId = messageId;
+                showAlert('تم تثبيت الرسالة.');
+            } catch (error) {
+                console.error('Pin message failed:', error);
+                showAlert('فشل تثبيت الرسالة.');
+            }
+        });
+    });
+
+    document.querySelectorAll('.mute-chat-user-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const userId = event.currentTarget.dataset.userId;
+            if (!userId) return;
+
+            const confirmed = confirm('متأكد تبي تكتم هذا العضو؟');
+            if (!confirmed) return;
+
+            try {
+                await loadAppSettings();
+
+                const muted = Array.isArray(appSettings.mutedUserIds)
+                    ? [...appSettings.mutedUserIds]
+                    : [];
+
+                if (!muted.includes(userId)) {
+                    muted.push(userId);
+                }
+
+                await setDoc(doc(db, 'settings', 'app'), {
+                    mutedUserIds: muted
+                }, { merge: true });
+
+                appSettings.mutedUserIds = muted;
+
+                showAlert('تم كتم العضو.');
+            } catch (error) {
+                console.error('Mute user failed:', error);
+                showAlert('فشل كتم العضو.');
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-chat-message-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const messageId = event.currentTarget.dataset.id;
+            const confirmed = confirm('متأكد تبي تحذف الرسالة؟');
+            if (!confirmed || !messageId) return;
+
+            try {
+                await deleteDoc(doc(db, "chat", messageId));
+                showAlert('تم حذف الرسالة.');
+            } catch (error) {
+                console.error('Chat message delete failed:', error);
+                showAlert('فشل حذف الرسالة.');
+            }
+        });
+    });
+
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -1931,6 +2045,18 @@ async function handleSendMessage(e) {
 
     if (!currentUser) {
         showAlert('لازم تقلط أول.');
+        return;
+    }
+
+    await loadAppSettings();
+
+    if (appSettings.chatEnabled === false) {
+        showAlert('الدردشة مقفلة مؤقتاً.');
+        return;
+    }
+
+    if (Array.isArray(appSettings.mutedUserIds) && appSettings.mutedUserIds.includes(currentUser.uid)) {
+        showAlert('تم كتمك مؤقتاً من الدردشة.');
         return;
     }
 

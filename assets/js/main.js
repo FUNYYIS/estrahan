@@ -72,6 +72,13 @@ const DEFAULT_APP_SETTINGS = {
     chatEnabled: true,
     mutedUserIds: [],
 
+    themePrimaryColor: '#78915a',
+    themeBackgroundColor: '#f6f3ea',
+    themeCardColor: '#ffffff',
+    themeLogoUrl: '',
+    themeBackgroundImageUrl: '',
+    themeBackgroundImageEnabled: false,
+
     qattahAmount: 100,
     paymentEnabled: false,
 
@@ -82,6 +89,48 @@ const DEFAULT_APP_SETTINGS = {
 };
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
+
+
+function applyCustomTheme() {
+    const root = document.documentElement;
+
+    const primary = appSettings.themePrimaryColor || '#78915a';
+    const background = appSettings.themeBackgroundColor || '#f6f3ea';
+    const card = appSettings.themeCardColor || '#ffffff';
+
+    root.style.setProperty('--theme-primary', primary);
+    root.style.setProperty('--theme-background', background);
+    root.style.setProperty('--theme-card', card);
+
+    document.body.style.backgroundColor = background;
+
+    document.querySelectorAll('.panel, .home-reference-card, .payment-summary-card, .list-item-card, .service-card, .stat-card').forEach((el) => {
+        el.style.backgroundColor = card;
+    });
+
+    document.querySelectorAll('.btn').forEach((el) => {
+        el.style.backgroundColor = primary;
+    });
+
+    const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '');
+    if (logoUrl) {
+        document.querySelectorAll('img[src*="estraha-logo"], #app-logo, .app-page-logo, .topbar-logo, .splash-logo, .home-title-logo').forEach((img) => {
+            img.src = logoUrl;
+        });
+    }
+
+    if (appSettings.themeBackgroundImageEnabled === true && appSettings.themeBackgroundImageUrl) {
+        const bgUrl = safeExternalUrl(appSettings.themeBackgroundImageUrl, '');
+        if (bgUrl) {
+            document.body.style.backgroundImage = `url("${bgUrl}")`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundAttachment = 'fixed';
+            document.body.style.backgroundPosition = 'center';
+        }
+    } else {
+        document.body.style.backgroundImage = '';
+    }
+}
 
 async function loadAppSettings() {
     try {
@@ -96,6 +145,7 @@ async function loadAppSettings() {
         console.warn('App settings unavailable, using defaults:', error);
         appSettings = { ...DEFAULT_APP_SETTINGS };
     }
+    applyCustomTheme();
     return appSettings;
 }
 
@@ -868,6 +918,23 @@ async function setupAdminNotifications() {
     const chatEnabledInput = document.getElementById('admin-chat-enabled');
     const chatSettingsStatus = document.getElementById('admin-chat-settings-status');
 
+    const themeSettingsForm = document.getElementById('admin-theme-settings-form');
+    const themePrimaryColorInput = document.getElementById('admin-theme-primary-color');
+    const themeBackgroundColorInput = document.getElementById('admin-theme-background-color');
+    const themeCardColorInput = document.getElementById('admin-theme-card-color');
+    const themeLogoUrlInput = document.getElementById('admin-theme-logo-url');
+    const themeBackgroundImageUrlInput = document.getElementById('admin-theme-background-image-url');
+    const themeBackgroundImageEnabledInput = document.getElementById('admin-theme-background-image-enabled');
+    const themeSettingsStatus = document.getElementById('admin-theme-settings-status');
+
+    if (themePrimaryColorInput) themePrimaryColorInput.value = appSettings.themePrimaryColor || '#78915a';
+    if (themeBackgroundColorInput) themeBackgroundColorInput.value = appSettings.themeBackgroundColor || '#f6f3ea';
+    if (themeCardColorInput) themeCardColorInput.value = appSettings.themeCardColor || '#ffffff';
+    if (themeLogoUrlInput) themeLogoUrlInput.value = appSettings.themeLogoUrl || '';
+    if (themeBackgroundImageUrlInput) themeBackgroundImageUrlInput.value = appSettings.themeBackgroundImageUrl || '';
+    if (themeBackgroundImageEnabledInput) themeBackgroundImageEnabledInput.checked = appSettings.themeBackgroundImageEnabled === true;
+
+
     if (chatEnabledInput) chatEnabledInput.checked = appSettings.chatEnabled !== false;
 
 
@@ -922,6 +989,40 @@ async function setupAdminNotifications() {
         }
     });
 
+
+
+    themeSettingsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextThemeSettings = {
+            themePrimaryColor: themePrimaryColorInput?.value || '#78915a',
+            themeBackgroundColor: themeBackgroundColorInput?.value || '#f6f3ea',
+            themeCardColor: themeCardColorInput?.value || '#ffffff',
+            themeLogoUrl: themeLogoUrlInput?.value.trim() || '',
+            themeBackgroundImageUrl: themeBackgroundImageUrlInput?.value.trim() || '',
+            themeBackgroundImageEnabled: themeBackgroundImageEnabledInput?.checked === true
+        };
+
+        if (themeSettingsStatus) themeSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextThemeSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextThemeSettings };
+            applyCustomTheme();
+
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'تم حفظ التصميم.';
+            showAlert('تم حفظ إعدادات التصميم.');
+        } catch (error) {
+            console.error('Theme settings save failed:', error);
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'فشل حفظ التصميم.';
+            showAlert('فشل حفظ إعدادات التصميم.');
+        }
+    });
 
     chatSettingsForm?.addEventListener('submit', async (event) => {
         event.preventDefault();

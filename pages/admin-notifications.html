@@ -205,6 +205,51 @@
 
 <section class="panel">
     <div class="panel-head">
+        <h2><i data-lucide="palette"></i> إعدادات التصميم</h2>
+        <p class="text-sm">غيّر ألوان الموقع والشعار والخلفية من هنا</p>
+    </div>
+
+    <form id="admin-theme-settings-form" class="section-stack">
+        <div class="input-group">
+            <label for="admin-theme-primary-color">اللون الأساسي</label>
+            <input id="admin-theme-primary-color" type="color" value="#78915a">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-theme-background-color">لون الخلفية</label>
+            <input id="admin-theme-background-color" type="color" value="#f6f3ea">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-theme-card-color">لون الكروت</label>
+            <input id="admin-theme-card-color" type="color" value="#ffffff">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-theme-logo-url">رابط الشعار</label>
+            <input id="admin-theme-logo-url" type="url" maxlength="500" autocomplete="off" placeholder="https://...">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-theme-background-image-url">رابط صورة الخلفية</label>
+            <input id="admin-theme-background-image-url" type="url" maxlength="500" autocomplete="off" placeholder="https://...">
+        </div>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="image"></i>
+                <span class="font-bold">تفعيل صورة الخلفية</span>
+            </div>
+            <input id="admin-theme-background-image-enabled" type="checkbox">
+        </label>
+
+        <button type="submit" class="btn">حفظ التصميم</button>
+        <p id="admin-theme-settings-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
         <h2><i data-lucide="messages-square"></i> إدارة الدردشة</h2>
         <p class="text-sm">تحكم سريع بحالة الدردشة</p>
     </div>

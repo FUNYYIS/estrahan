@@ -57,6 +57,31 @@ const db = getFirestore(app);
 const functions = getFunctions(app, 'us-central1');
 const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
 
+const DEFAULT_APP_SETTINGS = {
+    siteName: 'تطبيق الاستراحة',
+    siteDescription: 'إدارة خدمات الاستراحة والقطة والمباريات',
+    inviteCode: 'Ss7905Ss',
+    homeAnnouncement: ''
+};
+
+let appSettings = { ...DEFAULT_APP_SETTINGS };
+
+async function loadAppSettings() {
+    try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'app'));
+        if (settingsDoc.exists()) {
+            appSettings = { ...DEFAULT_APP_SETTINGS, ...settingsDoc.data() };
+        } else if (auth.currentUser?.uid === ADMIN_UID) {
+            await setDoc(doc(db, 'settings', 'app'), DEFAULT_APP_SETTINGS, { merge: true });
+            appSettings = { ...DEFAULT_APP_SETTINGS };
+        }
+    } catch (error) {
+        console.warn('App settings unavailable, using defaults:', error);
+        appSettings = { ...DEFAULT_APP_SETTINGS };
+    }
+    return appSettings;
+}
+
 // --- عناصر واجهة المستخدم ---
 const pageContent = document.getElementById('page-content');
 const bottomNav = document.getElementById('bottom-nav');
@@ -935,7 +960,9 @@ async function handleCompleteRegistration(e) {
         return;
     }
 
-    if (inviteCode !== 'Ss7905Ss') {
+    await loadAppSettings();
+
+    if (inviteCode !== appSettings.inviteCode) {
         showAlert('رمز الدعوة غير صحيح.');
         return;
     }

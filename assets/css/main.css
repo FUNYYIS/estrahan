@@ -8311,13 +8311,13 @@ body.is-authenticated #bottom-nav.nav {
 
 body.is-authenticated .main,
 body.is-authenticated #page-content {
-  padding-bottom: 110px !important;
+  padding-bottom: 76px !important;
 }
 
 /* Final bottom navigation: fixed, centered, five clean sections */
 body.is-authenticated .main,
 body.is-authenticated #page-content {
-  padding-bottom: calc(116px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
 }
 
 body.is-authenticated #bottom-nav.nav {
@@ -8754,7 +8754,7 @@ body.is-authenticated .main {
 
 body.is-authenticated #page-content {
   overflow: visible !important;
-  padding-bottom: 86px !important;
+  padding-bottom: 76px !important;
 }
 
 body.is-authenticated .topbar {
@@ -8791,7 +8791,7 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
 }
 
 body.is-authenticated #page-content {
-  padding-bottom: 86px !important;
+  padding-bottom: 76px !important;
 }
 
 body.is-authenticated .view > section {
@@ -8807,7 +8807,7 @@ body.is-authenticated #bottom-nav.nav {
 }
 
 body.is-authenticated #page-content {
-  padding-bottom: 86px !important;
+  padding-bottom: 76px !important;
 }
 
 body.is-authenticated #bottom-nav.nav .nav-link[href="#payments"] span::before,
@@ -8885,7 +8885,7 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
   display: grid !important;
   gap: 10px !important;
   direction: rtl !important;
-  padding-bottom: 86px !important;
+  padding-bottom: 76px !important;
 }
 
 .clean-chat-page .app-page-header {

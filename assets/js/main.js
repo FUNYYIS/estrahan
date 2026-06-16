@@ -555,9 +555,7 @@ function attachEventListeners(hash) {
         recaptchaManager.destroy('recaptcha-container-register');
 
         const registerForm = document.getElementById('register-form');
-        const registerCodeForm = document.getElementById('register-code-form');
         if (registerForm) registerForm.addEventListener('submit', handleCompleteRegistration);
-        if (registerCodeForm) registerCodeForm.addEventListener('submit', (e) => handleVerifyCode(e, true));
 
         // Setup recaptcha with validation
         const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
@@ -1016,10 +1014,8 @@ async function handleSendCode(e, isRegister = false) {
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
         if (isRegister) {
-            const registerForm = document.getElementById('register-form');
-            const registerCodeForm = document.getElementById('register-code-form');
-            if (registerForm) registerForm.style.display = 'none';
-            if (registerCodeForm) registerCodeForm.style.display = 'block';
+            window.location.hash = '#register';
+            await renderPage('#register');
         } else {
             const phoneForm = document.getElementById('phone-form');
             const codeForm = document.getElementById('code-form');

@@ -87,6 +87,51 @@
 
 <section class="panel">
     <div class="panel-head">
+        <h2><i data-lucide="hand-coins"></i> إعدادات القطة والدفع</h2>
+        <p class="text-sm">جهّز بيانات القطة والدفع بدون تفعيلها للأعضاء حالياً</p>
+    </div>
+
+    <form id="admin-payment-settings-form" class="section-stack">
+        <div class="input-group">
+            <label for="admin-qattah-amount">مبلغ القطة الشهري</label>
+            <input id="admin-qattah-amount" type="number" min="0" step="1" placeholder="100">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-beneficiary-name">اسم المستفيد</label>
+            <input id="admin-beneficiary-name" type="text" maxlength="80" autocomplete="off" placeholder="اسم المستفيد">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-stc-pay-number">رقم STC Pay</label>
+            <input id="admin-stc-pay-number" type="text" maxlength="30" autocomplete="off" placeholder="05xxxxxxxx">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-apple-pay-text">بيانات Apple Pay</label>
+            <input id="admin-apple-pay-text" type="text" maxlength="120" autocomplete="off" placeholder="غير متاح حالياً">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-payment-qr-url">رابط صورة QR</label>
+            <input id="admin-payment-qr-url" type="url" maxlength="500" autocomplete="off" placeholder="https://...">
+        </div>
+
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="power"></i>
+                <span class="font-bold">تفعيل الدفع للأعضاء</span>
+            </div>
+            <input id="admin-payment-enabled" type="checkbox">
+        </label>
+
+        <button type="submit" class="btn">حفظ إعدادات القطة والدفع</button>
+        <p id="admin-payment-settings-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
         <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
         <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
     </div>

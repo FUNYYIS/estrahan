@@ -61,7 +61,15 @@ const DEFAULT_APP_SETTINGS = {
     siteName: 'تطبيق الاستراحة',
     siteDescription: 'إدارة خدمات الاستراحة والقطة والمباريات',
     inviteCode: 'Ss7905Ss',
-    homeAnnouncement: ''
+    homeAnnouncement: '',
+
+    qattahAmount: 100,
+    paymentEnabled: false,
+
+    stcPayNumber: '',
+    applePayText: '',
+    beneficiaryName: '',
+    paymentQrUrl: ''
 };
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
@@ -793,10 +801,57 @@ async function setupAdminNotifications() {
     const homeAnnouncementInput = document.getElementById('admin-home-announcement');
     const appSettingsStatus = document.getElementById('admin-app-settings-status');
 
+    const paymentSettingsForm = document.getElementById('admin-payment-settings-form');
+    const qattahAmountInput = document.getElementById('admin-qattah-amount');
+    const beneficiaryNameInput = document.getElementById('admin-beneficiary-name');
+    const stcPayNumberInput = document.getElementById('admin-stc-pay-number');
+    const applePayTextInput = document.getElementById('admin-apple-pay-text');
+    const paymentQrUrlInput = document.getElementById('admin-payment-qr-url');
+    const paymentEnabledInput = document.getElementById('admin-payment-enabled');
+    const paymentSettingsStatus = document.getElementById('admin-payment-settings-status');
+
     if (siteNameInput) siteNameInput.value = appSettings.siteName || '';
     if (siteDescriptionInput) siteDescriptionInput.value = appSettings.siteDescription || '';
     if (inviteCodeInput) inviteCodeInput.value = appSettings.inviteCode || '';
     if (homeAnnouncementInput) homeAnnouncementInput.value = appSettings.homeAnnouncement || '';
+
+    if (qattahAmountInput) qattahAmountInput.value = appSettings.qattahAmount ?? DEFAULT_APP_SETTINGS.qattahAmount;
+    if (beneficiaryNameInput) beneficiaryNameInput.value = appSettings.beneficiaryName || '';
+    if (stcPayNumberInput) stcPayNumberInput.value = appSettings.stcPayNumber || '';
+    if (applePayTextInput) applePayTextInput.value = appSettings.applePayText || '';
+    if (paymentQrUrlInput) paymentQrUrlInput.value = appSettings.paymentQrUrl || '';
+    if (paymentEnabledInput) paymentEnabledInput.checked = appSettings.paymentEnabled === true;
+
+    paymentSettingsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextPaymentSettings = {
+            qattahAmount: Number(qattahAmountInput?.value || DEFAULT_APP_SETTINGS.qattahAmount),
+            paymentEnabled: paymentEnabledInput?.checked === true,
+            beneficiaryName: beneficiaryNameInput?.value.trim() || '',
+            stcPayNumber: stcPayNumberInput?.value.trim() || '',
+            applePayText: applePayTextInput?.value.trim() || '',
+            paymentQrUrl: paymentQrUrlInput?.value.trim() || ''
+        };
+
+        if (paymentSettingsStatus) paymentSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextPaymentSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextPaymentSettings };
+            if (paymentSettingsStatus) paymentSettingsStatus.textContent = 'تم حفظ إعدادات القطة والدفع.';
+            showAlert('تم حفظ إعدادات القطة والدفع.');
+        } catch (error) {
+            console.error('Payment settings save failed:', error);
+            if (paymentSettingsStatus) paymentSettingsStatus.textContent = 'فشل حفظ إعدادات القطة والدفع.';
+            showAlert('فشل حفظ إعدادات القطة والدفع.');
+        }
+    });
 
     appSettingsForm?.addEventListener('submit', async (event) => {
         event.preventDefault();

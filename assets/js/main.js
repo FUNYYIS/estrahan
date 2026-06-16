@@ -79,7 +79,6 @@ const topProfile = document.getElementById('top-profile');
 
 // --- حالة التطبيق ---
 let currentUser = null;
-let tempName = ''; // لتخزين الاسم مؤقتاً عند التسجيل
 let unsubscribeChat, unsubscribeChatUsers, unsubscribeMembers, unsubscribePayments;
 let chatMessagesCache = [];
 let chatUsersCache = new Map();
@@ -997,19 +996,6 @@ async function handleSendCode(e, isRegister = false) {
         phoneNumber = '+966' + phoneNumber;
     }
 
-    if (isRegister) {
-        const nameInput = document.getElementById('register-name');
-        if (!nameInput) {
-            showAlert('خانة الاسم مو موجودة، حدّث الصفحة.');
-            return;
-        }
-        tempName = nameInput.value.trim();
-        if (!tempName) {
-            showAlert('الرجاء إدخال الاسم الكامل.');
-            return;
-        }
-    }
-
     // Get recaptcha verifier
     const appVerifier = window.recaptchaVerifier;
     if (!appVerifier) {
@@ -1028,10 +1014,6 @@ async function handleSendCode(e, isRegister = false) {
 
         // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
-        if (isRegister) {
-            sessionStorage.setItem('tempName', tempName);
-        }
-
         setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
         if (isRegister) {
             const registerForm = document.getElementById('register-form');
@@ -1132,19 +1114,12 @@ async function handleVerifyCode(e, isRegister = false) {
         console.log('✓ Phone verification successful');
 
         if (isRegister) {
-            const name = sessionStorage.getItem('tempName');
-            if (!name) {
-                showAlert('ضاعت بيانات التسجيل. جرّب مرة ثانية.');
-                return;
-            }
-            console.log('Creating user profile...');
-            await setDoc(doc(db, "users", user.uid), {
-                name: name,
-                phone: user.phoneNumber,
-                paymentStatus: 'late',
-                createdAt: serverTimestamp()
-            });
-            console.log('✓ User profile created');
+            sessionStorage.removeItem('firebaseVerificationId');
+
+            showAlert('تم التحقق من رقمك. كمل الاسم ورمز الدعوة.');
+            window.location.hash = '#register';
+            await renderPage('#register');
+            return;
         }
 
         if (!isRegister) {
@@ -1160,7 +1135,6 @@ async function handleVerifyCode(e, isRegister = false) {
 
         // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
-        sessionStorage.removeItem('tempName');
 
         setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');

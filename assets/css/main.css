@@ -9023,3 +9023,33 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
   outline:none !important;
 }
 
+
+#home-announcement-card{
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  padding:12px 16px !important;
+}
+
+.announcement-marquee{
+  width:100%;
+  overflow:hidden;
+  position:relative;
+}
+
+.announcement-marquee span{
+  display:inline-block;
+  white-space:nowrap;
+  padding-left:100%;
+  animation: estrahaMarquee 18s linear infinite;
+  font-weight:700;
+}
+
+@keyframes estrahaMarquee{
+  from{
+    transform:translateX(0);
+  }
+  to{
+    transform:translateX(-100%);
+  }
+}
+

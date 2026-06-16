@@ -1253,7 +1253,11 @@ function applyHomeAppSettings() {
             heroSection.insertAdjacentElement('afterend', announcement);
         }
         if (announcement) {
-            announcement.innerHTML = `<strong>تنبيه</strong><p>${escapeHtml(appSettings.homeAnnouncement)}</p>`;
+            announcement.innerHTML = `
+<div class="announcement-marquee">
+  <span>📢 ${escapeHtml(appSettings.homeAnnouncement)}</span>
+</div>
+`;
             announcement.style.display = '';
         }
     } else if (announcement) {

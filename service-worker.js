@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v248';
+const CACHE_NAME = 'estraha-cache-v249';
 
 const urlsToCache = [
   '/',

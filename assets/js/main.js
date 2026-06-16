@@ -86,6 +86,13 @@ const DEFAULT_APP_SETTINGS = {
     themeBackgroundImageUrl: '',
     themeBackgroundImageEnabled: false,
 
+    splashEnabled: true,
+    splashType: 'logo',
+    splashTitle: 'تطبيق الاستراحة',
+    splashDuration: 6,
+    splashImageUrl: '',
+    splashVideoUrl: '',
+
     qattahAmount: 100,
     paymentEnabled: false,
 
@@ -97,6 +104,41 @@ const DEFAULT_APP_SETTINGS = {
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
 
+
+
+function applySplashSettings() {
+    const splash = document.getElementById('splash');
+    const splashCard = splash?.querySelector('.splash-card');
+    if (!splash || !splashCard) return;
+
+    if (appSettings.splashEnabled === false) {
+        splash.style.display = 'none';
+        return;
+    }
+
+    const type = appSettings.splashType || 'logo';
+    const title = appSettings.splashTitle || appSettings.siteName || 'تطبيق الاستراحة';
+    const imageUrl = safeExternalUrl(appSettings.splashImageUrl || appSettings.themeLogoUrl || '', '');
+    const videoUrl = safeExternalUrl(appSettings.splashVideoUrl || '', '');
+
+    if (type === 'video' && videoUrl) {
+        splashCard.innerHTML = `
+            <video class="splash-media" src="${escapeHtml(videoUrl)}" autoplay muted playsinline preload="auto"></video>
+            <strong>${escapeHtml(title)}</strong>
+        `;
+    } else if (type === 'image' && imageUrl) {
+        splashCard.innerHTML = `
+            <img class="splash-logo splash-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <strong>${escapeHtml(title)}</strong>
+        `;
+    } else {
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/images/estraha-logo.svg';
+        splashCard.innerHTML = `
+            <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <strong>${escapeHtml(title)}</strong>
+        `;
+    }
+}
 
 function applyCustomTheme() {
     const root = document.documentElement;
@@ -152,6 +194,7 @@ async function loadAppSettings() {
         console.warn('App settings unavailable, using defaults:', error);
         appSettings = { ...DEFAULT_APP_SETTINGS };
     }
+    applySplashSettings();
     applyCustomTheme();
     return appSettings;
 }
@@ -925,6 +968,60 @@ async function setupAdminNotifications() {
     const chatEnabledInput = document.getElementById('admin-chat-enabled');
     const chatSettingsStatus = document.getElementById('admin-chat-settings-status');
 
+    const splashSettingsForm = document.getElementById('admin-splash-settings-form');
+    const splashEnabledInput = document.getElementById('admin-splash-enabled');
+    const splashTypeInput = document.getElementById('admin-splash-type');
+    const splashTitleInput = document.getElementById('admin-splash-title');
+    const splashDurationInput = document.getElementById('admin-splash-duration');
+    const splashImageFileInput = document.getElementById('admin-splash-image-file');
+    const splashImageUrlInput = document.getElementById('admin-splash-image-url');
+    const splashVideoFileInput = document.getElementById('admin-splash-video-file');
+    const splashVideoUrlInput = document.getElementById('admin-splash-video-url');
+    const splashSettingsStatus = document.getElementById('admin-splash-settings-status');
+
+    if (splashEnabledInput) splashEnabledInput.checked = appSettings.splashEnabled !== false;
+    if (splashTypeInput) splashTypeInput.value = appSettings.splashType || 'logo';
+    if (splashTitleInput) splashTitleInput.value = appSettings.splashTitle || appSettings.siteName || 'تطبيق الاستراحة';
+    if (splashDurationInput) splashDurationInput.value = appSettings.splashDuration || 6;
+    if (splashImageUrlInput) splashImageUrlInput.value = appSettings.splashImageUrl || '';
+    if (splashVideoUrlInput) splashVideoUrlInput.value = appSettings.splashVideoUrl || '';
+
+    async function uploadSplashFile(file, folder) {
+        const fileRef = storageRef(storage, `${folder}/${Date.now()}-${file.name}`);
+        await uploadBytes(fileRef, file);
+        return await getDownloadURL(fileRef);
+    }
+
+    splashImageFileInput?.addEventListener('change', async () => {
+        const file = splashImageFileInput.files?.[0];
+        if (!file) return;
+        try {
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'جاري رفع صورة السبلاش...';
+            const url = await uploadSplashFile(file, 'splash-images');
+            if (splashImageUrlInput) splashImageUrlInput.value = url;
+            if (splashTypeInput) splashTypeInput.value = 'image';
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'تم رفع صورة السبلاش.';
+        } catch (error) {
+            console.error('Splash image upload failed:', error);
+            showAlert('فشل رفع صورة السبلاش.');
+        }
+    });
+
+    splashVideoFileInput?.addEventListener('change', async () => {
+        const file = splashVideoFileInput.files?.[0];
+        if (!file) return;
+        try {
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'جاري رفع فيديو السبلاش...';
+            const url = await uploadSplashFile(file, 'splash-videos');
+            if (splashVideoUrlInput) splashVideoUrlInput.value = url;
+            if (splashTypeInput) splashTypeInput.value = 'video';
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'تم رفع فيديو السبلاش.';
+        } catch (error) {
+            console.error('Splash video upload failed:', error);
+            showAlert('فشل رفع فيديو السبلاش.');
+        }
+    });
+
     const themeSettingsForm = document.getElementById('admin-theme-settings-form');
     const themePrimaryColorInput = document.getElementById('admin-theme-primary-color');
     const themeBackgroundColorInput = document.getElementById('admin-theme-background-color');
@@ -1040,6 +1137,40 @@ async function setupAdminNotifications() {
     });
 
 
+
+
+    splashSettingsForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const nextSplashSettings = {
+            splashEnabled: splashEnabledInput?.checked === true,
+            splashType: splashTypeInput?.value || 'logo',
+            splashTitle: splashTitleInput?.value.trim() || 'تطبيق الاستراحة',
+            splashDuration: Number(splashDurationInput?.value || 6),
+            splashImageUrl: splashImageUrlInput?.value.trim() || '',
+            splashVideoUrl: splashVideoUrlInput?.value.trim() || ''
+        };
+
+        if (splashSettingsStatus) splashSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextSplashSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextSplashSettings };
+            applySplashSettings();
+
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'تم حفظ السبلاش.';
+            showAlert('تم حفظ إعدادات السبلاش.');
+        } catch (error) {
+            console.error('Splash settings save failed:', error);
+            if (splashSettingsStatus) splashSettingsStatus.textContent = 'فشل حفظ السبلاش.';
+            showAlert('فشل حفظ إعدادات السبلاش.');
+        }
+    });
 
     themeSettingsForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -3083,7 +3214,7 @@ function initApp() {
                         mainContent.style.display = 'grid';
                         console.log('✓ Splash screen hidden, main content shown');
                     }
-                }, 4500);
+                }, Number(appSettings.splashDuration || 6) * 1000);
             } else if (mainContent) {
                 mainContent.style.display = 'grid';
             }

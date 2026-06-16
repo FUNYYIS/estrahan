@@ -1376,19 +1376,33 @@ function applyHomeAppSettings() {
 
 
 function applyHomeSectionVisibility() {
-    const weather = document.getElementById('weather-card');
-    const prayer = document.getElementById('prayer-card');
-    const matches = document.getElementById('matches-card');
-    const news = document.getElementById('news-card');
-    const chat = document.getElementById('chat-card');
+    const widgetsSection = document.querySelector('.home-reference-widgets');
+    const prayerCard = document.querySelector('.home-prayer-card');
+    const weatherCard = document.querySelector('.home-weather-card');
 
-    if (weather) weather.style.display = appSettings.showWeather === false ? 'none' : '';
-    if (prayer) prayer.style.display = appSettings.showPrayer === false ? 'none' : '';
-    if (matches) matches.style.display = appSettings.showMatches === false ? 'none' : '';
-    if (news) news.style.display = appSettings.showNews === false ? 'none' : '';
-    if (chat) chat.style.display = appSettings.showChat === false ? 'none' : '';
+    const matchesHead = document.querySelector('a[href="#matches"]')?.closest('.reference-section-head');
+    const matchesList = document.getElementById('home-matches-list');
+
+    const chatHead = document.querySelector('a[href="#chat"]')?.closest('.reference-section-head');
+    const chatList = document.getElementById('home-chat-preview');
+
+    const newsList = document.getElementById('home-news-list');
+
+    if (prayerCard) prayerCard.style.display = appSettings.showPrayer === false ? 'none' : '';
+    if (weatherCard) weatherCard.style.display = appSettings.showWeather === false ? 'none' : '';
+    if (widgetsSection) {
+        widgetsSection.style.display =
+            appSettings.showPrayer === false && appSettings.showWeather === false ? 'none' : '';
+    }
+
+    if (matchesHead) matchesHead.style.display = appSettings.showMatches === false ? 'none' : '';
+    if (matchesList) matchesList.style.display = appSettings.showMatches === false ? 'none' : '';
+
+    if (chatHead) chatHead.style.display = appSettings.showChat === false ? 'none' : '';
+    if (chatList) chatList.style.display = appSettings.showChat === false ? 'none' : '';
+
+    if (newsList) newsList.style.display = appSettings.showNews === false ? 'none' : '';
 }
-
 
 async function loadHomePageData() {
     if (!currentUser) return;

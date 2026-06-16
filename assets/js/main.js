@@ -783,6 +783,38 @@ async function requestBrowserNotificationPermission() {
     }
 }
 
+
+
+async function loadAdminStats() {
+    const membersCount = document.getElementById('admin-members-count');
+    const paidCount = document.getElementById('admin-paid-count');
+    const lateCount = document.getElementById('admin-late-count');
+
+    if (!membersCount && !paidCount && !lateCount) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, "users"));
+        const total = snapshot.size;
+        let paid = 0;
+
+        snapshot.forEach((item) => {
+            const user = item.data();
+            if (user.paymentStatus === 'paid') paid += 1;
+        });
+
+        const late = Math.max(total - paid, 0);
+
+        if (membersCount) membersCount.textContent = String(total);
+        if (paidCount) paidCount.textContent = String(paid);
+        if (lateCount) lateCount.textContent = String(late);
+    } catch (error) {
+        console.error('Admin stats load failed:', error);
+        if (membersCount) membersCount.textContent = '--';
+        if (paidCount) paidCount.textContent = '--';
+        if (lateCount) lateCount.textContent = '--';
+    }
+}
+
 async function setupAdminNotifications() {
     if ((auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
@@ -791,6 +823,7 @@ async function setupAdminNotifications() {
     }
 
     await loadAppSettings();
+    loadAdminStats();
 
     const report = document.getElementById('admin-notification-report');
     const successCount = document.getElementById('notification-success-count');

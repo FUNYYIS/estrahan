@@ -634,8 +634,32 @@ function setupProfileEditor() {
     const avatarInput = document.getElementById('profile-avatar-input');
     const avatarPreview = document.getElementById('profile-avatar-preview');
     const status = document.getElementById('profile-save-status');
+    const saveNameBtn = document.getElementById('profile-save-name-btn');
 
     if (nameInput) nameInput.value = currentUser.name || '';
+
+    if (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) {
+        if (nameInput) nameInput.removeAttribute('readonly');
+        if (saveNameBtn) saveNameBtn.style.display = 'inline-flex';
+    }
+
+    saveNameBtn?.addEventListener('click', async () => {
+        const newName = nameInput?.value.trim();
+        if (!newName) {
+            showAlert('اكتب الاسم أولاً.');
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "users", currentUser.uid), { name: newName });
+            currentUser = { ...currentUser, name: newName };
+            syncShellUserState();
+            if (status) status.textContent = 'تم حفظ الاسم بنجاح.';
+        } catch (error) {
+            console.error('Profile name update failed:', error);
+            showAlert('فشل حفظ الاسم.');
+        }
+    });
     if (phoneInput) phoneInput.value = currentUser.phone || '';
     if (avatarPreview) avatarPreview.src = currentUser.avatarUrl || 'assets/images/estraha-logo.svg';
 

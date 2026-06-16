@@ -1235,10 +1235,39 @@ async function handleLogout() {
 
 // --- Firestore Data Loading & Realtime Updates ---
 
-function loadHomePageData() {
+
+function applyHomeAppSettings() {
+    const title = document.getElementById('home-welcome-title');
+    const heroDescription = document.querySelector('.home-reference-hero p');
+    const heroSection = document.querySelector('.home-reference-hero');
+
+    if (title) title.textContent = appSettings.siteName || DEFAULT_APP_SETTINGS.siteName;
+    if (heroDescription) heroDescription.textContent = appSettings.siteDescription || DEFAULT_APP_SETTINGS.siteDescription;
+
+    let announcement = document.getElementById('home-announcement-card');
+    if (appSettings.homeAnnouncement) {
+        if (!announcement && heroSection) {
+            announcement = document.createElement('div');
+            announcement.id = 'home-announcement-card';
+            announcement.className = 'home-reference-card';
+            heroSection.insertAdjacentElement('afterend', announcement);
+        }
+        if (announcement) {
+            announcement.innerHTML = `<strong>تنبيه</strong><p>${escapeHtml(appSettings.homeAnnouncement)}</p>`;
+            announcement.style.display = '';
+        }
+    } else if (announcement) {
+        announcement.style.display = 'none';
+    }
+}
+
+
+async function loadHomePageData() {
     if (!currentUser) return;
 
     try {
+        await loadAppSettings();
+        applyHomeAppSettings();
         loadHomePrayerAndDate();
         loadHomeWeather();
         loadHomeMembersSummary();

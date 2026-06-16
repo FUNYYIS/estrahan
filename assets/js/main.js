@@ -35,6 +35,12 @@ import {
     getFunctions,
     httpsCallable
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import {
+    getStorage,
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // إعدادات Firebase الخاصة بتطبيقك
 const firebaseConfig = {
@@ -55,6 +61,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app, 'us-central1');
+const storage = getStorage(app);
 const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف المستخدم الخاص بالمسؤول هنا
 
 const DEFAULT_APP_SETTINGS = {
@@ -925,7 +932,50 @@ async function setupAdminNotifications() {
     const themeLogoUrlInput = document.getElementById('admin-theme-logo-url');
     const themeBackgroundImageUrlInput = document.getElementById('admin-theme-background-image-url');
     const themeBackgroundImageEnabledInput = document.getElementById('admin-theme-background-image-enabled');
+    const themeLogoFileInput = document.getElementById('admin-theme-logo-file');
+    const themeBackgroundFileInput = document.getElementById('admin-theme-background-file');
     const themeSettingsStatus = document.getElementById('admin-theme-settings-status');
+
+    async function uploadThemeFile(file, folder) {
+        const fileRef = storageRef(
+            storage,
+            `${folder}/${Date.now()}-${file.name}`
+        );
+
+        await uploadBytes(fileRef, file);
+        return await getDownloadURL(fileRef);
+    }
+
+    themeLogoFileInput?.addEventListener('change', async () => {
+        const file = themeLogoFileInput.files?.[0];
+        if (!file) return;
+
+        try {
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'جاري رفع الشعار...';
+            const url = await uploadThemeFile(file, 'theme-logos');
+            if (themeLogoUrlInput) themeLogoUrlInput.value = url;
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'تم رفع الشعار.';
+        } catch (error) {
+            console.error('Logo upload failed:', error);
+            showAlert('فشل رفع الشعار.');
+        }
+    });
+
+    themeBackgroundFileInput?.addEventListener('change', async () => {
+        const file = themeBackgroundFileInput.files?.[0];
+        if (!file) return;
+
+        try {
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'جاري رفع الخلفية...';
+            const url = await uploadThemeFile(file, 'theme-backgrounds');
+            if (themeBackgroundImageUrlInput) themeBackgroundImageUrlInput.value = url;
+            if (themeSettingsStatus) themeSettingsStatus.textContent = 'تم رفع الخلفية.';
+        } catch (error) {
+            console.error('Background upload failed:', error);
+            showAlert('فشل رفع الخلفية.');
+        }
+    });
+
 
     if (themePrimaryColorInput) themePrimaryColorInput.value = appSettings.themePrimaryColor || '#78915a';
     if (themeBackgroundColorInput) themeBackgroundColorInput.value = appSettings.themeBackgroundColor || '#f6f3ea';

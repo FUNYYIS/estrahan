@@ -1020,6 +1020,7 @@ function loadPageData(pageId) {
                 loadMembers();
                 break;
             case 'payments':
+                applyPaymentSettingsView();
                 loadPaymentOverview();
                 loadPaymentLog();
                 break;
@@ -1580,6 +1581,57 @@ function loadPaymentLog() {
         console.error('Error setting up payment listener:', error);
         logList.innerHTML = '<p class="text-center text-red-500">ما قدرنا نحمّل سجل القطة.</p>';
     }
+}
+
+
+async function applyPaymentSettingsView() {
+    await loadAppSettings();
+
+    const enabled = appSettings.paymentEnabled === true;
+
+    const title = document.getElementById('payment-availability-title');
+    const desc = document.getElementById('payment-availability-desc');
+    const methodsNote = document.getElementById('payment-methods-note');
+
+    const stcMethod = document.getElementById('stc-pay-method');
+    const stcValue = document.getElementById('stc-pay-value');
+    const copyStcBtn = document.getElementById('copy-stc-pay-button');
+
+    const appleMethod = document.getElementById('apple-pay-method');
+    const appleValue = document.getElementById('apple-pay-value');
+    const appleStatus = document.getElementById('apple-pay-status');
+
+    const beneficiaryCard = document.getElementById('payment-beneficiary-card');
+    const beneficiaryName = document.getElementById('payment-beneficiary-name');
+
+    const qrCard = document.getElementById('payment-qr-card');
+    const qrImage = document.getElementById('payment-qr-image');
+
+    if (title) title.textContent = enabled ? 'الدفع متاح حالياً' : 'الدفع الإلكتروني غير متاح حالياً';
+    if (desc) desc.textContent = enabled
+        ? 'اختر طريقة الدفع المناسبة لك من البيانات بالأسفل'
+        : 'تابع السداد حالياً من السجل وسيتم تفعيل الدفع لاحقاً';
+
+    if (methodsNote) methodsNote.textContent = enabled
+        ? `مبلغ القطة الشهري: ${Number(appSettings.qattahAmount || 0)} ريال`
+        : 'طرق الدفع مخفية حتى يتم تفعيلها من لوحة التحكم';
+
+    if (stcMethod) stcMethod.classList.toggle('is-disabled', !enabled || !appSettings.stcPayNumber);
+    if (stcValue) stcValue.textContent = enabled && appSettings.stcPayNumber ? appSettings.stcPayNumber : 'غير متاح حالياً';
+    if (copyStcBtn) {
+        copyStcBtn.style.display = enabled && appSettings.stcPayNumber ? 'inline-flex' : 'none';
+        copyStcBtn.onclick = () => copyToClipboard(appSettings.stcPayNumber || '');
+    }
+
+    if (appleMethod) appleMethod.classList.toggle('is-disabled', !enabled || !appSettings.applePayText);
+    if (appleValue) appleValue.textContent = enabled && appSettings.applePayText ? appSettings.applePayText : 'غير متاح حالياً';
+    if (appleStatus) appleStatus.textContent = enabled && appSettings.applePayText ? 'متاح' : 'قريباً';
+
+    if (beneficiaryCard) beneficiaryCard.style.display = enabled && appSettings.beneficiaryName ? '' : 'none';
+    if (beneficiaryName) beneficiaryName.textContent = appSettings.beneficiaryName || '--';
+
+    if (qrCard) qrCard.style.display = enabled && appSettings.paymentQrUrl ? '' : 'none';
+    if (qrImage && appSettings.paymentQrUrl) qrImage.src = safeExternalUrl(appSettings.paymentQrUrl, '');
 }
 
 async function loadPaymentOverview() {

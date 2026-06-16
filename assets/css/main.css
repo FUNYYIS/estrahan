@@ -8954,7 +8954,7 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
 
 .clean-chat-page #chat-form {
   position: sticky !important;
-  bottom: 88px !important;
+  bottom: 8px !important;
   z-index: 30 !important;
   display: flex !important;
   align-items: center !important;

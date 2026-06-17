@@ -158,8 +158,6 @@
         <button type="submit" class="btn">حفظ إدارة الرئيسية</button>
         <p id="admin-home-sections-status" class="text-sm"></p>
     </form>
-</section>
-
 <section class="panel">
     <div class="panel-head">
         <h2><i data-lucide="hand-coins"></i> إعدادات القطة والدفع</h2>

@@ -9053,3 +9053,21 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
   }
 }
 
+
+/* FIX_THEME_BACKGROUND_IMAGE */
+body.has-theme-background {
+  background-image: var(--theme-background-image) !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+body.has-theme-background::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(246, 243, 234, 0.20);
+  pointer-events: none;
+  z-index: -1;
+}

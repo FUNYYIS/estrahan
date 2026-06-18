@@ -47,7 +47,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCoIy5Yf3nvkpbp9l43590snBZui86uSXY",
   authDomain: "estrahaapp-9e327.firebaseapp.com",
   projectId: "estrahaapp-9e327",
-  storageBucket: "estrahaapp-9e327.appspot.com",
+  storageBucket: "estrahaapp-9e327.firebasestorage.app",
   messagingSenderId: "198308357962",
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };

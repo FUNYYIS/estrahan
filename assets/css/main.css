@@ -9080,3 +9080,27 @@ body {
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
 }
+
+/* FIX_OVERRIDE_OLD_RIYADH_BACKGROUND */
+body.theme-custom-bg,
+body.theme-custom-bg main,
+body.theme-custom-bg .app-shell,
+body.theme-custom-bg .app-container,
+body.theme-custom-bg .page,
+body.theme-custom-bg .page-content,
+body.theme-custom-bg .main-content {
+  background-image: var(--theme-bg-image) !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+body.theme-custom-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(246, 243, 234, 0.16);
+  pointer-events: none;
+  z-index: -1;
+}

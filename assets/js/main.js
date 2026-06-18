@@ -172,12 +172,15 @@ function applyCustomTheme() {
         const bgUrl = safeExternalUrl(appSettings.themeBackgroundImageUrl, '');
         if (bgUrl) {
             document.documentElement.style.setProperty('--theme-bg-image', `url("${bgUrl}")`);
+            document.body.classList.add('theme-custom-bg');
             document.body.style.backgroundImage = `url("${bgUrl}")`;
             document.body.style.backgroundSize = 'cover';
             document.body.style.backgroundAttachment = 'fixed';
             document.body.style.backgroundPosition = 'center';
         }
     } else {
+        document.body.classList.remove('theme-custom-bg');
+        document.documentElement.style.removeProperty('--theme-bg-image');
         document.body.style.backgroundImage = '';
     }
 }

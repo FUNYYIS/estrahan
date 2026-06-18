@@ -9071,3 +9071,12 @@ body.has-theme-background::before {
   pointer-events: none;
   z-index: -1;
 }
+
+/* FORCE_DYNAMIC_THEME_BACKGROUND */
+body {
+  background-image: var(--theme-bg-image, none) !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}

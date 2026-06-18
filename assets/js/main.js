@@ -171,6 +171,7 @@ function applyCustomTheme() {
     if (appSettings.themeBackgroundImageEnabled === true && appSettings.themeBackgroundImageUrl) {
         const bgUrl = safeExternalUrl(appSettings.themeBackgroundImageUrl, '');
         if (bgUrl) {
+            document.documentElement.style.setProperty('--theme-bg-image', `url("${bgUrl}")`);
             document.body.style.backgroundImage = `url("${bgUrl}")`;
             document.body.style.backgroundSize = 'cover';
             document.body.style.backgroundAttachment = 'fixed';

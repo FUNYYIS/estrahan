@@ -1,0 +1,42 @@
+<header class="app-page-header">
+    <div>
+        <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
+        <div>
+            <span>إعدادات التطبيق</span>
+            <h2>الإعدادات</h2>
+        </div>
+    </div>
+    <i data-lucide="grid-2x2"></i>
+</header>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="settings"></i> الضبط</h2>
+    </div>
+    <div class="section-stack">
+        <a href="#profile-settings" class="list-item-card">
+            <div class="flex items-center gap-4"><i data-lucide="user-circle-2"></i><span class="font-bold">بياناتك وصورتك</span></div>
+            <i data-lucide="chevron-left"></i>
+        </a>
+        <a href="#notifications-settings" class="list-item-card">
+            <div class="flex items-center gap-4"><i data-lucide="bell"></i><span class="font-bold">تنبيهاتك</span></div>
+            <i data-lucide="chevron-left"></i>
+        </a>
+        <a href="#admin-notifications" class="list-item-card" data-admin-only style="display: none;">
+            <div class="flex items-center gap-4"><i data-lucide="sliders-horizontal"></i><span class="font-bold">لوحة التحكم</span></div>
+            <i data-lucide="chevron-left"></i>
+        </a>
+        <a href="#prayer" class="list-item-card">
+            <div class="flex items-center gap-4"><i data-lucide="moon-star"></i><span class="font-bold">مواقيت الصلاة والقبلة</span></div>
+            <i data-lucide="chevron-left"></i>
+        </a>
+        <div class="list-item-card theme-setting-card">
+            <div class="flex items-center gap-4"><i data-lucide="palette"></i><span class="font-bold">المظهر</span></div>
+            <div class="theme-choice" role="group" aria-label="اختيار المظهر">
+                <button type="button" data-theme-choice="light"><i data-lucide="sun"></i><span>نهاري</span></button>
+                <button type="button" data-theme-choice="dark"><i data-lucide="moon"></i><span>ليلي</span></button>
+            </div>
+        </div>
+    </div>
+    <button id="settings-logout-button" class="btn btn-danger mt-8">اطلع</button>
+</section>

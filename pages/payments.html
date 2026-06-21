@@ -1,0 +1,100 @@
+<section class="payment-screen compact-qattah-page">
+    <header class="app-page-header">
+        <div>
+            <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
+            <div>
+                <span>متابعة السداد</span>
+                <h2>القطة الشهرية</h2>
+            </div>
+        </div>
+        <i data-lucide="hand-coins"></i>
+    </header>
+
+    <section class="panel payment-status-panel">
+        <div class="panel-head">
+            <h2><i data-lucide="chart-no-axes-combined"></i> ملخص القطة</h2>
+        </div>
+
+        <div class="payment-summary-grid">
+            <div class="payment-summary-card">
+                <span>المسدد</span>
+                <strong id="payments-paid-count">--</strong>
+                <small class="status-badge paid">تم السداد</small>
+            </div>
+
+            <div class="payment-summary-card">
+                <span>المتأخر</span>
+                <strong id="payments-late-count">--</strong>
+                <small class="status-badge overdue">متأخر</small>
+            </div>
+
+            <div class="payment-summary-card">
+                <span>المتبقي</span>
+                <strong id="payments-remaining-count">--</strong>
+                <small class="status-badge pending">لم يسدد بعد</small>
+            </div>
+        </div>
+    </section>
+
+    <section id="payment-availability-card" class="payment-secure compact-payment-note">
+        <i data-lucide="shield-check"></i>
+        <div>
+            <strong id="payment-availability-title">الدفع الإلكتروني غير متاح حالياً</strong>
+            <span id="payment-availability-desc">تابع السداد حالياً من السجل وسيتم تفعيل الدفع لاحقاً</span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2><i data-lucide="receipt"></i> آخر المدفوعات</h2>
+        </div>
+        <div id="payment-log-list" class="section-stack">
+            <p class="text-center">جاري تحميل السجل...</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2><i data-lucide="triangle-alert"></i> الأعضاء المتأخرون</h2>
+        </div>
+        <div id="late-members-list" class="section-stack">
+            <p class="text-center">جاري تحميل المتأخرين...</p>
+        </div>
+    </section>
+
+    <section id="payment-methods-panel" class="panel compact-payment-methods">
+        <div class="panel-head">
+            <h2><i data-lucide="credit-card"></i> طرق الدفع</h2>
+            <p id="payment-methods-note" class="text-sm">يتم عرض بيانات الدفع حسب إعدادات لوحة التحكم</p>
+        </div>
+
+        <div class="payment-methods">
+            <div id="apple-pay-method" class="payment-method is-disabled">
+                <div class="payment-method-label">
+                    <span class="payment-brand apple-brand"><b>Apple Pay</b></span>
+                    <span><strong>Apple Pay</strong><small id="apple-pay-value">غير متاح حالياً</small></span>
+                </div>
+                <span id="apple-pay-status" class="coming-soon">قريباً</span>
+            </div>
+
+            <div id="stc-pay-method" class="payment-method is-disabled">
+                <div class="payment-method-label">
+                    <span class="payment-brand stc-brand">stc <b>pay</b></span>
+                    <span><strong>stc pay</strong><small id="stc-pay-value">غير متاح حالياً</small></span>
+                </div>
+                <button id="copy-stc-pay-button" type="button" class="btn" style="width:auto; padding: 8px 12px; display:none;">نسخ</button>
+            </div>
+        </div>
+
+        <div id="payment-beneficiary-card" class="list-item-card" style="display:none; margin-top:12px;">
+            <div>
+                <span class="text-sm">اسم المستفيد</span>
+                <strong id="payment-beneficiary-name">--</strong>
+            </div>
+        </div>
+
+        <div id="payment-qr-card" class="list-item-card" style="display:none; margin-top:12px; justify-content:center;">
+            <img id="payment-qr-image" src="" alt="QR الدفع" style="max-width:180px; border-radius:18px;">
+        </div>
+    </section>
+</section>

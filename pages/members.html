@@ -1,0 +1,41 @@
+<header class="app-page-header">
+    <div>
+        <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
+        <div>
+            <span>أعضاء الاستراحة</span>
+            <h2>الأعضاء</h2>
+        </div>
+    </div>
+    <i data-lucide="users"></i>
+</header>
+
+<section class="panel" data-admin-only>
+    <div class="panel-head">
+        <h2><i data-lucide="user-plus"></i> إضافة عضو يدوي</h2>
+    </div>
+
+    <form id="manual-member-form" class="section-stack">
+        <div class="input-group">
+            <label for="manual-member-name">اسم العضو</label>
+            <input id="manual-member-name" type="text" maxlength="80" autocomplete="off" placeholder="اكتب اسم العضو" required>
+        </div>
+
+        <div class="input-group">
+            <label for="manual-member-phone">رقم الجوال</label>
+            <input id="manual-member-phone" type="tel" maxlength="30" autocomplete="off" placeholder="05xxxxxxxx">
+        </div>
+
+        <button type="submit" class="btn">إضافة العضو</button>
+        <p id="manual-member-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-head">
+        <h2><i data-lucide="users"></i> قائمة المطانيخ</h2>
+        <span class="badge scheduled">محفوظة</span>
+    </div>
+    <div id="members-list" class="section-stack">
+        <p class="text-center">جاري تحميل المطانيخ...</p>
+    </div>
+</section>

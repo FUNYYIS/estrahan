@@ -1,0 +1,45 @@
+<header class="app-page-header">
+    <div>
+        <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
+        <div>
+            <span>حسابك</span>
+            <h2>بياناتك</h2>
+        </div>
+    </div>
+    <a href="#settings" class="service-link">المزيد</a>
+</header>
+
+<section class="panel profile-panel">
+    <div class="panel-head">
+        <h2><i data-lucide="user-circle-2"></i> بياناتك</h2>
+        <a href="#settings" class="service-link">الضبط</a>
+    </div>
+
+    <div class="profile-editor">
+        <div class="profile-photo-card">
+            <img id="profile-avatar-preview" src="assets/images/estraha-logo.svg" alt="" loading="lazy" decoding="async">
+            <label class="ghost upload-button" for="profile-avatar-input">
+                <i data-lucide="camera"></i>
+                غيّر الصورة
+            </label>
+            <input id="profile-avatar-input" type="file" accept="image/*" class="visually-hidden">
+            <p class="muted">اختر صورة خفيفة وواضحة عشان تطلع مرتبة بكل مكان.</p>
+        </div>
+
+        <form id="profile-form" class="profile-form">
+            <p class="profile-admin-note">
+                البيانات الأساسية يديرها المسؤول فقط. تقدر تغيّر صورتك، ولتعديل الاسم أو رقم الجوال تواصل مع الإدارة.
+            </p>
+            <div class="input-group">
+                <label for="profile-name-input">اسمك</label>
+                <input type="text" id="profile-name-input" autocomplete="name" readonly>
+            </div>
+            <button id="profile-save-name-btn" type="button" class="btn" data-admin-only style="display:none;">حفظ الاسم</button>
+            <div class="input-group">
+                <label for="profile-phone-input">رقم جوالك</label>
+                <input type="tel" id="profile-phone-input" placeholder="05XXXXXXXX" autocomplete="tel" readonly>
+            </div>
+            <p id="profile-save-status" class="auth-status muted" aria-live="polite"></p>
+        </form>
+    </div>
+</section>

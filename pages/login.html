@@ -1,0 +1,40 @@
+<div class="auth-layout">
+    <div class="auth-brand">
+        <img class="auth-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" loading="eager" decoding="async">
+        <span>إدارة خدمات الاستراحة</span>
+        <h2>تطبيق الاستراحة</h2>
+        <p>إدارة خدمات الاستراحة والقطة والمباريات</p>
+    </div>
+
+    <div class="content-body">
+        <img class="auth-form-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" loading="lazy" decoding="async">
+        <p class="auth-greeting">نورت الاستراحة يالأمير</p>
+        <h2>أقلط</h2>
+
+        <form id="phone-form">
+            <div class="input-group">
+                <label for="phone-number">رقم جوالك</label>
+                <input type="tel" id="phone-number" placeholder="05XXXXXXXX" autocomplete="tel" required>
+            </div>
+
+            <button type="submit" class="btn">أرسل رمز الدخول</button>
+            <p id="login-status" class="auth-status muted" aria-live="polite"></p>
+            <div id="recaptcha-container" class="mt-4"></div>
+        </form>
+
+        <form id="code-form" style="display: none;">
+            <div class="input-group">
+                <label for="verification-code">رمز الدخول</label>
+                <input type="text" id="verification-code" inputmode="numeric" autocomplete="one-time-code" required>
+            </div>
+
+            <button type="submit" class="btn">تحقق واقلط</button>
+            <p id="login-code-status" class="auth-status muted" aria-live="polite"></p>
+        </form>
+
+        <p class="link-text">
+            أول مرة معنا؟
+            <a href="#register">سجل معنا يالذيب</a>
+        </p>
+    </div>
+</div>

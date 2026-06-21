@@ -11,6 +11,7 @@ const THE_SPORTS_DB_KEY = '3';
 const SAUDI_LEAGUE_ID = '4668';
 const WORLD_CUP_LEAGUE_ID = '4429';
 const WORLD_CUP_SEASON = '2026';
+const ADMIN_TEST_NOTIFICATION_TYPES = new Set(['match', 'payment', 'prayer', 'general']);
 const MATCH_NOTIFICATION_TEMPLATES = [
   '⚽ لا تروح بعيد {{homeTeam}} ضد {{awayTeam}} قربت',
   '☕ جهزوا القهوة {{homeTeam}} ضد {{awayTeam}} بتبدا عقب شوي 😄'
@@ -97,6 +98,10 @@ exports.sendAdminTestNotification = onCall(
     assertAdmin(request);
 
     const type = String(request.data?.type || 'general');
+    if (!ADMIN_TEST_NOTIFICATION_TYPES.has(type)) {
+      throw new HttpsError('invalid-argument', 'Unsupported notification test type.');
+    }
+
     const message = await buildAdminTestMessage(type);
     const tokens = await getTokensForUser(ADMIN_UID);
 

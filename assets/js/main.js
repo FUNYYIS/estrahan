@@ -151,7 +151,7 @@ function applyCustomTheme() {
     root.style.setProperty('--theme-background', background);
     root.style.setProperty('--theme-card', card);
 
-    document.body.style.backgroundColor = background;
+    root.style.setProperty('--theme-bg-color', background);
 
     document.querySelectorAll('.panel, .home-reference-card, .payment-summary-card, .list-item-card, .service-card, .stat-card').forEach((el) => {
         el.style.backgroundColor = card;
@@ -173,15 +173,10 @@ function applyCustomTheme() {
         if (bgUrl) {
             document.documentElement.style.setProperty('--theme-bg-image', `url("${bgUrl}")`);
             document.body.classList.add('theme-custom-bg');
-            document.body.style.backgroundImage = `url("${bgUrl}")`;
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundAttachment = 'fixed';
-            document.body.style.backgroundPosition = 'center';
         }
     } else {
         document.body.classList.remove('theme-custom-bg');
         document.documentElement.style.removeProperty('--theme-bg-image');
-        document.body.style.backgroundImage = '';
     }
 }
 
@@ -936,6 +931,36 @@ async function setupAdminNotifications() {
     await loadAppSettings();
     loadAdminStats();
 
+    const tabList = document.querySelector('.admin-notifications-page .admin-tabs');
+    const tabButtons = document.querySelectorAll('[data-admin-tab-target]');
+    const tabSections = document.querySelectorAll('[data-admin-tab]');
+
+    const activateAdminTab = (targetTab = 'general') => {
+        tabButtons.forEach((button) => {
+            const isActive = button.dataset.adminTabTarget === targetTab;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-selected', String(isActive));
+        });
+
+        tabSections.forEach((section) => {
+            const isActive = section.dataset.adminTab === targetTab;
+            section.style.display = isActive ? '' : 'none';
+            section.setAttribute('aria-hidden', String(!isActive));
+        });
+    };
+
+    if (tabList && !tabList.dataset.adminTabsBound) {
+        tabList.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-admin-tab-target]');
+            if (!button || !tabList.contains(button)) return;
+
+            activateAdminTab(button.dataset.adminTabTarget || 'general');
+        });
+        tabList.dataset.adminTabsBound = 'true';
+    }
+
+    activateAdminTab('general');
+
     const report = document.getElementById('admin-notification-report');
     const successCount = document.getElementById('notification-success-count');
     const failureCount = document.getElementById('notification-failure-count');
@@ -1295,8 +1320,10 @@ async function setupAdminNotifications() {
         }
     });
 
-    const setStatus = (message = '') => {
-        if (status) status.textContent = message;
+    const setStatus = (message = '', type = '') => {
+        if (!status) return;
+        status.textContent = message;
+        status.dataset.status = type;
     };
 
     const renderReport = (result = {}) => {
@@ -1309,15 +1336,16 @@ async function setupAdminNotifications() {
         button.addEventListener('click', async () => {
             const type = button.dataset.adminTestNotification;
             button.disabled = true;
-            setStatus('جاري إرسال الاختبار...');
+            setStatus('جاري إرسال الاختبار...', 'pending');
             try {
                 const callable = httpsCallable(functions, 'sendAdminTestNotification');
                 const response = await callable({ type });
                 renderReport(response.data || {});
-                setStatus('تم إرسال اختبار الإشعار.');
+                setStatus('تم إرسال اختبار الإشعار.', 'success');
             } catch (error) {
                 console.error('Admin test notification failed:', error);
-                setStatus(error.message || 'فشل إرسال اختبار الإشعار.');
+                renderReport({ successCount: 0, failureCount: 1 });
+                setStatus(getAdminNotificationErrorMessage(error), 'error');
             } finally {
                 button.disabled = false;
             }
@@ -1335,21 +1363,45 @@ async function setupAdminNotifications() {
 
         const submitButton = broadcastForm.querySelector('button[type="submit"]');
         if (submitButton) submitButton.disabled = true;
-        setStatus('جاري الإرسال للجميع...');
+        setStatus('جاري الإرسال للجميع...', 'pending');
 
         try {
             const callable = httpsCallable(functions, 'sendAdminBroadcastNotification');
             const response = await callable({ title, message });
             renderReport(response.data || {});
-            setStatus('تم إرسال الإشعار للجميع.');
+            setStatus('تم إرسال الإشعار للجميع.', 'success');
             broadcastForm.reset();
         } catch (error) {
             console.error('Admin broadcast notification failed:', error);
-            setStatus(error.message || 'فشل إرسال الإشعار للجميع.');
+            renderReport({ successCount: 0, failureCount: 1 });
+            setStatus(getAdminNotificationErrorMessage(error), 'error');
         } finally {
             if (submitButton) submitButton.disabled = false;
         }
     });
+}
+
+function getAdminNotificationErrorMessage(error) {
+    const code = error?.code || '';
+    const message = error?.message || '';
+
+    if (code.includes('permission-denied')) {
+        return 'فشل الإرسال: هذه العملية متاحة للمسؤول فقط.';
+    }
+
+    if (code.includes('failed-precondition')) {
+        return message || 'فشل الإرسال: لا توجد بيانات كافية لإرسال هذا الاختبار.';
+    }
+
+    if (code.includes('invalid-argument')) {
+        return message || 'فشل الإرسال: نوع الإشعار أو محتواه غير صحيح.';
+    }
+
+    if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+        return 'فشل الإرسال: تعذر الاتصال بخدمة الإشعارات، حاول مرة أخرى.';
+    }
+
+    return message || 'فشل إرسال الإشعار. تحقق من تسجيل الجهاز للتنبيهات وحالة Cloud Functions.';
 }
 
 function setNotificationToggleState(button, enabled) {

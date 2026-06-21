@@ -1,3 +1,4 @@
+<div class="admin-notifications-page">
 <header class="app-page-header">
     <div>
         <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
@@ -9,7 +10,15 @@
     <a href="#settings" class="service-link">الإعدادات</a>
 </header>
 
-<section class="panel">
+<nav class="admin-tabs" aria-label="أقسام لوحة التحكم" role="tablist">
+    <button type="button" id="admin-tab-general" class="tab-btn active" data-admin-tab-target="general" role="tab" aria-selected="true">عام</button>
+    <button type="button" id="admin-tab-theme" class="tab-btn" data-admin-tab-target="theme" role="tab" aria-selected="false">التصميم</button>
+    <button type="button" id="admin-tab-payment" class="tab-btn" data-admin-tab-target="payment" role="tab" aria-selected="false">القطة والدفع</button>
+    <button type="button" id="admin-tab-notifications" class="tab-btn" data-admin-tab-target="notifications" role="tab" aria-selected="false">الإشعارات</button>
+    <button type="button" id="admin-tab-history" class="tab-btn" data-admin-tab-target="history" role="tab" aria-selected="false">السجل والدردشة</button>
+</nav>
+
+<section class="panel" data-admin-tab="general" role="tabpanel" aria-labelledby="admin-tab-general">
     <div class="panel-head">
         <h2><i data-lucide="sliders-horizontal"></i> إدارة التطبيق</h2>
         <p class="text-sm">اختصارات سريعة لإدارة أقسام التطبيق</p>
@@ -39,7 +48,7 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="general" role="tabpanel" aria-labelledby="admin-tab-general">
     <div class="panel-head">
         <h2><i data-lucide="chart-column"></i> إحصائيات الاستراحة</h2>
     </div>
@@ -62,13 +71,13 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications">
     <div class="panel-head">
         <h2><i data-lucide="bell-ring"></i> اختبار الإشعارات</h2>
         <p class="text-sm">اختبر وصول الإشعارات قبل الاعتماد</p>
     </div>
 
-    <div class="cards-grid">
+    <div class="cards-grid admin-test-grid">
         <button type="button" class="btn" data-admin-test-notification="match">اختبار إشعار مباراة</button>
         <button type="button" class="btn" data-admin-test-notification="payment">اختبار إشعار القطة</button>
         <button type="button" class="btn" data-admin-test-notification="prayer">اختبار إشعار الصلاة</button>
@@ -76,7 +85,7 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="general" role="tabpanel" aria-labelledby="admin-tab-general">
     <div class="panel-head">
         <h2><i data-lucide="settings-2"></i> إعدادات الموقع</h2>
         <p class="text-sm">عدّل بيانات التطبيق ورمز الدعوة من هنا</p>
@@ -108,7 +117,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="general" role="tabpanel" aria-labelledby="admin-tab-general">
     <div class="panel-head">
         <h2><i data-lucide="home"></i> إدارة الصفحة الرئيسية</h2>
         <p class="text-sm">اختر الأقسام اللي تظهر للأعضاء في الرئيسية</p>
@@ -160,7 +169,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="payment" role="tabpanel" aria-labelledby="admin-tab-payment">
     <div class="panel-head">
         <h2><i data-lucide="hand-coins"></i> إعدادات القطة والدفع</h2>
         <p class="text-sm">جهّز بيانات القطة والدفع بدون تفعيلها للأعضاء حالياً</p>
@@ -205,7 +214,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="theme" role="tabpanel" aria-labelledby="admin-tab-theme">
     <div class="panel-head">
         <h2><i data-lucide="sparkles"></i> إدارة السبلاش</h2>
         <p class="text-sm">تحكم بصورة أو فيديو شاشة البداية</p>
@@ -264,7 +273,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="theme" role="tabpanel" aria-labelledby="admin-tab-theme">
     <div class="panel-head">
         <h2><i data-lucide="palette"></i> إدارة التصميم</h2>
         <p class="text-sm">غيّر ألوان الموقع والشعار والخلفية من هنا</p>
@@ -319,7 +328,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="history" role="tabpanel" aria-labelledby="admin-tab-history">
     <div class="panel-head">
         <h2><i data-lucide="messages-square"></i> إدارة الدردشة</h2>
         <p class="text-sm">تحكم سريع بحالة الدردشة</p>
@@ -339,7 +348,7 @@
     </form>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications">
     <div class="panel-head">
         <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
         <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
@@ -360,7 +369,7 @@
     </form>
 </section>
 
-<section id="admin-notification-report" class="panel" hidden>
+<section id="admin-notification-report" class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications" hidden>
     <div class="panel-head">
         <h2><i data-lucide="clipboard-check"></i> تقرير الإرسال</h2>
     </div>
@@ -380,7 +389,7 @@
     <p id="admin-notification-status" class="text-sm"></p>
 </section>
 
-<section class="panel">
+<section class="panel" data-admin-tab="history" role="tabpanel" aria-labelledby="admin-tab-history">
     <div class="panel-head">
         <h2><i data-lucide="history"></i> سجل الإشعارات</h2>
         <p class="text-sm">آخر التنبيهات المرسلة من لوحة الإدارة</p>
@@ -390,3 +399,4 @@
         <p class="text-center">جاري تحميل سجل الإشعارات...</p>
     </div>
 </section>
+</div>

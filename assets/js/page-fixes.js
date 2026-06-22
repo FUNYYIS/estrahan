@@ -1,4 +1,5 @@
 const ARABIYA_SPORT_RSS = 'https://www.alarabiya.net/.mrss/ar/sport.xml';
+const NEWS_FALLBACK_IMAGE = 'assets/images/estraha-logo.svg';
 const FOOTBALL_KEYWORDS = [
   'كرة القدم', 'دوري', 'كأس', 'مونديال', 'مباراة', 'مباريات', 'هدف', 'أهداف',
   'منتخب', 'نادي', 'فريق', 'لاعب', 'مدرب', 'فيفا', 'أبطال أوروبا', 'الدوري الإنجليزي',
@@ -35,6 +36,22 @@ function escapeMarkup(value = '') {
   }[char]));
 }
 
+function firstImageFromHtml(value = '') {
+  const template = document.createElement('template');
+  template.innerHTML = String(value);
+  return safeUrl(template.content.querySelector('img')?.getAttribute('src') || '');
+}
+
+function rssItemImage(item) {
+  const mediaContent = item.getElementsByTagName('media:content')[0]
+    || item.getElementsByTagName('media:thumbnail')[0];
+  const enclosure = item.querySelector('enclosure[type^="image"]') || item.querySelector('enclosure');
+  const description = item.querySelector('description')?.textContent || '';
+  return safeUrl(mediaContent?.getAttribute('url') || enclosure?.getAttribute('url') || '')
+    || firstImageFromHtml(description)
+    || NEWS_FALLBACK_IMAGE;
+}
+
 function isFootballArticle(article) {
   const haystack = `${article.title || ''} ${article.description || ''}`.toLowerCase();
   return FOOTBALL_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
@@ -67,6 +84,9 @@ async function fetchArabiyaFootballNews() {
         title: plainText(item.title),
         description: plainText(item.description || item.content || ''),
         url: safeUrl(item.link),
+        image: safeUrl(item.thumbnail || item.enclosure?.link || '')
+          || firstImageFromHtml(item.description || item.content || '')
+          || NEWS_FALLBACK_IMAGE,
         publishedAt: item.pubDate || ''
       }));
     } catch (error) {
@@ -80,6 +100,7 @@ async function fetchArabiyaFootballNews() {
         title: plainText(item.querySelector('title')?.textContent || ''),
         description: plainText(item.querySelector('description')?.textContent || ''),
         url: safeUrl(item.querySelector('link')?.textContent || ''),
+        image: rssItemImage(item),
         publishedAt: item.querySelector('pubDate')?.textContent || ''
       }));
     }
@@ -107,27 +128,34 @@ async function renderArabiyaNews(container, compact = false) {
 
   try {
     const articles = await fetchArabiyaFootballNews();
-    const limit = compact ? 8 : 16;
+    const limit = compact ? 8 : 18;
     const visible = articles.slice(0, limit);
 
-    container.classList.add('compact-arabiya-news');
-    container.dataset.newsSource = 'arabiya-football';
+    container.className = compact
+      ? 'home-news-preview compact-arabiya-news'
+      : 'compact-arabiya-news';
+    container.dataset.newsSource = 'arabiya-football-only';
 
     if (!visible.length) {
       container.innerHTML = '<p class="text-center">ما فيه أخبار كرة قدم متاحة حالياً.</p>';
       return;
     }
 
-    container.innerHTML = visible.map((article, index) => `
-      <a class="compact-news-item" href="${escapeMarkup(article.url)}" target="_blank" rel="noopener noreferrer">
-        <span class="compact-news-index">${index + 1}</span>
-        <strong title="${escapeMarkup(article.title)}">${escapeMarkup(article.title)}</strong>
-        <small>العربية رياضة</small>
-      </a>
-    `).join('');
+    container.innerHTML = visible.map((article) => {
+      const image = safeUrl(article.image) || NEWS_FALLBACK_IMAGE;
+      return `
+        <a class="compact-news-item" href="${escapeMarkup(article.url)}" target="_blank" rel="noopener noreferrer">
+          <img class="compact-news-thumb" src="${escapeMarkup(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.src='${NEWS_FALLBACK_IMAGE}'">
+          <span class="compact-news-copy">
+            <strong title="${escapeMarkup(article.title)}">${escapeMarkup(article.title)}</strong>
+            <small>العربية رياضة</small>
+          </span>
+        </a>
+      `;
+    }).join('');
   } catch (error) {
     console.error('Al Arabiya football news failed:', error);
-    container.innerHTML = '<p class="text-center">تعذر تحميل أخبار كرة القدم حالياً.</p>';
+    container.innerHTML = '<p class="text-center">تعذر تحميل أخبار كرة القدم من العربية حالياً.</p>';
   } finally {
     container.dataset.arabiyaLoading = 'false';
   }
@@ -141,12 +169,13 @@ function monitorNewsContainer(container, compact) {
     if (container.dataset.arabiyaLoading === 'true') return;
     const hasOurItems = container.querySelector('.compact-news-item');
     const hasOldCards = container.querySelector('.news-card');
-    if (!hasOurItems || hasOldCards) {
+    const hasWrongSource = /الجزيرة/.test(container.textContent || '');
+    if (!hasOurItems || hasOldCards || hasWrongSource) {
       queueMicrotask(() => renderArabiyaNews(container, compact));
     }
   });
 
-  observer.observe(container, { childList: true });
+  observer.observe(container, { childList: true, subtree: true });
   renderArabiyaNews(container, compact);
 }
 
@@ -222,8 +251,7 @@ function bindQiblaFix() {
         window.removeEventListener('deviceorientationabsolute', orientationHandler);
       }
 
-      const orientationAvailable = 'DeviceOrientationEvent' in window
-        && motionPermission !== 'denied';
+      const orientationAvailable = 'DeviceOrientationEvent' in window && motionPermission !== 'denied';
 
       if (orientationAvailable) {
         orientationHandler = (event) => {

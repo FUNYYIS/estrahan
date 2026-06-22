@@ -9170,3 +9170,44 @@ body[data-theme="dark"] .admin-notifications-page .tab-btn.active {
     min-height: 58px !important;
   }
 }
+
+/* CHAT_FULL_HEIGHT_FIX_START */
+body.is-authenticated #page-content:has(.clean-chat-page) {
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.clean-chat-page {
+  min-height: calc(100vh - 112px) !important;
+  height: calc(100dvh - 112px) !important;
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  align-content: stretch !important;
+  gap: 10px !important;
+  overflow: hidden !important;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+}
+
+.clean-chat-page #chat-box.messages {
+  min-height: 0 !important;
+  max-height: none !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+.clean-chat-page #chat-form {
+  position: static !important;
+  inset: auto !important;
+  align-self: end !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 600px) {
+  .clean-chat-page {
+    min-height: calc(100vh - 88px) !important;
+    height: calc(100dvh - 88px) !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+  }
+}
+/* CHAT_FULL_HEIGHT_FIX_END */

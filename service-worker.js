@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v256';
+const CACHE_NAME = 'estraha-cache-v257';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -75,31 +75,37 @@ self.addEventListener('fetch', (event) => {
   if (requestUrl.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(networkFirstPage(request));
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  if (isFreshCodeAsset(requestUrl)) {
+    event.respondWith(networkFirst(request));
     return;
   }
 
   if (isStaticAsset(requestUrl)) {
-    event.respondWith(cacheFirstAsset(request));
+    event.respondWith(cacheFirst(request));
   }
 });
 
-async function networkFirstPage(request) {
+async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: 'no-store' });
     if (isCacheableResponse(response)) {
       cache.put(request, response.clone()).catch(() => {});
     }
     return response;
   } catch {
     return (await cache.match(request))
+      || (await cache.match(new URL(request.url).pathname))
       || (await cache.match('/index.html'))
       || Response.error();
   }
 }
 
-async function cacheFirstAsset(request) {
+async function cacheFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
   if (cached) return cached;
@@ -109,6 +115,13 @@ async function cacheFirstAsset(request) {
     cache.put(request, response.clone()).catch(() => {});
   }
   return response;
+}
+
+function isFreshCodeAsset(url) {
+  return url.pathname.startsWith('/pages/')
+    || url.pathname.endsWith('.js')
+    || url.pathname.endsWith('.css')
+    || url.pathname === '/manifest.json';
 }
 
 function isStaticAsset(url) {

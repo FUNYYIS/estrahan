@@ -949,6 +949,9 @@ async function setupAdminNotifications() {
             const isActive = button.dataset.adminTabTarget === targetTab;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-selected', String(isActive));
+            if (isActive) {
+                button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
         });
 
         tabSections.forEach((section) => {

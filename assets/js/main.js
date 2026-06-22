@@ -585,6 +585,16 @@ function currentPublicRoute() {
     return publicRoutes.includes(hash) ? hash : '#login';
 }
 
+async function navigateToHash(hash) {
+    const nextHash = normalizeHash(hash);
+    if (window.location.hash === nextHash) {
+        await renderPage(nextHash);
+        return;
+    }
+
+    window.location.hash = nextHash;
+}
+
 function updateActiveNav(hash) {
     const activeHash = getPrimaryNavHash(hash);
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -620,7 +630,7 @@ async function renderPage(hash) {
 
     if (currentHash === '#admin-notifications' && (auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
-        window.location.hash = '#settings';
+        await navigateToHash('#settings');
         return;
     }
 
@@ -663,7 +673,7 @@ async function renderPage(hash) {
         }
     } else {
         // Fallback to default page
-        await renderPage(defaultPage);
+        await navigateToHash(defaultPage);
     }
 }
 
@@ -923,7 +933,7 @@ async function loadAdminStats() {
 async function setupAdminNotifications() {
     if ((auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
-        window.location.hash = '#settings';
+        await navigateToHash('#settings');
         return;
     }
 
@@ -1505,7 +1515,7 @@ async function handleCompleteRegistration(e) {
     const user = auth.currentUser;
     if (!user) {
         showAlert('تحقق من رقم جوالك أولاً من صفحة الدخول.');
-        window.location.hash = '#login';
+        await navigateToHash('#login');
         return;
     }
 
@@ -1545,8 +1555,7 @@ async function handleCompleteRegistration(e) {
         document.body.classList.add('is-authenticated');
         syncShellUserState();
         showAlert('تم تسجيلك بنجاح، حيّاك الله.');
-        window.location.hash = '#home';
-        await renderPage('#home');
+        await navigateToHash('#home');
     } catch (error) {
         console.error('Registration completion failed:', error);
         showAlert(getRegistrationErrorMessage(error));
@@ -1634,8 +1643,7 @@ async function handleSendCode(e, isRegister = false) {
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
         if (isRegister) {
-            window.location.hash = '#register';
-            await renderPage('#register');
+            await navigateToHash('#register');
         } else {
             const phoneForm = document.getElementById('phone-form');
             const codeForm = document.getElementById('code-form');
@@ -1733,8 +1741,7 @@ async function handleVerifyCode(e, isRegister = false) {
             sessionStorage.removeItem('firebaseVerificationId');
 
             showAlert('تم التحقق من رقمك. كمل الاسم ورمز الدعوة.');
-            window.location.hash = '#register';
-            await renderPage('#register');
+            await navigateToHash('#register');
             return;
         }
 
@@ -1743,8 +1750,7 @@ async function handleVerifyCode(e, isRegister = false) {
             const existingUserDoc = await getDoc(userDocRef);
             if (!existingUserDoc.exists()) {
                 showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
-                window.location.hash = '#register';
-                await renderPage('#register');
+                await navigateToHash('#register');
                 return;
             }
         }
@@ -3258,8 +3264,7 @@ function initApp() {
                     document.body.classList.remove('is-authenticated');
                     syncShellUserState();
                     appLogo.style.display = 'block';
-                    window.location.hash = '#register';
-                    await renderPage('#register');
+                    await navigateToHash('#register');
                 }
             } else {
                 console.log('✓ No user authenticated, showing login');
@@ -3268,7 +3273,7 @@ function initApp() {
                 sidebar?.classList.remove('open');
                 syncShellUserState();
                 appLogo.style.display = 'block';
-                await renderPage(currentPublicRoute());
+                await navigateToHash(currentPublicRoute());
             }
         } catch (error) {
             console.error('✗ Error in auth state change:', error);
@@ -3277,7 +3282,7 @@ function initApp() {
             sidebar?.classList.remove('open');
             syncShellUserState();
             appLogo.style.display = 'block';
-            await renderPage(currentPublicRoute());
+            await navigateToHash(currentPublicRoute());
         }
     });
 
@@ -3295,22 +3300,23 @@ function initApp() {
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');
 
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const configuredDuration = Number(appSettings.splashDuration || 1.2);
+        const splashDelay = prefersReducedMotion
+            ? 0
+            : Math.min(Math.max(configuredDuration, 0.4), 1.5) * 1000;
+
         setTimeout(() => {
             if (splash) {
                 splash.classList.add('done');
-
-                setTimeout(() => {
-                    splash.style.display = 'none';
-
-                    if (mainContent) {
-                        mainContent.style.display = 'grid';
-                        console.log('✓ Splash screen hidden, main content shown');
-                    }
-                }, Number(appSettings.splashDuration || 6) * 1000);
-            } else if (mainContent) {
-                mainContent.style.display = 'grid';
+                splash.style.display = 'none';
             }
-        }, 1300);
+
+            if (mainContent) {
+                mainContent.style.display = 'grid';
+                console.log('✓ Splash screen hidden, main content shown');
+            }
+        }, splashDelay);
     }
 
     window.addEventListener('hashchange', () => {
@@ -3335,18 +3341,7 @@ document.addEventListener('click', (event) => {
     if (!hash || hash === '#') return;
 
     event.preventDefault();
-    window.location.hash = hash;
-    renderPage(hash);
+    navigateToHash(hash).catch((error) => {
+        console.error('Navigation failed:', error);
+    });
 });
-
-document.addEventListener('click', async (event) => {
-  const link = event.target.closest('a[href="#login"], a[href="#register"]');
-  if (!link) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  const hash = link.getAttribute('href');
-  window.location.hash = hash;
-  await renderPage(hash);
-}, true);

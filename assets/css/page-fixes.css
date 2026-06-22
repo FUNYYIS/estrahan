@@ -1,0 +1,117 @@
+/* Compact Al Arabiya football news and reliable qibla controls */
+.compact-arabiya-news {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+#home-news-list.compact-arabiya-news {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.compact-news-item {
+  min-width: 0;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(215, 187, 118, 0.18);
+  border-radius: 16px;
+  color: #fff;
+  background: rgba(7, 26, 21, 0.88);
+  text-decoration: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.compact-news-item:hover,
+.compact-news-item:focus-visible {
+  border-color: rgba(215, 187, 118, 0.5);
+  transform: translateY(-1px);
+}
+
+.compact-news-item strong {
+  min-width: 0;
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-news-item small {
+  color: #d7bb76;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.compact-news-index {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #071a15;
+  background: #d7bb76;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.qibla-enable-button {
+  width: min(100%, 280px) !important;
+  min-height: 50px !important;
+  margin: 0 auto 16px !important;
+  border-radius: 16px !important;
+}
+
+#qibla-fix-compass[hidden] {
+  display: none !important;
+}
+
+#qibla-fix-compass {
+  display: block;
+  margin-inline: auto;
+}
+
+#qibla-fix-status {
+  min-height: 30px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .compact-arabiya-news {
+    gap: 7px !important;
+  }
+
+  .compact-news-item {
+    min-height: 46px;
+    grid-template-columns: 26px minmax(0, 1fr);
+    padding: 9px 10px;
+    border-radius: 14px;
+  }
+
+  .compact-news-item strong {
+    font-size: 0.9rem;
+  }
+
+  .compact-news-item small {
+    display: none;
+  }
+
+  .compact-news-index {
+    width: 25px;
+    height: 25px;
+    font-size: 0.72rem;
+  }
+}

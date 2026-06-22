@@ -204,6 +204,37 @@
             <input id="admin-payment-enabled" type="checkbox">
         </label>
 
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="bell-ring"></i>
+                <span class="font-bold">تفعيل تذكير القطة</span>
+            </div>
+            <input id="admin-payment-reminder-enabled" type="checkbox">
+        </label>
+
+        <div class="input-group">
+            <label for="admin-payment-reminder-day">يوم التذكير الشهري</label>
+            <input id="admin-payment-reminder-day" type="number" min="1" max="31" step="1" placeholder="1">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-payment-reminder-hour">ساعة التذكير</label>
+            <input id="admin-payment-reminder-hour" type="number" min="0" max="23" step="1" placeholder="9">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-payment-reminder-minute">دقيقة التذكير</label>
+            <input id="admin-payment-reminder-minute" type="number" min="0" max="59" step="1" placeholder="0">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-payment-reminder-mode">مستلمي تذكير القطة</label>
+            <select id="admin-payment-reminder-mode">
+                <option value="all">كل المشتركين بتنبيهات القطة</option>
+                <option value="lateOnly">المتأخرين فقط</option>
+            </select>
+        </div>
+
         <button type="submit" class="btn">حفظ إعدادات القطة والدفع</button>
         <p id="admin-payment-settings-status" class="text-sm"></p>
     </form>
@@ -345,6 +376,41 @@
 
 <section class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications">
     <div class="panel-head">
+        <h2><i data-lucide="landmark"></i> إعدادات تنبيهات الصلاة</h2>
+        <p class="text-sm">تحديد المدينة ووقت التذكير قبل الصلاة</p>
+    </div>
+
+    <form id="admin-prayer-notification-settings-form" class="section-stack">
+        <label class="list-item-card" style="cursor:pointer;">
+            <div class="flex items-center gap-4">
+                <i data-lucide="power"></i>
+                <span class="font-bold">تشغيل تنبيهات الصلاة العامة</span>
+            </div>
+            <input id="admin-prayer-notifications-enabled" type="checkbox">
+        </label>
+
+        <div class="input-group">
+            <label for="admin-prayer-city">المدينة</label>
+            <input id="admin-prayer-city" type="text" maxlength="80" autocomplete="off" placeholder="Jeddah">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-prayer-country">الدولة</label>
+            <input id="admin-prayer-country" type="text" maxlength="80" autocomplete="off" placeholder="Saudi Arabia">
+        </div>
+
+        <div class="input-group">
+            <label for="admin-prayer-reminder-minutes">الدقائق قبل الصلاة</label>
+            <input id="admin-prayer-reminder-minutes" type="number" min="1" max="60" step="1" placeholder="10">
+        </div>
+
+        <button type="submit" class="btn">حفظ إعدادات الصلاة</button>
+        <p id="admin-prayer-notification-settings-status" class="text-sm"></p>
+    </form>
+</section>
+
+<section class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications">
+    <div class="panel-head">
         <h2><i data-lucide="send"></i> إرسال تنبيه عام</h2>
         <p class="text-sm">اكتب تنبيه طارئ وارسله للأعضاء</p>
     </div>
@@ -371,6 +437,10 @@
 
     <div class="cards-grid">
         <div class="stat-card">
+            <span>الأجهزة المستهدفة</span>
+            <strong id="notification-target-count">0</strong>
+        </div>
+        <div class="stat-card">
             <span>تم الإرسال بنجاح</span>
             <strong id="notification-success-count">0</strong>
         </div>
@@ -378,6 +448,10 @@
         <div class="stat-card">
             <span>فشل الإرسال</span>
             <strong id="notification-failure-count">0</strong>
+        </div>
+        <div class="stat-card">
+            <span>رموز تم تنظيفها</span>
+            <strong id="notification-deleted-token-count">0</strong>
         </div>
     </div>
 

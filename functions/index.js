@@ -18,6 +18,17 @@ const MATCH_NOTIFICATION_TEMPLATES = [
   '⚽ لا تروح بعيد {{homeTeam}} ضد {{awayTeam}} قربت',
   '☕ جهزوا القهوة {{homeTeam}} ضد {{awayTeam}} بتبدا عقب شوي 😄'
 ];
+const PRAYER_NAMES = {
+  Fajr: 'الفجر',
+  Dhuhr: 'الظهر',
+  Asr: 'العصر',
+  Maghrib: 'المغرب',
+  Isha: 'العشاء'
+};
+const INVALID_FCM_TOKEN_CODES = new Set([
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-registration-token'
+]);
 
 exports.checkUpcomingMatches = onSchedule(
   {
@@ -59,17 +70,9 @@ exports.checkUpcomingMatches = onSchedule(
       const stateDoc = await stateRef.get();
       if (stateDoc.exists) continue;
 
-      const tokenSnapshot = await db
-        .collection('fcmTokens')
-        .where('topics.matches', '==', true)
-        .limit(500)
-        .get();
+      const tokenRecords = await getTokenRecordsByTopic('matches');
 
-      const tokens = tokenSnapshot.docs
-        .map((doc) => doc.data().token)
-        .filter(Boolean);
-
-      if (!tokens.length) {
+      if (!tokenRecords.length) {
         logger.info('No FCM tokens subscribed to match notifications.');
         continue;
       }
@@ -77,8 +80,7 @@ exports.checkUpcomingMatches = onSchedule(
       const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
       const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
 
-      const response = await admin.messaging().sendEachForMulticast({
-        tokens,
+      const result = await sendNotificationToTokenRecords(tokenRecords, {
         notification: {
           title,
           body
@@ -108,10 +110,117 @@ exports.checkUpcomingMatches = onSchedule(
         homeTeam: teams.homeTeam,
         awayTeam: teams.awayTeam,
         kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
-        successCount: response.successCount,
-        failureCount: response.failureCount,
+        targetedTokens: result.targetedTokens,
+        successCount: result.successCount,
+        failureCount: result.failureCount,
         sentAt: admin.firestore.FieldValue.serverTimestamp()
       });
+    }
+  }
+);
+
+exports.checkPrayerNotifications = onSchedule(
+  {
+    schedule: 'every 5 minutes',
+    timeZone: 'Asia/Riyadh',
+    region: 'us-central1'
+  },
+  async () => {
+    try {
+      const settings = await getAppSettings();
+      if (settings.prayerNotificationsEnabled === false) return;
+
+      const city = cleanSettingText(settings.prayerCity, 'Jeddah');
+      const country = cleanSettingText(settings.prayerCountry, 'Saudi Arabia');
+      const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
+      const dateKey = getLocalDateKey();
+      const timings = await fetchPrayerTimings(city, country);
+      const windowStart = Math.max(0, minutesBefore - 3);
+      const windowEnd = minutesBefore + 3;
+
+      for (const [prayerKey, prayerName] of Object.entries(PRAYER_NAMES)) {
+        const prayerTime = timings[prayerKey];
+        const prayerDate = parseRiyadhDateTime(dateKey, prayerTime);
+        if (!prayerDate) continue;
+
+        const remainingMinutes = Math.round((prayerDate.getTime() - Date.now()) / 60000);
+        if (remainingMinutes < windowStart || remainingMinutes > windowEnd) continue;
+
+        const stateKey = `${dateKey}-${prayerKey}-${minutesBefore}`;
+        const stateRef = db.collection('prayerNotificationState').doc(toDocId(stateKey));
+        if ((await stateRef.get()).exists) continue;
+
+        const tokenRecords = await getTokenRecordsByTopic('prayer');
+        if (!tokenRecords.length) {
+          logger.info('No FCM tokens subscribed to prayer notifications.');
+          continue;
+        }
+
+        const message = buildPrayerReminderMessage(prayerName, minutesBefore);
+        const result = await sendNotificationToTokenRecords(tokenRecords, message);
+
+        await stateRef.set({
+          prayerName,
+          prayerTime,
+          reminderMinutes: minutesBefore,
+          successCount: result.successCount,
+          failureCount: result.failureCount,
+          targetedTokens: result.targetedTokens,
+          sentAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    } catch (error) {
+      logger.error('Prayer notification schedule failed.', error);
+    }
+  }
+);
+
+exports.checkPaymentReminders = onSchedule(
+  {
+    schedule: 'every 10 minutes',
+    timeZone: 'Asia/Riyadh',
+    region: 'us-central1'
+  },
+  async () => {
+    try {
+      const settings = await getAppSettings();
+      if (settings.paymentReminderEnabled === false) return;
+
+      const now = getRiyadhParts();
+      const reminderDay = clampNumber(settings.paymentReminderDay, 1, 31, 1);
+      const reminderHour = clampNumber(settings.paymentReminderHour, 0, 23, 9);
+      const reminderMinute = clampNumber(settings.paymentReminderMinute, 0, 59, 0);
+      if (now.day !== reminderDay || now.hour !== reminderHour) return;
+      if (Math.abs(now.minute - reminderMinute) > 5) return;
+
+      const audience = settings.paymentReminderMode === 'lateOnly' ? 'lateOnly' : 'all';
+      const stateKey = `${now.year}-${now.month}-${now.day}-${audience}`;
+      const stateRef = db.collection('paymentReminderState').doc(toDocId(stateKey));
+      if ((await stateRef.get()).exists) return;
+
+      const tokenRecords = audience === 'lateOnly'
+        ? await getLatePaymentTokenRecords()
+        : await getTokenRecordsByTopic('payments');
+
+      if (!tokenRecords.length) {
+        logger.info('No FCM tokens subscribed to payment reminders.', { audience });
+        return;
+      }
+
+      const message = buildPaymentReminderMessage(settings);
+      const result = await sendNotificationToTokenRecords(tokenRecords, message);
+
+      await stateRef.set({
+        reminderMonth: `${now.year}-${now.month}`,
+        audience,
+        targetedUsers: Array.from(new Set(tokenRecords.map((record) => record.uid).filter(Boolean))).length,
+        targetedTokens: result.targetedTokens,
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        sentAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (error) {
+      logger.error('Payment reminder schedule failed.', error);
     }
   }
 );
@@ -129,14 +238,14 @@ exports.sendAdminTestNotification = onCall(
     }
 
     const message = await buildAdminTestMessage(type);
-    const tokens = await getTokensForUser(ADMIN_UID);
+    const tokenRecords = await getTokenRecordsForUser(ADMIN_UID);
 
-    return sendNotificationToTokens(tokens, {
-      notification: {
-        title: message.title,
-        body: message.body
-      },
-      data: message.data,
+    if (!tokenRecords.length) {
+      throw new HttpsError('failed-precondition', 'لا يوجد جهاز مسجل لاستقبال الإشعارات. افتح إعدادات الإشعارات وفعّلها أولاً.');
+    }
+
+    const result = await sendNotificationToTokenRecords(tokenRecords, {
+      ...message,
       webpush: {
         notification: {
           icon: '/assets/icons/icon-192.png',
@@ -145,6 +254,8 @@ exports.sendAdminTestNotification = onCall(
         }
       }
     });
+
+    return result;
   }
 );
 
@@ -162,8 +273,8 @@ exports.sendAdminBroadcastNotification = onCall(
       throw new HttpsError('invalid-argument', 'Notification title and message are required.');
     }
 
-    const tokens = await getAllTokens();
-    const result = await sendNotificationToTokens(tokens, {
+    const tokenRecords = await getAllTokenRecords();
+    const result = await sendNotificationToTokenRecords(tokenRecords, {
       notification: {
         title,
         body
@@ -194,6 +305,38 @@ exports.sendAdminBroadcastNotification = onCall(
     });
 
     return result;
+  }
+);
+
+exports.debugPrayerNotification = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+    const settings = await getAppSettings();
+    const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
+    const message = buildPrayerReminderMessage('العصر', minutesBefore);
+    const tokenRecords = await getTokenRecordsForUser(ADMIN_UID);
+    if (!tokenRecords.length) {
+      throw new HttpsError('failed-precondition', 'لا يوجد جهاز مسجل لاستقبال الإشعارات. افتح إعدادات الإشعارات وفعّلها أولاً.');
+    }
+    return sendNotificationToTokenRecords(tokenRecords, message);
+  }
+);
+
+exports.debugPaymentReminder = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+    const message = buildPaymentReminderMessage(await getAppSettings());
+    const tokenRecords = await getTokenRecordsForUser(ADMIN_UID);
+    if (!tokenRecords.length) {
+      throw new HttpsError('failed-precondition', 'لا يوجد جهاز مسجل لاستقبال الإشعارات. افتح إعدادات الإشعارات وفعّلها أولاً.');
+    }
+    return sendNotificationToTokenRecords(tokenRecords, message);
   }
 );
 
@@ -455,11 +598,14 @@ async function buildAdminTestMessage(type) {
     }
 
     return {
-      title: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams),
-      body: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams),
-      link: '/index.html#matches',
+      notification: {
+        title: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams),
+        body: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams)
+      },
       data: {
         type: 'match',
+        title: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams),
+        body: renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams),
         homeTeam: teams.homeTeam,
         awayTeam: teams.awayTeam,
         link: '/index.html#matches'
@@ -468,86 +614,118 @@ async function buildAdminTestMessage(type) {
   }
 
   if (type === 'payment') {
-    return {
-      title: 'تنبيه القطة',
-      body: 'تذكير من تطبيق الاستراحة بمتابعة القطة.',
-      link: '/index.html#payments',
-      data: {
-        type: 'payment',
-        link: '/index.html#payments'
-      }
-    };
+    return buildPaymentReminderMessage(await getAppSettings());
   }
 
   if (type === 'prayer') {
-    return {
-      title: 'تنبيه الصلاة',
-      body: 'تذكير من تطبيق الاستراحة بمتابعة مواقيت الصلاة.',
-      link: '/index.html#prayer',
-      data: {
-        type: 'prayer',
-        link: '/index.html#prayer'
-      }
-    };
+    const settings = await getAppSettings();
+    const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
+    return buildPrayerReminderMessage('العصر', minutesBefore);
   }
 
   return {
-    title: 'تطبيق الاستراحة',
-    body: 'وصل إشعار اختبار من تطبيق الاستراحة.',
-    link: '/index.html#home',
+    notification: {
+      title: 'تطبيق الاستراحة',
+      body: 'وصل إشعار اختبار من تطبيق الاستراحة.'
+    },
     data: {
       type: 'general',
+      title: 'تطبيق الاستراحة',
+      body: 'وصل إشعار اختبار من تطبيق الاستراحة.',
       link: '/index.html#home'
     }
   };
 }
 
-async function getTokensForUser(uid) {
+async function getTokenRecordsForUser(uid) {
   const snapshot = await db
     .collection('fcmTokens')
     .where('uid', '==', uid)
     .get();
 
-  return docsToTokens(snapshot.docs);
+  return docsToTokenRecords(snapshot.docs);
 }
 
-async function getAllTokens() {
+async function getAllTokenRecords() {
   const snapshot = await db.collection('fcmTokens').get();
-  return docsToTokens(snapshot.docs);
+  return docsToTokenRecords(snapshot.docs);
 }
 
-function docsToTokens(docs) {
-  return Array.from(new Set(
-    docs
-      .map((doc) => doc.data().token)
-      .filter(Boolean)
-  ));
+async function getTokenRecordsByTopic(topic) {
+  const snapshot = await db
+    .collection('fcmTokens')
+    .where(`topics.${topic}`, '==', true)
+    .get();
+
+  return docsToTokenRecords(snapshot.docs);
 }
 
-async function sendNotificationToTokens(tokens, message) {
-  if (!tokens.length) {
+async function getLatePaymentTokenRecords() {
+  const usersSnapshot = await db
+    .collection('users')
+    .where('paymentStatus', '!=', 'paid')
+    .get();
+  const lateUserIds = new Set(usersSnapshot.docs.map((doc) => doc.id));
+  if (!lateUserIds.size) return [];
+
+  const paymentTokens = await getTokenRecordsByTopic('payments');
+  return paymentTokens.filter((record) => lateUserIds.has(record.uid));
+}
+
+function docsToTokenRecords(docs) {
+  const seen = new Set();
+  return docs
+    .map((doc) => ({ id: doc.id, ref: doc.ref, ...doc.data() }))
+    .filter((record) => {
+      if (!record.token || seen.has(record.token)) return false;
+      seen.add(record.token);
+      return true;
+    });
+}
+
+async function sendNotificationToTokenRecords(tokenRecords, message) {
+  if (!tokenRecords.length) {
     return {
+      targetedTokens: 0,
       successCount: 0,
-      failureCount: 0
+      failureCount: 0,
+      deletedInvalidTokens: 0
     };
   }
 
   let successCount = 0;
   let failureCount = 0;
-  const chunks = chunk(tokens, 500);
+  let deletedInvalidTokens = 0;
+  const chunks = chunk(tokenRecords, 500);
 
   for (const tokenChunk of chunks) {
+    const tokens = tokenChunk.map((record) => record.token);
     const response = await admin.messaging().sendEachForMulticast({
       ...message,
-      tokens: tokenChunk
+      tokens
     });
     successCount += response.successCount;
     failureCount += response.failureCount;
+
+    const deletePromises = [];
+    response.responses.forEach((item, index) => {
+      const code = item.error?.code;
+      if (code && INVALID_FCM_TOKEN_CODES.has(code)) {
+        deletePromises.push(tokenChunk[index].ref.delete());
+      }
+    });
+
+    if (deletePromises.length) {
+      await Promise.allSettled(deletePromises);
+      deletedInvalidTokens += deletePromises.length;
+    }
   }
 
   return {
+    targetedTokens: tokenRecords.length,
     successCount,
-    failureCount
+    failureCount,
+    deletedInvalidTokens
   };
 }
 
@@ -561,6 +739,98 @@ function chunk(items, size) {
 
 function cleanNotificationText(value) {
   return String(value || '').trim().slice(0, 240);
+}
+
+async function getAppSettings() {
+  const settingsDoc = await db.collection('settings').doc('app').get();
+  return settingsDoc.exists ? settingsDoc.data() : {};
+}
+
+function cleanSettingText(value, fallback) {
+  const text = String(value || '').trim();
+  return text || fallback;
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(Math.max(Math.round(number), min), max);
+}
+
+function buildPrayerReminderMessage(prayerName, minutesBefore) {
+  const title = `قرب موعد صلاة ${prayerName}`;
+  const body = `باقي ${minutesBefore} دقائق على صلاة ${prayerName}`;
+  return {
+    notification: {
+      title,
+      body
+    },
+    data: {
+      type: 'prayer',
+      title,
+      body,
+      link: '/index.html#prayer'
+    }
+  };
+}
+
+function buildPaymentReminderMessage(settings = {}) {
+  const amount = clampNumber(settings.qattahAmount, 0, 100000, 100);
+  const title = 'تذكير القطة الشهرية';
+  const body = amount > 0
+    ? `لا تنسى تسدد القطة الشهرية بقيمة ${amount} ريال`
+    : 'لا تنسى تسدد القطة الشهرية';
+  return {
+    notification: {
+      title,
+      body
+    },
+    data: {
+      type: 'payment',
+      title,
+      body,
+      link: '/index.html#payments'
+    }
+  };
+}
+
+async function fetchPrayerTimings(city, country) {
+  const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=4`;
+  const data = await fetchJson(url);
+  if (!data?.data?.timings) {
+    throw new Error('Invalid prayer timing response.');
+  }
+  return data.data.timings;
+}
+
+function parseRiyadhDateTime(dateKey, timeValue = '') {
+  const time = String(timeValue || '').match(/\d{1,2}:\d{2}/)?.[0];
+  if (!time) return null;
+  const value = new Date(`${dateKey}T${time}:00+03:00`);
+  return Number.isNaN(value.getTime()) ? null : value;
+}
+
+function getRiyadhParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute)
+  };
 }
 
 async function getNextUpcomingMatch() {

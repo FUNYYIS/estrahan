@@ -11,16 +11,17 @@
 
 <section class="panel">
     <div class="panel-head">
-        <h2><i data-lucide="compass"></i> مواقيت الصلاة والقبلة</h2>
+        <h2><i data-lucide="compass"></i> اتجاه القبلة</h2>
         <a href="#prayer" class="service-link">مواقيت الصلاة</a>
     </div>
-    <p class="muted">نحدد القبلة من موقعك، وإذا جهازك يدعم الحساس تضبط معك أكثر.</p>
+    <p class="muted">تحقق من إذن الوصول للموقع والحساس.</p>
 </section>
 
-<section id="qibla-container" class="panel text-center">
-    <p id="qibla-status" class="mb-4">اسمح بالموقع وحرك جوالك عشان نحدد القبلة.</p>
-    <div id="compass" class="qibla-dial" style="display:none;">
-        <div id="qibla-arrow" class="qibla-needle"></div>
+<section id="qibla-fix-container" class="panel text-center">
+    <p id="qibla-fix-status" class="mb-4">اضغط الزر لتفعيل الموقع والحساس.</p>
+    <button id="qibla-enable-button" type="button" class="btn qibla-enable-button">تفعيل القبلة</button>
+    <div id="qibla-fix-compass" class="qibla-dial" hidden>
+        <div id="qibla-fix-arrow" class="qibla-needle"></div>
         <strong>القبلة</strong>
     </div>
 </section>

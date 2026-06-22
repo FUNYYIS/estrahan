@@ -82,15 +82,35 @@
   white-space: nowrap;
 }
 
-#home-news-list .compact-news-item {
+#home-arabiya-news-list .compact-news-item {
   min-height: 72px;
   padding: 7px 9px;
 }
 
-#home-news-list .compact-news-thumb {
+#home-arabiya-news-list .compact-news-thumb {
   width: 76px;
   height: 56px;
   flex-basis: 76px;
+}
+
+.news-load-error {
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(215, 187, 118, .2);
+  border-radius: 16px;
+  color: #fff;
+  background: rgba(7, 26, 21, .9);
+}
+
+.news-load-error .btn {
+  width: auto !important;
+  min-width: 112px;
+  min-height: 42px;
+  padding-inline: 14px !important;
 }
 
 body.is-authenticated:has(.estraha-reference-home) #page-content {
@@ -156,14 +176,27 @@ body.is-authenticated:has(.estraha-reference-home) #page-content {
     font-size: .7rem;
   }
 
-  #home-news-list .compact-news-item {
+  #home-arabiya-news-list .compact-news-item {
     min-height: 68px;
   }
 
-  #home-news-list .compact-news-thumb {
+  #home-arabiya-news-list .compact-news-thumb {
     width: 70px;
     height: 52px;
     flex-basis: 70px;
+  }
+
+  .news-load-error {
+    min-height: 76px;
+    padding: 10px;
+    font-size: .86rem;
+  }
+
+  .news-load-error .btn {
+    min-width: 96px;
+    min-height: 40px;
+    padding-inline: 10px !important;
+    font-size: .8rem;
   }
 
   body.is-authenticated:has(.estraha-reference-home) #page-content {

@@ -1,9 +1,8 @@
-const CACHE_NAME = 'estraha-cache-v249';
-
-const urlsToCache = [
+const CACHE_NAME = 'estraha-cache-v250';
+const APP_SHELL_URLS = [
   '/',
   '/index.html',
-  '/firebase-messaging-sw.js',
+  '/manifest.json',
   '/assets/css/main.css',
   '/assets/js/main.js',
   '/assets/images/estraha-logo.svg',
@@ -11,7 +10,6 @@ const urlsToCache = [
   '/assets/icons/icon-512.png',
   '/assets/images/riyadh-skyline-bg.jpg',
   '/assets/images/shagrdiyah-desert-bg.png',
-  '/welcome.mp4',
   '/pages/login.html',
   '/pages/register.html',
   '/pages/home.html',
@@ -28,130 +26,130 @@ const urlsToCache = [
   '/pages/news.html'
 ];
 
-self.addEventListener('install', event => {
+importScripts('https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: 'AIzaSyCoIy5Yf3nvkpbp9l43590snBZui86uSXY',
+  authDomain: 'estrahaapp-9e327.firebaseapp.com',
+  projectId: 'estrahaapp-9e327',
+  storageBucket: 'estrahaapp-9e327.appspot.com',
+  messagingSenderId: '198308357962',
+  appId: '1:198308357962:web:63b5b267e738efd54a83b3'
+});
+
+const messaging = firebase.messaging();
+
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        return Promise.all(
-          urlsToCache.map(url => {
-            return cache.add(url).catch(err => {
-              console.warn(`Failed to cache ${url}:`, err);
-            });
-          })
-        );
-      })
+      .then((cache) => Promise.all(
+        APP_SHELL_URLS.map((url) => cache.add(url).catch((error) => {
+          console.warn(`Failed to cache ${url}:`, error);
+        }))
+      ))
       .then(() => self.skipWaiting())
-      .catch(err => console.error('Install event failed:', err))
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then(cacheNames => Promise.all(
+      .then((cacheNames) => Promise.all(
         cacheNames
-          .filter(cacheName => cacheName !== CACHE_NAME)
-          .map(cacheName => {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
+          .filter((cacheName) => cacheName.startsWith('estraha-cache-') && cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
       ))
       .then(() => self.clients.claim())
-      .catch(err => console.error('Activate event failed:', err))
   );
 });
 
-self.addEventListener('fetch', event => {
-  const request = event.request;
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
 
   const requestUrl = new URL(request.url);
+  if (requestUrl.origin !== self.location.origin) return;
 
-  // Handle cross-origin requests directly
-  if (requestUrl.origin !== self.location.origin) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)));
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(networkFirstPage(request));
     return;
   }
 
-  // Cache-first strategy for assets, network-first for pages
-  const isAsset = requestUrl.pathname.includes('/assets/');
-  
-  if (isAsset) {
-    // Cache-first for assets
-    event.respondWith(
-      caches.match(request)
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return fetch(request)
-            .then(response => {
-              // Don't cache non-200 responses or partial responses
-              if (
-                !response ||
-                response.status !== 200 ||
-                response.type === 'opaque' ||
-                response.status === 206
-              ) {
-                return response;
-              }
-
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(request, responseToCache).catch(err => {
-                    console.warn('Failed to cache response:', err);
-                  });
-                })
-                .catch(err => console.warn('Failed to open cache:', err));
-
-              return response;
-            })
-            .catch(() => {
-              // Return fallback for failed asset requests
-              return caches.match('/index.html');
-            });
-        })
-        .catch(() => {
-          return caches.match('/index.html');
-        })
-    );
-  } else {
-    // Network-first for HTML pages
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type === 'opaque' ||
-            response.status === 206
-          ) {
-            return response;
-          }
-
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(request, responseToCache).catch(err => {
-                console.warn('Failed to cache page response:', err);
-              });
-            })
-            .catch(err => console.warn('Failed to open cache:', err));
-
-          return response;
-        })
-        .catch(() => {
-          // Return cached page if network fails
-          return caches.match(request)
-            .then(cachedResponse => {
-              return cachedResponse || caches.match('/index.html');
-            });
-        })
-    );
+  if (isStaticAsset(requestUrl)) {
+    event.respondWith(cacheFirstAsset(request));
   }
+});
+
+async function networkFirstPage(request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (isCacheableResponse(response)) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch {
+    return (await cache.match(request))
+      || (await cache.match('/index.html'))
+      || Response.error();
+  }
+}
+
+async function cacheFirstAsset(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (isCacheableResponse(response)) {
+    cache.put(request, response.clone()).catch(() => {});
+  }
+  return response;
+}
+
+function isStaticAsset(url) {
+  return url.pathname.startsWith('/assets/')
+    || url.pathname === '/manifest.json'
+    || url.pathname.startsWith('/pages/');
+}
+
+function isCacheableResponse(response) {
+  return response && response.status === 200 && response.type !== 'opaque' && response.status !== 206;
+}
+
+messaging.onBackgroundMessage((payload) => {
+  const title = payload.notification?.title || payload.data?.title || 'تطبيق الاستراحة';
+  const options = {
+    body: payload.notification?.body || payload.data?.body || '',
+    icon: '/assets/icons/icon-192.png',
+    badge: '/assets/icons/icon-192.png',
+    data: payload.data || {}
+  };
+
+  self.registration.showNotification(title, options);
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const link = event.notification.data?.link || '/index.html#home';
+  const targetUrl = new URL(link, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+
+      return undefined;
+    })
+  );
 });

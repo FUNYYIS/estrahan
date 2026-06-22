@@ -1,5 +1,5 @@
 const NEWS_ENDPOINT = '/api/alarabiya-news';
-const NEWS_FALLBACK_IMAGE = 'assets/images/estraha-logo.svg';
+const IMAGE_PROXY_ENDPOINT = '/.netlify/functions/alarabiya-image';
 let orientationHandler = null;
 
 function escapeMarkup(value = '') {
@@ -54,12 +54,15 @@ function renderNewsItems(container, articles, compact) {
 
   container.innerHTML = visible.map((article) => {
     const url = safeUrl(article.url);
-    const image = safeUrl(article.image) || NEWS_FALLBACK_IMAGE;
+    const image = safeUrl(article.image);
     const title = String(article.title || 'خبر رياضي').trim();
+    const imageMarkup = image
+      ? `<img class="compact-news-thumb" src="${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}" alt="" loading="lazy" decoding="async" onerror="this.remove();this.closest('.compact-news-item')?.classList.add('no-image')">`
+      : '';
 
     return `
-      <a class="compact-news-item" href="${escapeMarkup(url || '#')}" target="_blank" rel="noopener noreferrer">
-        <img class="compact-news-thumb" src="${escapeMarkup(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${NEWS_FALLBACK_IMAGE}'">
+      <a class="compact-news-item${image ? '' : ' no-image'}" href="${escapeMarkup(url || '#')}" target="_blank" rel="noopener noreferrer">
+        ${imageMarkup}
         <span class="compact-news-copy">
           <strong title="${escapeMarkup(title)}">${escapeMarkup(title)}</strong>
           <small>العربية رياضة</small>

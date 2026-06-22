@@ -2,19 +2,47 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == "tquFv8nhU3ZPGgqumfCo3Hx67k02";
+    }
+
+    function isImage(maxSize) {
+      return request.resource != null
+        && request.resource.size <= maxSize
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isSplashVideo(maxSize) {
+      return request.resource != null
+        && request.resource.size <= maxSize
+        && request.resource.contentType.matches('video/(mp4|webm|quicktime)');
+    }
+
     match /theme-backgrounds/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin() && isImage(5 * 1024 * 1024);
     }
 
     match /theme-logos/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin() && isImage(5 * 1024 * 1024);
     }
 
     match /splash/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin()
+        && (isImage(5 * 1024 * 1024) || isSplashVideo(25 * 1024 * 1024));
+    }
+
+    match /splash-images/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage(5 * 1024 * 1024);
+    }
+
+    match /splash-videos/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && isSplashVideo(25 * 1024 * 1024);
     }
 
     match /{allPaths=**} {

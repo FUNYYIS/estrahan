@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.uid == "tquFv8nhU3ZPGgqumfCo3Hx67k02";
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isRegistered() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isActiveMember() {
+      return isRegistered() && userDoc(request.auth.uid).data.disabled != true;
+    }
+
+    function onlyChanged(allowedFields) {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(allowedFields);
+    }
+
+    function hasOnlyKeys(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    match /users/{userId} {
+      allow get: if isAdmin() || (signedIn() && request.auth.uid == userId) || isActiveMember();
+      allow list: if isActiveMember() || isAdmin();
+
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == userId
+          && resource.data.disabled != true
+          && request.resource.data.userId == resource.data.userId
+          && onlyChanged(['avatarUrl', 'updatedAt'])
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /settings/app {
+      allow read: if isActiveMember() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /chat/{messageId} {
+      allow read: if isActiveMember() || isAdmin();
+      allow create: if isActiveMember()
+        && hasOnlyKeys(['text', 'userId', 'userName', 'avatarUrl', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000;
+      allow update: if false;
+      allow delete: if isAdmin()
+        || (isActiveMember() && resource.data.userId == request.auth.uid);
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isActiveMember() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /fcmTokens/{tokenId} {
+      allow get: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+      allow list: if isAdmin();
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 20
+        && request.resource.data.keys().hasOnly(['token', 'uid', 'topics', 'userAgent', 'updatedAt']);
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    match /adminNotifications/{notificationId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /matchNotificationState/{stateId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

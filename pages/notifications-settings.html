@@ -14,6 +14,13 @@
         <h2><i data-lucide="bell"></i> تنبيهاتك</h2>
         <a href="#settings" class="service-link">الضبط</a>
     </div>
+    <div class="list-item-card">
+        <div>
+            <span class="font-bold">حالة إذن المتصفح</span>
+            <p id="notification-permission-status" class="text-sm">جاري التحقق...</p>
+            <p id="notification-sync-status" class="text-sm"></p>
+        </div>
+    </div>
     <div class="section-stack">
         <div class="list-item-card">
             <span class="font-bold">تنبيه القطه</span>
@@ -24,9 +31,9 @@
         </div>
         <div class="list-item-card">
             <span class="font-bold">نبّهني وقت الصلاة</span>
-            <button class="notification-toggle" type="button" data-notification-toggle="prayer-notification" aria-pressed="true" aria-label="تفعيل تنبيهات مواقيت الصلاة">
-                <i data-lucide="toggle-right"></i>
-                <span>شغّال</span>
+            <button class="notification-toggle" type="button" data-notification-toggle="prayer-notification" aria-pressed="false" aria-label="تفعيل تنبيهات مواقيت الصلاة">
+                <i data-lucide="toggle-left"></i>
+                <span>مقفّل</span>
             </button>
         </div>
         <div class="list-item-card">
@@ -43,5 +50,9 @@
                 <span>شغّال</span>
             </button>
         </div>
+    </div>
+    <div class="cards-grid mt-4">
+        <button id="register-notification-device" class="btn" type="button">تسجيل هذا الجهاز للإشعارات</button>
+        <button id="resync-notifications" class="btn" type="button">إعادة مزامنة الإشعارات</button>
     </div>
 </section>

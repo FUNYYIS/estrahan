@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '252';
+const APP_ASSET_VERSION = '254';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -94,11 +94,21 @@ const DEFAULT_APP_SETTINGS = {
 
     qattahAmount: 100,
     paymentEnabled: false,
+    paymentReminderEnabled: false,
+    paymentReminderDay: 1,
+    paymentReminderHour: 9,
+    paymentReminderMinute: 0,
+    paymentReminderMode: 'lateOnly',
 
     stcPayNumber: '',
     applePayText: '',
     beneficiaryName: '',
-    paymentQrUrl: ''
+    paymentQrUrl: '',
+
+    prayerNotificationsEnabled: false,
+    prayerCity: 'Jeddah',
+    prayerCountry: 'Saudi Arabia',
+    prayerReminderMinutes: 10
 };
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
@@ -484,14 +494,16 @@ function getConfiguredVapidKey() {
 }
 
 async function syncFcmTokenWithPreferences() {
-    if (!currentUser || Notification.permission !== 'granted') return;
+    if (!currentUser) throw new Error('لازم تقلط أول.');
+    if (!('Notification' in window)) throw new Error('المتصفح لا يدعم الإشعارات.');
+    if (Notification.permission !== 'granted') throw new Error('لم يتم منح صلاحية الإشعارات.');
 
     const vapidKey = getConfiguredVapidKey();
-    if (!vapidKey) return;
+    if (!vapidKey) throw new Error('مفتاح إشعارات المتصفح غير مضبوط.');
 
     try {
         const serviceWorkerRegistration = await initFirebaseMessaging();
-        if (!firebaseMessaging || !serviceWorkerRegistration) return;
+        if (!firebaseMessaging || !serviceWorkerRegistration) throw new Error('تعذر تسجيل خدمة الإشعارات.');
 
         const token = await getToken(firebaseMessaging, {
             vapidKey,
@@ -499,13 +511,18 @@ async function syncFcmTokenWithPreferences() {
         });
 
         if (!token) {
-            console.warn('Firebase Cloud Messaging token was not returned.');
-            return;
+            throw new Error('تعذر إنشاء FCM Token.');
         }
 
-        await saveFcmToken(token);
+        const result = await saveFcmToken(token);
+        const syncedAt = new Date().toISOString();
+        localStorage.setItem('al-istiraha-notification-last-sync', syncedAt);
+        updateNotificationPermissionStatus();
+        return { ...result, syncedAt };
     } catch (error) {
         console.warn('Firebase Cloud Messaging token sync failed:', error);
+        updateNotificationPermissionStatus(error.message || 'تعذرت مزامنة الإشعارات.');
+        throw error;
     }
 }
 
@@ -516,13 +533,14 @@ async function saveFcmToken(token) {
         uid: currentUser.uid,
         topics: {
             payments: localStorage.getItem('al-istiraha-payment-notification') !== 'false',
-            prayer: localStorage.getItem('al-istiraha-prayer-notification') !== 'false',
+            prayer: localStorage.getItem('al-istiraha-prayer-notification') === 'true',
             matches: localStorage.getItem('al-istiraha-matches-notification') === 'true',
             chat: localStorage.getItem('al-istiraha-chat-notification') !== 'false'
         },
         userAgent: navigator.userAgent,
         updatedAt: serverTimestamp()
     }, { merge: true });
+    return { tokenId };
 }
 
 menuBtn?.addEventListener('click', () => {
@@ -857,35 +875,180 @@ function resizeImageToDataUrl(file, maxSize = 360) {
 }
 
 function setupNotificationToggles() {
+    updateNotificationPermissionStatus();
+
+    const registerDeviceButton = document.getElementById('register-notification-device');
+    const resyncButton = document.getElementById('resync-notifications');
+
+    if (registerDeviceButton && registerDeviceButton.dataset.bound !== 'true') {
+        registerDeviceButton.dataset.bound = 'true';
+        registerDeviceButton.addEventListener('click', async () => {
+            await handleNotificationRegistrationAction(registerDeviceButton);
+        });
+    }
+
+    if (resyncButton && resyncButton.dataset.bound !== 'true') {
+        resyncButton.dataset.bound = 'true';
+        resyncButton.addEventListener('click', async () => {
+            await handleNotificationRegistrationAction(resyncButton, true);
+        });
+    }
+
     document.querySelectorAll('[data-notification-toggle]').forEach((button) => {
+        if (button.dataset.bound === 'true') return;
+        button.dataset.bound = 'true';
+
         const key = `al-istiraha-${button.dataset.notificationToggle}`;
         const savedValue = localStorage.getItem(key);
-        const enabled = savedValue === null ? button.getAttribute('aria-pressed') === 'true' : savedValue === 'true';
+        const enabled = savedValue === null
+            ? button.getAttribute('aria-pressed') === 'true'
+            : savedValue === 'true';
+
         setNotificationToggleState(button, enabled);
-        button.addEventListener('click', () => {
-            const nextValue = button.getAttribute('aria-pressed') !== 'true';
-            localStorage.setItem(key, String(nextValue));
-            setNotificationToggleState(button, nextValue);
-            if (nextValue) {
-                requestBrowserNotificationPermission();
-            } else if ('Notification' in window && Notification.permission === 'granted') {
-                syncFcmTokenWithPreferences();
+
+        button.addEventListener('click', async () => {
+            const previousEnabled = button.getAttribute('aria-pressed') === 'true';
+            const previousStoredValue = localStorage.getItem(key);
+            const nextValue = !previousEnabled;
+
+            button.disabled = true;
+
+            try {
+                /*
+                 * نحفظ القيمة مؤقتًا لكي يقرأها saveFcmToken،
+                 * لكن لا نغيّر شكل الزر إلا بعد نجاح المزامنة.
+                 */
+                localStorage.setItem(key, String(nextValue));
+
+                if (nextValue) {
+                    if (!('Notification' in window)) {
+                        throw new Error('المتصفح لا يدعم الإشعارات.');
+                    }
+
+                    const permission = Notification.permission === 'default'
+                        ? await Notification.requestPermission()
+                        : Notification.permission;
+
+                    if (permission !== 'granted') {
+                        throw new Error(
+                            permission === 'denied'
+                                ? 'تم رفض صلاحية الإشعارات من المتصفح.'
+                                : 'لم يتم منح صلاحية الإشعارات.'
+                        );
+                    }
+
+                    await syncFcmTokenWithPreferences();
+                } else if (
+                    'Notification' in window &&
+                    Notification.permission === 'granted'
+                ) {
+                    await syncFcmTokenWithPreferences();
+                }
+
+                setNotificationToggleState(button, nextValue);
+                updateNotificationPermissionStatus();
+
+                showAlert(
+                    nextValue
+                        ? 'تم تفعيل هذا التنبيه ومزامنة الجهاز.'
+                        : 'تم إيقاف هذا التنبيه ومزامنة الجهاز.'
+                );
+            } catch (error) {
+                if (previousStoredValue === null) {
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(key, previousStoredValue);
+                }
+
+                setNotificationToggleState(button, previousEnabled);
+                updateNotificationPermissionStatus(
+                    error.message || 'تعذرت مزامنة الإشعارات.'
+                );
+                showAlert(error.message || 'تعذرت مزامنة الإشعارات.');
+            } finally {
+                button.disabled = false;
             }
         });
     });
 }
 
 async function requestBrowserNotificationPermission() {
-    if (!('Notification' in window)) return;
+    if (!('Notification' in window)) {
+        updateNotificationPermissionStatus('المتصفح لا يدعم الإشعارات.');
+        showAlert('المتصفح لا يدعم الإشعارات.');
+        return null;
+    }
     try {
         const permission = Notification.permission === 'default'
             ? await Notification.requestPermission()
             : Notification.permission;
         if (permission === 'granted') {
             await syncFcmTokenWithPreferences();
+            showAlert('تم تفعيل الإشعارات.');
+        } else if (permission === 'denied') {
+            updateNotificationPermissionStatus('تم رفض صلاحية الإشعارات.');
+            showAlert('تم رفض صلاحية الإشعارات من المتصفح.');
+        } else {
+            updateNotificationPermissionStatus('لم يتم طلب صلاحية الإشعارات.');
+            showAlert('لم يتم تفعيل الإشعارات بعد.');
         }
+        return permission;
     } catch (error) {
         console.warn('Notification permission request failed:', error);
+        updateNotificationPermissionStatus(error.message || 'تعذر طلب صلاحية الإشعارات.');
+        throw error;
+    }
+}
+
+async function handleNotificationRegistrationAction(button, forceSync = false) {
+    const defaultText = button.textContent;
+    button.disabled = true;
+    button.textContent = forceSync ? 'جاري إعادة المزامنة...' : 'جاري تسجيل الجهاز...';
+
+    try {
+        if (!('Notification' in window)) {
+            throw new Error('المتصفح لا يدعم الإشعارات.');
+        }
+
+        if (Notification.permission === 'default') {
+            await requestBrowserNotificationPermission();
+        } else if (Notification.permission === 'denied') {
+            throw new Error('تم رفض صلاحية الإشعارات.');
+        } else {
+            await syncFcmTokenWithPreferences();
+            showAlert(forceSync ? 'تمت إعادة مزامنة الإشعارات.' : 'تم تسجيل هذا الجهاز للإشعارات.');
+        }
+    } catch (error) {
+        showAlert(error.message || 'تعذرت مزامنة الإشعارات.');
+    } finally {
+        button.disabled = false;
+        button.textContent = defaultText;
+        updateNotificationPermissionStatus();
+    }
+}
+
+function updateNotificationPermissionStatus(extraMessage = '') {
+    const permissionStatus = document.getElementById('notification-permission-status');
+    const syncStatus = document.getElementById('notification-sync-status');
+    if (!permissionStatus && !syncStatus) return;
+
+    let statusText = 'غير مدعوم';
+    if ('Notification' in window) {
+        statusText = Notification.permission === 'granted'
+            ? 'مفعّل'
+            : Notification.permission === 'denied'
+                ? 'مرفوض'
+                : 'لم يُطلب';
+    }
+
+    if (permissionStatus) permissionStatus.textContent = statusText;
+
+    const lastSync = localStorage.getItem('al-istiraha-notification-last-sync');
+    if (syncStatus) {
+        const lastSyncText = lastSync
+            ? `آخر مزامنة: ${new Date(lastSync).toLocaleString('ar-SA')}`
+            : 'لم تتم مزامنة هذا الجهاز بعد.';
+        syncStatus.textContent = extraMessage || lastSyncText;
     }
 }
 
@@ -965,8 +1128,10 @@ async function setupAdminNotifications() {
     activateAdminTab('general');
 
     const report = document.getElementById('admin-notification-report');
+    const targetCount = document.getElementById('notification-target-count');
     const successCount = document.getElementById('notification-success-count');
     const failureCount = document.getElementById('notification-failure-count');
+    const deletedTokenCount = document.getElementById('notification-deleted-token-count');
     const status = document.getElementById('admin-notification-status');
     const broadcastForm = document.getElementById('admin-broadcast-form');
     const titleInput = document.getElementById('broadcast-title');
@@ -985,7 +1150,19 @@ async function setupAdminNotifications() {
     const applePayTextInput = document.getElementById('admin-apple-pay-text');
     const paymentQrUrlInput = document.getElementById('admin-payment-qr-url');
     const paymentEnabledInput = document.getElementById('admin-payment-enabled');
+    const paymentReminderEnabledInput = document.getElementById('admin-payment-reminder-enabled');
+    const paymentReminderDayInput = document.getElementById('admin-payment-reminder-day');
+    const paymentReminderHourInput = document.getElementById('admin-payment-reminder-hour');
+    const paymentReminderMinuteInput = document.getElementById('admin-payment-reminder-minute');
+    const paymentReminderModeInput = document.getElementById('admin-payment-reminder-mode');
     const paymentSettingsStatus = document.getElementById('admin-payment-settings-status');
+
+    const prayerNotificationSettingsForm = document.getElementById('admin-prayer-notification-settings-form');
+    const prayerNotificationsEnabledInput = document.getElementById('admin-prayer-notifications-enabled');
+    const prayerCityInput = document.getElementById('admin-prayer-city');
+    const prayerCountryInput = document.getElementById('admin-prayer-country');
+    const prayerReminderMinutesInput = document.getElementById('admin-prayer-reminder-minutes');
+    const prayerNotificationSettingsStatus = document.getElementById('admin-prayer-notification-settings-status');
 
     const homeSectionsForm = document.getElementById('admin-home-sections-form');
     const showWeatherInput = document.getElementById('admin-show-weather');
@@ -1017,13 +1194,19 @@ async function setupAdminNotifications() {
     if (splashImageUrlInput) splashImageUrlInput.value = appSettings.splashImageUrl || '';
     if (splashVideoUrlInput) splashVideoUrlInput.value = appSettings.splashVideoUrl || '';
 
+    const bindAdminListenerOnce = (element, key, eventName, handler) => {
+        if (!element || element.dataset[key] === 'true') return;
+        element.dataset[key] = 'true';
+        element.addEventListener(eventName, handler);
+    };
+
     async function uploadSplashFile(file, folder) {
         const fileRef = storageRef(storage, `${folder}/${Date.now()}-${file.name}`);
         await uploadBytes(fileRef, file);
         return await getDownloadURL(fileRef);
     }
 
-    splashImageFileInput?.addEventListener('change', async () => {
+    bindAdminListenerOnce(splashImageFileInput, 'adminSplashImageUploadBound', 'change', async () => {
         const file = splashImageFileInput.files?.[0];
         if (!file) return;
         try {
@@ -1038,7 +1221,7 @@ async function setupAdminNotifications() {
         }
     });
 
-    splashVideoFileInput?.addEventListener('change', async () => {
+    bindAdminListenerOnce(splashVideoFileInput, 'adminSplashVideoUploadBound', 'change', async () => {
         const file = splashVideoFileInput.files?.[0];
         if (!file) return;
         try {
@@ -1074,7 +1257,7 @@ async function setupAdminNotifications() {
         return await getDownloadURL(fileRef);
     }
 
-    themeLogoFileInput?.addEventListener('change', async () => {
+    bindAdminListenerOnce(themeLogoFileInput, 'adminLogoUploadBound', 'change', async () => {
         const file = themeLogoFileInput.files?.[0];
         if (!file) return;
 
@@ -1089,7 +1272,7 @@ async function setupAdminNotifications() {
         }
     });
 
-    themeBackgroundFileInput?.addEventListener('change', async () => {
+    bindAdminListenerOnce(themeBackgroundFileInput, 'adminBackgroundUploadBound', 'change', async () => {
         const file = themeBackgroundFileInput.files?.[0];
         if (!file) return;
 
@@ -1133,9 +1316,18 @@ async function setupAdminNotifications() {
     if (applePayTextInput) applePayTextInput.value = appSettings.applePayText || '';
     if (paymentQrUrlInput) paymentQrUrlInput.value = appSettings.paymentQrUrl || '';
     if (paymentEnabledInput) paymentEnabledInput.checked = appSettings.paymentEnabled === true;
+    if (paymentReminderEnabledInput) paymentReminderEnabledInput.checked = appSettings.paymentReminderEnabled === true;
+    if (paymentReminderDayInput) paymentReminderDayInput.value = appSettings.paymentReminderDay ?? DEFAULT_APP_SETTINGS.paymentReminderDay;
+    if (paymentReminderHourInput) paymentReminderHourInput.value = appSettings.paymentReminderHour ?? DEFAULT_APP_SETTINGS.paymentReminderHour;
+    if (paymentReminderMinuteInput) paymentReminderMinuteInput.value = appSettings.paymentReminderMinute ?? DEFAULT_APP_SETTINGS.paymentReminderMinute;
+    if (paymentReminderModeInput) paymentReminderModeInput.value = appSettings.paymentReminderMode || DEFAULT_APP_SETTINGS.paymentReminderMode;
+    if (prayerNotificationsEnabledInput) prayerNotificationsEnabledInput.checked = appSettings.prayerNotificationsEnabled !== false;
+    if (prayerCityInput) prayerCityInput.value = appSettings.prayerCity || DEFAULT_APP_SETTINGS.prayerCity;
+    if (prayerCountryInput) prayerCountryInput.value = appSettings.prayerCountry || DEFAULT_APP_SETTINGS.prayerCountry;
+    if (prayerReminderMinutesInput) prayerReminderMinutesInput.value = appSettings.prayerReminderMinutes ?? DEFAULT_APP_SETTINGS.prayerReminderMinutes;
 
 
-    homeSectionsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(homeSectionsForm, 'adminHomeSectionsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextHomeSettings = {
@@ -1169,7 +1361,7 @@ async function setupAdminNotifications() {
 
 
 
-    splashSettingsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(splashSettingsForm, 'adminSplashSettingsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextSplashSettings = {
@@ -1202,7 +1394,7 @@ async function setupAdminNotifications() {
         }
     });
 
-    themeSettingsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(themeSettingsForm, 'adminThemeSettingsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextThemeSettings = {
@@ -1235,7 +1427,7 @@ async function setupAdminNotifications() {
         }
     });
 
-    chatSettingsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(chatSettingsForm, 'adminChatSettingsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextChatSettings = {
@@ -1261,7 +1453,7 @@ async function setupAdminNotifications() {
         }
     });
 
-    paymentSettingsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(paymentSettingsForm, 'adminPaymentSettingsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextPaymentSettings = {
@@ -1270,7 +1462,12 @@ async function setupAdminNotifications() {
             beneficiaryName: beneficiaryNameInput?.value.trim() || '',
             stcPayNumber: stcPayNumberInput?.value.trim() || '',
             applePayText: applePayTextInput?.value.trim() || '',
-            paymentQrUrl: paymentQrUrlInput?.value.trim() || ''
+            paymentQrUrl: paymentQrUrlInput?.value.trim() || '',
+            paymentReminderEnabled: paymentReminderEnabledInput?.checked === true,
+            paymentReminderDay: Number(paymentReminderDayInput?.value || DEFAULT_APP_SETTINGS.paymentReminderDay),
+            paymentReminderHour: Number(paymentReminderHourInput?.value || DEFAULT_APP_SETTINGS.paymentReminderHour),
+            paymentReminderMinute: Number(paymentReminderMinuteInput?.value || DEFAULT_APP_SETTINGS.paymentReminderMinute),
+            paymentReminderMode: paymentReminderModeInput?.value === 'all' ? 'all' : 'lateOnly'
         };
 
         if (paymentSettingsStatus) paymentSettingsStatus.textContent = 'جاري الحفظ...';
@@ -1292,7 +1489,36 @@ async function setupAdminNotifications() {
         }
     });
 
-    appSettingsForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(prayerNotificationSettingsForm, 'adminPrayerSettingsBound', 'submit', async (event) => {
+        event.preventDefault();
+
+        const nextPrayerSettings = {
+            prayerNotificationsEnabled: prayerNotificationsEnabledInput?.checked === true,
+            prayerCity: prayerCityInput?.value.trim() || DEFAULT_APP_SETTINGS.prayerCity,
+            prayerCountry: prayerCountryInput?.value.trim() || DEFAULT_APP_SETTINGS.prayerCountry,
+            prayerReminderMinutes: Number(prayerReminderMinutesInput?.value || DEFAULT_APP_SETTINGS.prayerReminderMinutes)
+        };
+
+        if (prayerNotificationSettingsStatus) prayerNotificationSettingsStatus.textContent = 'جاري الحفظ...';
+
+        try {
+            await setDoc(doc(db, 'settings', 'app'), {
+                ...nextPrayerSettings,
+                updatedAt: serverTimestamp(),
+                updatedBy: auth.currentUser?.uid || currentUser?.uid || ''
+            }, { merge: true });
+
+            appSettings = { ...appSettings, ...nextPrayerSettings };
+            if (prayerNotificationSettingsStatus) prayerNotificationSettingsStatus.textContent = 'تم حفظ إعدادات الصلاة.';
+            showAlert('تم حفظ إعدادات تنبيهات الصلاة.');
+        } catch (error) {
+            console.error('Prayer notification settings save failed:', error);
+            if (prayerNotificationSettingsStatus) prayerNotificationSettingsStatus.textContent = 'فشل حفظ إعدادات الصلاة.';
+            showAlert('فشل حفظ إعدادات تنبيهات الصلاة.');
+        }
+    });
+
+    bindAdminListenerOnce(appSettingsForm, 'adminAppSettingsBound', 'submit', async (event) => {
         event.preventDefault();
 
         const nextSettings = {
@@ -1328,20 +1554,27 @@ async function setupAdminNotifications() {
 
     const renderReport = (result = {}) => {
         if (report) report.hidden = false;
+        if (targetCount) targetCount.textContent = String(result.targetedTokens || 0);
         if (successCount) successCount.textContent = String(result.successCount || 0);
         if (failureCount) failureCount.textContent = String(result.failureCount || 0);
+        if (deletedTokenCount) deletedTokenCount.textContent = String(result.deletedInvalidTokens || 0);
     };
 
     document.querySelectorAll('[data-admin-test-notification]').forEach((button) => {
-        button.addEventListener('click', async () => {
+        bindAdminListenerOnce(button, 'adminTestNotificationBound', 'click', async () => {
             const type = button.dataset.adminTestNotification;
             button.disabled = true;
             setStatus('جاري إرسال الاختبار...', 'pending');
             try {
                 const callable = httpsCallable(functions, 'sendAdminTestNotification');
                 const response = await callable({ type });
-                renderReport(response.data || {});
-                setStatus('تم إرسال اختبار الإشعار.', 'success');
+                const result = response.data || {};
+                renderReport(result);
+                if ((result.successCount || 0) > 0) {
+                    setStatus('تم إرسال اختبار الإشعار.', 'success');
+                } else {
+                    setStatus('لم يصل الاختبار لأي جهاز. أعد مزامنة الإشعارات ثم حاول مرة أخرى.', 'error');
+                }
             } catch (error) {
                 console.error('Admin test notification failed:', error);
                 renderReport({ successCount: 0, failureCount: 1 });
@@ -1352,7 +1585,7 @@ async function setupAdminNotifications() {
         });
     });
 
-    broadcastForm?.addEventListener('submit', async (event) => {
+    bindAdminListenerOnce(broadcastForm, 'adminBroadcastBound', 'submit', async (event) => {
         event.preventDefault();
         const title = titleInput?.value.trim();
         const message = messageInput?.value.trim();
@@ -1368,8 +1601,9 @@ async function setupAdminNotifications() {
         try {
             const callable = httpsCallable(functions, 'sendAdminBroadcastNotification');
             const response = await callable({ title, message });
-            renderReport(response.data || {});
-            setStatus('تم إرسال الإشعار للجميع.', 'success');
+            const result = response.data || {};
+            renderReport(result);
+            setStatus((result.successCount || 0) > 0 ? 'تم إرسال الإشعار للجميع.' : 'لم يصل الإشعار لأي جهاز.', (result.successCount || 0) > 0 ? 'success' : 'error');
             broadcastForm.reset();
         } catch (error) {
             console.error('Admin broadcast notification failed:', error);
@@ -1828,7 +2062,7 @@ function applyHomeSectionVisibility() {
     const chatHead = document.querySelector('a[href="#chat"]')?.closest('.reference-section-head');
     const chatList = document.getElementById('home-chat-preview');
 
-    const newsList = document.getElementById('home-news-list');
+    const newsSections = document.querySelectorAll('[data-home-section="news"]');
 
     if (prayerCard) prayerCard.style.display = appSettings.showPrayer === false ? 'none' : '';
     if (weatherCard) weatherCard.style.display = appSettings.showWeather === false ? 'none' : '';
@@ -1843,7 +2077,9 @@ function applyHomeSectionVisibility() {
     if (chatHead) chatHead.style.display = appSettings.showChat === false ? 'none' : '';
     if (chatList) chatList.style.display = appSettings.showChat === false ? 'none' : '';
 
-    if (newsList) newsList.style.display = appSettings.showNews === false ? 'none' : '';
+    newsSections.forEach((section) => {
+        section.style.display = appSettings.showNews === false ? 'none' : '';
+    });
 }
 
 async function loadHomePageData() {
@@ -2674,7 +2910,7 @@ async function loadHomeMatches() {
 async function loadHomeNews() {
     const container = document.getElementById('home-news-list');
     if (!container) return;
-    await loadNews(container, 2);
+    await loadNews(container, 3);
 }
 
 
@@ -3111,7 +3347,8 @@ async function loadNews(container, limit = 10) {
 
 async function fetchFootballNews(limit = 10) {
     const sources = [
-        { name: 'الجزيرة رياضة', url: 'https://www.aljazeera.net/aljazeerarss/sports.xml' }
+        { name: 'الجزيرة رياضة', url: 'https://www.aljazeera.net/aljazeerarss/sports.xml' },
+        { name: 'العربية رياضة', url: 'https://www.alarabiya.net/.mrss/ar/sport.xml' }
     ];
     const requests = sources.map((source) => fetchRssNewsSource(source));
     const settled = await Promise.allSettled(requests);
@@ -3127,11 +3364,7 @@ async function fetchFootballNews(limit = 10) {
 async function fetchRssNewsSource(source) {
     const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.url)}`;
     try {
-        const response = await fetch(rssJsonUrl);
-        if (!response.ok) {
-            throw new Error(`${source.name} rss2json returned ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await fetchJsonWithTimeout(rssJsonUrl, 8000);
         if (data.status !== 'ok' || !Array.isArray(data.items)) {
             throw new Error(`${source.name} rss2json returned invalid data`);
         }
@@ -3148,7 +3381,7 @@ async function fetchRssNewsSource(source) {
     }
 
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.url)}`;
-    const response = await fetch(proxyUrl);
+    const response = await fetchWithTimeout(proxyUrl, 8000);
     if (!response.ok) {
         throw new Error(`${source.name} returned ${response.status}`);
     }
@@ -3167,6 +3400,17 @@ async function fetchRssNewsSource(source) {
         publishedAt: readRssText(item, 'pubDate'),
         source: { name: source.name }
     }));
+}
+
+async function fetchWithTimeout(url, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, { signal: controller.signal });
+    } finally {
+        clearTimeout(timeout);
+    }
 }
 
 function containsArabic(value = '') {

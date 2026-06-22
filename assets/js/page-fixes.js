@@ -1,30 +1,6 @@
-const ARABIYA_SPORT_RSS = 'https://www.alarabiya.net/.mrss/ar/sport.xml';
+const NEWS_ENDPOINT = '/api/alarabiya-news';
 const NEWS_FALLBACK_IMAGE = 'assets/images/estraha-logo.svg';
-const FOOTBALL_KEYWORDS = [
-  'كرة القدم', 'دوري', 'كأس', 'مونديال', 'مباراة', 'مباريات', 'هدف', 'أهداف',
-  'منتخب', 'نادي', 'فريق', 'لاعب', 'مدرب', 'فيفا', 'أبطال أوروبا', 'الدوري الإنجليزي',
-  'الدوري الإسباني', 'الدوري الإيطالي', 'الدوري الألماني', 'الدوري الفرنسي', 'الدوري السعودي',
-  'ريال مدريد', 'برشلونة', 'ليفربول', 'مانشستر', 'أرسنال', 'تشيلسي', 'بايرن', 'باريس سان جيرمان',
-  'الهلال', 'النصر', 'الاتحاد', 'الأهلي', 'القادسية', 'الشباب', 'الاتفاق', 'كرة'
-];
-
-let arabiyaNewsPromise = null;
 let orientationHandler = null;
-
-function plainText(value = '') {
-  const template = document.createElement('template');
-  template.innerHTML = String(value);
-  return (template.content.textContent || '').replace(/\s+/g, ' ').trim();
-}
-
-function safeUrl(value = '') {
-  try {
-    const url = new URL(value, window.location.origin);
-    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
-  } catch {
-    return '';
-  }
-}
 
 function escapeMarkup(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -36,147 +12,100 @@ function escapeMarkup(value = '') {
   }[char]));
 }
 
-function firstImageFromHtml(value = '') {
-  const template = document.createElement('template');
-  template.innerHTML = String(value);
-  return safeUrl(template.content.querySelector('img')?.getAttribute('src') || '');
-}
-
-function rssItemImage(item) {
-  const mediaContent = item.getElementsByTagName('media:content')[0]
-    || item.getElementsByTagName('media:thumbnail')[0];
-  const enclosure = item.querySelector('enclosure[type^="image"]') || item.querySelector('enclosure');
-  const description = item.querySelector('description')?.textContent || '';
-  return safeUrl(mediaContent?.getAttribute('url') || enclosure?.getAttribute('url') || '')
-    || firstImageFromHtml(description)
-    || NEWS_FALLBACK_IMAGE;
-}
-
-function isFootballArticle(article) {
-  const haystack = `${article.title || ''} ${article.description || ''}`.toLowerCase();
-  return FOOTBALL_KEYWORDS.some((keyword) => haystack.includes(keyword.toLowerCase()));
-}
-
-async function fetchWithTimeout(url, timeoutMs = 9000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+function safeUrl(value = '') {
   try {
-    const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
-    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-    return response;
-  } finally {
-    clearTimeout(timer);
+    const url = new URL(value, window.location.origin);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
   }
 }
 
-async function fetchArabiyaFootballNews() {
-  if (arabiyaNewsPromise) return arabiyaNewsPromise;
-
-  arabiyaNewsPromise = (async () => {
-    let items = [];
-    const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(ARABIYA_SPORT_RSS)}`;
-
-    try {
-      const response = await fetchWithTimeout(rssJsonUrl);
-      const data = await response.json();
-      if (data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('Invalid RSS JSON');
-      items = data.items.map((item) => ({
-        title: plainText(item.title),
-        description: plainText(item.description || item.content || ''),
-        url: safeUrl(item.link),
-        image: safeUrl(item.thumbnail || item.enclosure?.link || '')
-          || firstImageFromHtml(item.description || item.content || '')
-          || NEWS_FALLBACK_IMAGE,
-        publishedAt: item.pubDate || ''
-      }));
-    } catch (error) {
-      console.warn('Al Arabiya RSS JSON unavailable, trying XML fallback:', error);
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(ARABIYA_SPORT_RSS)}`;
-      const response = await fetchWithTimeout(proxyUrl);
-      const xml = await response.text();
-      const doc = new DOMParser().parseFromString(xml, 'text/xml');
-      if (doc.querySelector('parsererror')) throw new Error('Invalid RSS XML');
-      items = Array.from(doc.querySelectorAll('item')).map((item) => ({
-        title: plainText(item.querySelector('title')?.textContent || ''),
-        description: plainText(item.querySelector('description')?.textContent || ''),
-        url: safeUrl(item.querySelector('link')?.textContent || ''),
-        image: rssItemImage(item),
-        publishedAt: item.querySelector('pubDate')?.textContent || ''
-      }));
-    }
-
-    const seen = new Set();
-    return items
-      .filter((item) => item.title && item.url && isFootballArticle(item))
-      .filter((item) => {
-        if (seen.has(item.url)) return false;
-        seen.add(item.url);
-        return true;
-      })
-      .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
-  })().catch((error) => {
-    arabiyaNewsPromise = null;
-    throw error;
+async function fetchArabiyaNews() {
+  const response = await fetch(`${NEWS_ENDPOINT}?t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { accept: 'application/json' }
   });
 
-  return arabiyaNewsPromise;
+  if (!response.ok) {
+    throw new Error(`Al Arabiya endpoint returned ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data?.ok || !Array.isArray(data.articles)) {
+    throw new Error(data?.error || 'Invalid Al Arabiya response');
+  }
+
+  return data.articles;
 }
 
-async function renderArabiyaNews(container, compact = false) {
-  if (!container || container.dataset.arabiyaLoading === 'true') return;
-  container.dataset.arabiyaLoading = 'true';
+function renderNewsItems(container, articles, compact) {
+  const limit = compact ? 8 : 18;
+  const visible = articles.slice(0, limit);
+
+  if (!visible.length) {
+    throw new Error('No Al Arabiya football articles');
+  }
+
+  container.className = compact
+    ? 'home-news-preview compact-arabiya-news'
+    : 'compact-arabiya-news';
+  container.dataset.newsState = 'success';
+
+  container.innerHTML = visible.map((article) => {
+    const url = safeUrl(article.url);
+    const image = safeUrl(article.image) || NEWS_FALLBACK_IMAGE;
+    const title = String(article.title || 'خبر رياضي').trim();
+
+    return `
+      <a class="compact-news-item" href="${escapeMarkup(url || '#')}" target="_blank" rel="noopener noreferrer">
+        <img class="compact-news-thumb" src="${escapeMarkup(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${NEWS_FALLBACK_IMAGE}'">
+        <span class="compact-news-copy">
+          <strong title="${escapeMarkup(title)}">${escapeMarkup(title)}</strong>
+          <small>العربية رياضة</small>
+        </span>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderNewsError(container, compact) {
+  container.className = compact
+    ? 'home-news-preview compact-arabiya-news'
+    : 'compact-arabiya-news';
+  container.dataset.newsState = 'error';
+  container.innerHTML = `
+    <div class="news-load-error">
+      <span>تعذر تحميل أخبار العربية حالياً.</span>
+      <button type="button" class="btn retry-arabiya-news">إعادة المحاولة</button>
+    </div>
+  `;
+
+  container.querySelector('.retry-arabiya-news')?.addEventListener('click', () => {
+    container.dataset.newsState = '';
+    loadArabiyaNews(container, compact);
+  });
+}
+
+async function loadArabiyaNews(container, compact = false) {
+  if (!container) return;
+  if (container.dataset.newsState === 'loading' || container.dataset.newsState === 'success') return;
+
+  container.dataset.newsState = 'loading';
+  container.innerHTML = '<p class="text-center">جاري تحميل أخبار العربية...</p>';
 
   try {
-    const articles = await fetchArabiyaFootballNews();
-    const limit = compact ? 8 : 18;
-    const visible = articles.slice(0, limit);
-
-    container.className = compact
-      ? 'home-news-preview compact-arabiya-news'
-      : 'compact-arabiya-news';
-    container.dataset.newsSource = 'arabiya-football-only';
-
-    if (!visible.length) {
-      container.innerHTML = '<p class="text-center">ما فيه أخبار كرة قدم متاحة حالياً.</p>';
-      return;
-    }
-
-    container.innerHTML = visible.map((article) => {
-      const image = safeUrl(article.image) || NEWS_FALLBACK_IMAGE;
-      return `
-        <a class="compact-news-item" href="${escapeMarkup(article.url)}" target="_blank" rel="noopener noreferrer">
-          <img class="compact-news-thumb" src="${escapeMarkup(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.src='${NEWS_FALLBACK_IMAGE}'">
-          <span class="compact-news-copy">
-            <strong title="${escapeMarkup(article.title)}">${escapeMarkup(article.title)}</strong>
-            <small>العربية رياضة</small>
-          </span>
-        </a>
-      `;
-    }).join('');
+    const articles = await fetchArabiyaNews();
+    renderNewsItems(container, articles, compact);
   } catch (error) {
-    console.error('Al Arabiya football news failed:', error);
-    container.innerHTML = '<p class="text-center">تعذر تحميل أخبار كرة القدم من العربية حالياً.</p>';
-  } finally {
-    container.dataset.arabiyaLoading = 'false';
+    console.error('Al Arabiya news failed:', error);
+    renderNewsError(container, compact);
   }
 }
 
-function monitorNewsContainer(container, compact) {
-  if (!container || container.dataset.arabiyaObserved === 'true') return;
-  container.dataset.arabiyaObserved = 'true';
-
-  const observer = new MutationObserver(() => {
-    if (container.dataset.arabiyaLoading === 'true') return;
-    const hasOurItems = container.querySelector('.compact-news-item');
-    const hasOldCards = container.querySelector('.news-card');
-    const hasWrongSource = /الجزيرة/.test(container.textContent || '');
-    if (!hasOurItems || hasOldCards || hasWrongSource) {
-      queueMicrotask(() => renderArabiyaNews(container, compact));
-    }
-  });
-
-  observer.observe(container, { childList: true, subtree: true });
-  renderArabiyaNews(container, compact);
+function initNews() {
+  loadArabiyaNews(document.getElementById('home-arabiya-news-list'), true);
+  loadArabiyaNews(document.getElementById('arabiya-news-list'), false);
 }
 
 function toRadians(degrees) {
@@ -247,8 +176,8 @@ function bindQiblaFix() {
       needle.style.transform = `translateX(-50%) rotate(${bearing}deg)`;
 
       if (orientationHandler) {
-        window.removeEventListener('deviceorientation', orientationHandler);
-        window.removeEventListener('deviceorientationabsolute', orientationHandler);
+        window.removeEventListener('deviceorientation', orientationHandler, true);
+        window.removeEventListener('deviceorientationabsolute', orientationHandler, true);
       }
 
       const orientationAvailable = 'DeviceOrientationEvent' in window && motionPermission !== 'denied';
@@ -285,20 +214,19 @@ function bindQiblaFix() {
 }
 
 function initPageFixes() {
-  const homeNews = document.getElementById('home-news-list');
-  if (homeNews) monitorNewsContainer(homeNews, true);
-
-  const newsList = document.getElementById('news-list');
-  if (newsList) monitorNewsContainer(newsList, false);
-
+  initNews();
   bindQiblaFix();
 }
 
 function startPageObserver() {
   const pageContent = document.getElementById('page-content');
   if (!pageContent) return;
-  const observer = new MutationObserver(() => initPageFixes());
-  observer.observe(pageContent, { childList: true, subtree: true });
+
+  const observer = new MutationObserver(() => {
+    window.requestAnimationFrame(initPageFixes);
+  });
+
+  observer.observe(pageContent, { childList: true, subtree: false });
   initPageFixes();
 }
 

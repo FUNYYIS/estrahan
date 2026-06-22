@@ -128,7 +128,7 @@ exports.checkPrayerNotifications = onSchedule(
   async () => {
     try {
       const settings = await getAppSettings();
-      if (settings.prayerNotificationsEnabled === false) return;
+      if (settings.prayerNotificationsEnabled !== true) return;
 
       const city = cleanSettingText(settings.prayerCity, 'Jeddah');
       const country = cleanSettingText(settings.prayerCountry, 'Saudi Arabia');
@@ -184,7 +184,7 @@ exports.checkPaymentReminders = onSchedule(
   async () => {
     try {
       const settings = await getAppSettings();
-      if (settings.paymentReminderEnabled === false) return;
+      if (settings.paymentReminderEnabled !== true) return;
 
       const now = getRiyadhParts();
       const reminderDay = clampNumber(settings.paymentReminderDay, 1, 31, 1);
@@ -255,6 +255,7 @@ exports.sendAdminTestNotification = onCall(
       }
     });
 
+    assertNotificationDeliveryResult(result);
     return result;
   }
 );
@@ -314,14 +315,88 @@ exports.debugPrayerNotification = onCall(
   },
   async (request) => {
     assertAdmin(request);
+
+    const mode = request.data?.mode === 'force' ? 'force' : 'dryRun';
     const settings = await getAppSettings();
+    const city = cleanSettingText(settings.prayerCity, 'Jeddah');
+    const country = cleanSettingText(settings.prayerCountry, 'Saudi Arabia');
     const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
-    const message = buildPrayerReminderMessage('العصر', minutesBefore);
-    const tokenRecords = await getTokenRecordsForUser(ADMIN_UID);
-    if (!tokenRecords.length) {
-      throw new HttpsError('failed-precondition', 'لا يوجد جهاز مسجل لاستقبال الإشعارات. افتح إعدادات الإشعارات وفعّلها أولاً.');
+    const dateKey = getLocalDateKey();
+    const timings = await fetchPrayerTimings(city, country);
+
+    const requestedPrayerKey = String(request.data?.prayerKey || '');
+    const nowMs = Date.now();
+
+    let selectedPrayer = null;
+
+    if (Object.prototype.hasOwnProperty.call(PRAYER_NAMES, requestedPrayerKey)) {
+      selectedPrayer = {
+        key: requestedPrayerKey,
+        name: PRAYER_NAMES[requestedPrayerKey],
+        time: timings[requestedPrayerKey],
+        dateKey
+      };
+    } else {
+      const upcoming = Object.entries(PRAYER_NAMES)
+        .map(([key, name]) => ({
+          key,
+          name,
+          time: timings[key],
+          dateKey,
+          date: parseRiyadhDateTime(dateKey, timings[key])
+        }))
+        .filter((item) => item.date && item.date.getTime() >= nowMs)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      selectedPrayer = upcoming[0] || {
+        key: 'Fajr',
+        name: PRAYER_NAMES.Fajr,
+        time: timings.Fajr,
+        dateKey: getLocalDateKey(new Date(Date.now() + 24 * 60 * 60 * 1000))
+      };
     }
-    return sendNotificationToTokenRecords(tokenRecords, message);
+
+    const subscribedRecords = await getTokenRecordsByTopic('prayer');
+    const adminRecords = await getTokenRecordsForUser(ADMIN_UID);
+
+    const preview = {
+      mode,
+      city,
+      country,
+      prayerKey: selectedPrayer.key,
+      prayerName: selectedPrayer.name,
+      prayerTime: selectedPrayer.time,
+      prayerDate: selectedPrayer.dateKey,
+      reminderMinutes: minutesBefore,
+      targetedTokens: mode === 'force'
+        ? adminRecords.length
+        : subscribedRecords.length,
+      targetedUsers: mode === 'force'
+        ? Number(adminRecords.length > 0)
+        : new Set(subscribedRecords.map((record) => record.uid).filter(Boolean)).size,
+      successCount: 0,
+      failureCount: 0,
+      deletedInvalidTokens: 0
+    };
+
+    if (mode === 'dryRun') {
+      return preview;
+    }
+
+    if (!adminRecords.length) {
+      throw new HttpsError(
+        'failed-precondition',
+        'لا يوجد جهاز مسجل للمشرف. افتح إعدادات الإشعارات وسجّل الجهاز أولاً.'
+      );
+    }
+
+    const result = await sendNotificationToTokenRecords(
+      adminRecords,
+      buildPrayerReminderMessage(selectedPrayer.name, minutesBefore)
+    );
+
+    assertNotificationDeliveryResult(result);
+    return { ...preview, ...result };
   }
 );
 
@@ -331,12 +406,52 @@ exports.debugPaymentReminder = onCall(
   },
   async (request) => {
     assertAdmin(request);
-    const message = buildPaymentReminderMessage(await getAppSettings());
-    const tokenRecords = await getTokenRecordsForUser(ADMIN_UID);
-    if (!tokenRecords.length) {
-      throw new HttpsError('failed-precondition', 'لا يوجد جهاز مسجل لاستقبال الإشعارات. افتح إعدادات الإشعارات وفعّلها أولاً.');
+
+    const mode = request.data?.mode === 'force' ? 'force' : 'dryRun';
+    const settings = await getAppSettings();
+    const audience = settings.paymentReminderMode === 'lateOnly'
+      ? 'lateOnly'
+      : 'all';
+
+    const audienceRecords = audience === 'lateOnly'
+      ? await getLatePaymentTokenRecords()
+      : await getTokenRecordsByTopic('payments');
+
+    const adminRecords = await getTokenRecordsForUser(ADMIN_UID);
+
+    const preview = {
+      mode,
+      audience,
+      amount: clampNumber(settings.qattahAmount, 0, 100000, 100),
+      targetedTokens: mode === 'force'
+        ? adminRecords.length
+        : audienceRecords.length,
+      targetedUsers: mode === 'force'
+        ? Number(adminRecords.length > 0)
+        : new Set(audienceRecords.map((record) => record.uid).filter(Boolean)).size,
+      successCount: 0,
+      failureCount: 0,
+      deletedInvalidTokens: 0
+    };
+
+    if (mode === 'dryRun') {
+      return preview;
     }
-    return sendNotificationToTokenRecords(tokenRecords, message);
+
+    if (!adminRecords.length) {
+      throw new HttpsError(
+        'failed-precondition',
+        'لا يوجد جهاز مسجل للمشرف. افتح إعدادات الإشعارات وسجّل الجهاز أولاً.'
+      );
+    }
+
+    const result = await sendNotificationToTokenRecords(
+      adminRecords,
+      buildPaymentReminderMessage(settings)
+    );
+
+    assertNotificationDeliveryResult(result);
+    return { ...preview, ...result };
   }
 );
 
@@ -661,11 +776,14 @@ async function getTokenRecordsByTopic(topic) {
 }
 
 async function getLatePaymentTokenRecords() {
-  const usersSnapshot = await db
-    .collection('users')
-    .where('paymentStatus', '!=', 'paid')
-    .get();
-  const lateUserIds = new Set(usersSnapshot.docs.map((doc) => doc.id));
+  const usersSnapshot = await db.collection('users').get();
+
+  const lateUserIds = new Set(
+    usersSnapshot.docs
+      .filter((userDoc) => userDoc.data()?.paymentStatus !== 'paid')
+      .map((userDoc) => userDoc.id)
+  );
+
   if (!lateUserIds.size) return [];
 
   const paymentTokens = await getTokenRecordsByTopic('payments');
@@ -727,6 +845,26 @@ async function sendNotificationToTokenRecords(tokenRecords, message) {
     failureCount,
     deletedInvalidTokens
   };
+}
+
+function assertNotificationDeliveryResult(result) {
+  if (
+    !result ||
+    result.targetedTokens < 1 ||
+    (result.successCount === 0 && result.failureCount === 0)
+  ) {
+    throw new HttpsError(
+      'failed-precondition',
+      'لم يتم العثور على جهاز صالح لإرسال الإشعار إليه.'
+    );
+  }
+
+  if (result.successCount === 0) {
+    throw new HttpsError(
+      'unavailable',
+      `فشل إيصال الإشعار إلى جميع الأجهزة المستهدفة (${result.failureCount}).`
+    );
+  }
 }
 
 function chunk(items, size) {

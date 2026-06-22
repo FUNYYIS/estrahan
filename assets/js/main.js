@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '253';
+const APP_ASSET_VERSION = '254';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -105,7 +105,7 @@ const DEFAULT_APP_SETTINGS = {
     beneficiaryName: '',
     paymentQrUrl: '',
 
-    prayerNotificationsEnabled: true,
+    prayerNotificationsEnabled: false,
     prayerCity: 'Jeddah',
     prayerCountry: 'Saudi Arabia',
     prayerReminderMinutes: 10
@@ -533,7 +533,7 @@ async function saveFcmToken(token) {
         uid: currentUser.uid,
         topics: {
             payments: localStorage.getItem('al-istiraha-payment-notification') !== 'false',
-            prayer: localStorage.getItem('al-istiraha-prayer-notification') !== 'false',
+            prayer: localStorage.getItem('al-istiraha-prayer-notification') === 'true',
             matches: localStorage.getItem('al-istiraha-matches-notification') === 'true',
             chat: localStorage.getItem('al-istiraha-chat-notification') !== 'false'
         },
@@ -876,6 +876,7 @@ function resizeImageToDataUrl(file, maxSize = 360) {
 
 function setupNotificationToggles() {
     updateNotificationPermissionStatus();
+
     const registerDeviceButton = document.getElementById('register-notification-device');
     const resyncButton = document.getElementById('resync-notifications');
 
@@ -896,24 +897,76 @@ function setupNotificationToggles() {
     document.querySelectorAll('[data-notification-toggle]').forEach((button) => {
         if (button.dataset.bound === 'true') return;
         button.dataset.bound = 'true';
+
         const key = `al-istiraha-${button.dataset.notificationToggle}`;
         const savedValue = localStorage.getItem(key);
-        const enabled = savedValue === null ? button.getAttribute('aria-pressed') === 'true' : savedValue === 'true';
+        const enabled = savedValue === null
+            ? button.getAttribute('aria-pressed') === 'true'
+            : savedValue === 'true';
+
         setNotificationToggleState(button, enabled);
+
         button.addEventListener('click', async () => {
-            const nextValue = button.getAttribute('aria-pressed') !== 'true';
-            localStorage.setItem(key, String(nextValue));
-            setNotificationToggleState(button, nextValue);
+            const previousEnabled = button.getAttribute('aria-pressed') === 'true';
+            const previousStoredValue = localStorage.getItem(key);
+            const nextValue = !previousEnabled;
+
+            button.disabled = true;
 
             try {
+                /*
+                 * نحفظ القيمة مؤقتًا لكي يقرأها saveFcmToken،
+                 * لكن لا نغيّر شكل الزر إلا بعد نجاح المزامنة.
+                 */
+                localStorage.setItem(key, String(nextValue));
+
                 if (nextValue) {
-                    await requestBrowserNotificationPermission();
-                } else if ('Notification' in window && Notification.permission === 'granted') {
+                    if (!('Notification' in window)) {
+                        throw new Error('المتصفح لا يدعم الإشعارات.');
+                    }
+
+                    const permission = Notification.permission === 'default'
+                        ? await Notification.requestPermission()
+                        : Notification.permission;
+
+                    if (permission !== 'granted') {
+                        throw new Error(
+                            permission === 'denied'
+                                ? 'تم رفض صلاحية الإشعارات من المتصفح.'
+                                : 'لم يتم منح صلاحية الإشعارات.'
+                        );
+                    }
+
                     await syncFcmTokenWithPreferences();
-                    showAlert('تم تحديث تفضيلات الإشعارات.');
+                } else if (
+                    'Notification' in window &&
+                    Notification.permission === 'granted'
+                ) {
+                    await syncFcmTokenWithPreferences();
                 }
+
+                setNotificationToggleState(button, nextValue);
+                updateNotificationPermissionStatus();
+
+                showAlert(
+                    nextValue
+                        ? 'تم تفعيل هذا التنبيه ومزامنة الجهاز.'
+                        : 'تم إيقاف هذا التنبيه ومزامنة الجهاز.'
+                );
             } catch (error) {
+                if (previousStoredValue === null) {
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(key, previousStoredValue);
+                }
+
+                setNotificationToggleState(button, previousEnabled);
+                updateNotificationPermissionStatus(
+                    error.message || 'تعذرت مزامنة الإشعارات.'
+                );
                 showAlert(error.message || 'تعذرت مزامنة الإشعارات.');
+            } finally {
+                button.disabled = false;
             }
         });
     });

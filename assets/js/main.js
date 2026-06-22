@@ -2217,21 +2217,13 @@ function loadChat() {
     }
 
     try {
-        unsubscribeChatUsers = onSnapshot(
-            collection(db, "users"),
-            (snapshot) => {
-                chatUsersCache = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
-                renderChatMessages(chatBox);
-            },
-            (error) => {
-                console.warn('Chat user avatars unavailable:', error);
-            }
-        );
-
         unsubscribeChat = onSnapshot(
-            query(collection(db, "chat"), orderBy("createdAt")),
-            (snapshot) => {
-                chatMessagesCache = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+            query(collection(db, "chat"), orderBy("createdAt", "desc"), limit(50)),
+            async (snapshot) => {
+                chatMessagesCache = snapshot.docs
+                    .map((item) => ({ id: item.id, ...item.data() }))
+                    .reverse();
+                await hydrateChatUsersForMessages(chatMessagesCache);
                 renderChatMessages(chatBox);
             },
             error => {
@@ -2245,12 +2237,34 @@ function loadChat() {
     }
 }
 
+async function hydrateChatUsersForMessages(messages = []) {
+    const userIds = Array.from(new Set(
+        messages
+            .map((message) => message.userId)
+            .filter((userId) => userId && !chatUsersCache.has(userId))
+    ));
+
+    if (!userIds.length) return;
+
+    await Promise.all(userIds.map(async (userId) => {
+        try {
+            const userSnapshot = await getDoc(doc(db, 'users', userId));
+            if (userSnapshot.exists()) {
+                chatUsersCache.set(userId, userSnapshot.data());
+            }
+        } catch (error) {
+            console.warn('Chat user profile unavailable:', error);
+        }
+    }));
+}
+
 function renderChatMessages(chatBox) {
     const searchTerm = (document.getElementById('chat-search-input')?.value || '').trim().toLowerCase();
     const messages = chatMessagesCache.filter((msg) => {
         if (!searchTerm) return true;
         return `${msg.userName || ''} ${msg.text || ''}`.toLowerCase().includes(searchTerm);
     });
+    const shouldStickToBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
 
     chatBox.innerHTML = '';
 
@@ -2363,7 +2377,9 @@ function renderChatMessages(chatBox) {
         });
     });
 
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (shouldStickToBottom) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
 function formatMessageTime(timestamp) {
@@ -2790,25 +2806,17 @@ async function loadMatches(container, limit = 10, compact = false) {
         const todayUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsday.php?d=${today}&s=Soccer`;
         const saudiSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(saudiSeason)}`;
         const worldCupSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${WORLD_CUP_LEAGUE_ID}&s=${WORLD_CUP_SEASON}`;
-        const [todayResponse, saudiResponse, worldCupResponse, githubWorldCup] = await Promise.all([
-            fetch(todayUrl),
-            fetch(saudiSeasonUrl),
-            fetch(worldCupSeasonUrl),
-            fetchWorldCupGithubFixtures().catch((error) => {
-                console.warn('World Cup GitHub fallback unavailable:', error);
-                return [];
-            })
+        const [todayResult, saudiResult, worldCupResult, githubResult] = await Promise.allSettled([
+            fetchJsonWithTimeout(todayUrl),
+            fetchJsonWithTimeout(saudiSeasonUrl),
+            fetchJsonWithTimeout(worldCupSeasonUrl),
+            fetchWorldCupGithubFixtures()
         ]);
 
-        if (!todayResponse.ok || !saudiResponse.ok || !worldCupResponse.ok) {
-            throw new Error(`API returned status ${todayResponse.status}/${saudiResponse.status}/${worldCupResponse.status}`);
-        }
-
-        const [todayData, saudiData, worldCupData] = await Promise.all([
-            todayResponse.json(),
-            saudiResponse.json(),
-            worldCupResponse.json()
-        ]);
+        const todayData = getSettledValue(todayResult, { events: [] }, 'مباريات اليوم غير متاحة حالياً.');
+        const saudiData = getSettledValue(saudiResult, { events: [] }, 'جدول الدوري السعودي غير متاح حالياً.');
+        const worldCupData = getSettledValue(worldCupResult, { events: [] }, 'جدول كأس العالم من TheSportsDB غير متاح حالياً.');
+        const githubWorldCup = getSettledValue(githubResult, [], 'جدول كأس العالم الاحتياطي غير متاح حالياً.');
 
         const saudiEvents = (saudiData.events || [])
             .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
@@ -2867,6 +2875,25 @@ async function loadMatches(container, limit = 10, compact = false) {
         console.error("Error fetching matches:", error);
         container.innerHTML = `<p class="text-center">ما قدرنا نجيب المباريات. جرّب مرة ثانية.</p>`;
     }
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+        return response.json();
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+function getSettledValue(result, fallback, warning) {
+    if (result.status === 'fulfilled') return result.value || fallback;
+    console.warn(warning, result.reason);
+    return fallback;
 }
 
 async function fetchWorldCupGithubFixtures() {

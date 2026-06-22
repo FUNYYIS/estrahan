@@ -1,2 +1,14 @@
 # Local Netlify folder
-.netlify
+.netlify/
+
+.DS_Store
+__MACOSX/
+*.zip
+*.bak
+*.backup
+.env
+.env.*
+!.env.example
+node_modules/
+functions/node_modules/
+.firebase/

@@ -8980,6 +8980,9 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
 .admin-notifications-page {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .admin-notifications-page .admin-tabs {
@@ -9004,6 +9007,7 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
 
 .admin-notifications-page .tab-btn {
   flex: 0 0 auto;
+  min-width: max-content;
   min-height: 42px;
   padding: 8px 14px;
   border: 1px solid transparent;
@@ -9051,6 +9055,12 @@ body[data-theme="dark"] .admin-notifications-page .tab-btn.active {
 
 .admin-notifications-page .section-stack {
   gap: 12px;
+}
+
+.admin-notifications-page input,
+.admin-notifications-page textarea,
+.admin-notifications-page select {
+  max-width: 100%;
 }
 
 .admin-test-grid {
@@ -9123,6 +9133,28 @@ body[data-theme="dark"] .admin-notifications-page .tab-btn.active {
 
   .admin-test-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .admin-notifications-page {
+    overflow-x: hidden;
+  }
+
+  .admin-notifications-page .admin-tabs {
+    margin-inline: -4px;
+    padding-inline: 6px;
+    scroll-padding-inline: 6px;
+  }
+
+  .admin-notifications-page .tab-btn {
+    min-width: max(108px, max-content);
+    justify-content: center;
+  }
+
+  .admin-notifications-page .list-item-card,
+  .admin-notifications-page .panel-head,
+  .admin-notifications-page .flex {
+    min-width: 0;
+    flex-wrap: wrap;
   }
 
   .list-item-card {

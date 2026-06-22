@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '248';
+const APP_ASSET_VERSION = '250';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -67,7 +67,6 @@ const ADMIN_UID = "tquFv8nhU3ZPGgqumfCo3Hx67k02"; //  <-- تم وضع معرف �
 const DEFAULT_APP_SETTINGS = {
     siteName: 'تطبيق الاستراحة',
     siteDescription: 'إدارة خدمات الاستراحة والقطة والمباريات',
-    inviteCode: 'Ss7905Ss',
     homeAnnouncement: '',
 
     showWeather: true,
@@ -450,7 +449,7 @@ async function initFirebaseMessaging() {
             return null;
         }
 
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const registration = await navigator.serviceWorker.register('/service-worker.js');
         firebaseMessaging = getMessaging(app);
 
         if (!foregroundMessageUnsubscribe) {
@@ -586,6 +585,16 @@ function currentPublicRoute() {
     return publicRoutes.includes(hash) ? hash : '#login';
 }
 
+async function navigateToHash(hash) {
+    const nextHash = normalizeHash(hash);
+    if (window.location.hash === nextHash) {
+        await renderPage(nextHash);
+        return;
+    }
+
+    window.location.hash = nextHash;
+}
+
 function updateActiveNav(hash) {
     const activeHash = getPrimaryNavHash(hash);
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -621,7 +630,7 @@ async function renderPage(hash) {
 
     if (currentHash === '#admin-notifications' && (auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
-        window.location.hash = '#settings';
+        await navigateToHash('#settings');
         return;
     }
 
@@ -664,7 +673,7 @@ async function renderPage(hash) {
         }
     } else {
         // Fallback to default page
-        await renderPage(defaultPage);
+        await navigateToHash(defaultPage);
     }
 }
 
@@ -692,17 +701,8 @@ function attachEventListeners(hash) {
     if (pageId === 'register') {
         console.log('Setting up register page event listeners');
 
-        // Clean up old verifier if switching pages
-        recaptchaManager.destroy('recaptcha-container-register');
-
         const registerForm = document.getElementById('register-form');
         if (registerForm) registerForm.addEventListener('submit', handleCompleteRegistration);
-
-        // Setup recaptcha with validation
-        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
-        if (!recaptchaSetupSuccess) {
-            console.error('Failed to set up reCAPTCHA on register page');
-        }
     }
 
     if (pageId === 'settings') {
@@ -924,7 +924,7 @@ async function loadAdminStats() {
 async function setupAdminNotifications() {
     if ((auth.currentUser?.uid !== ADMIN_UID && currentUser?.uid !== ADMIN_UID)) {
         showAlert('هذه الصفحة للمسؤول فقط.');
-        window.location.hash = '#settings';
+        await navigateToHash('#settings');
         return;
     }
 
@@ -940,6 +940,9 @@ async function setupAdminNotifications() {
             const isActive = button.dataset.adminTabTarget === targetTab;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-selected', String(isActive));
+            if (isActive) {
+                button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
         });
 
         tabSections.forEach((section) => {
@@ -972,7 +975,6 @@ async function setupAdminNotifications() {
     const appSettingsForm = document.getElementById('admin-app-settings-form');
     const siteNameInput = document.getElementById('admin-site-name');
     const siteDescriptionInput = document.getElementById('admin-site-description');
-    const inviteCodeInput = document.getElementById('admin-invite-code');
     const homeAnnouncementInput = document.getElementById('admin-home-announcement');
     const appSettingsStatus = document.getElementById('admin-app-settings-status');
 
@@ -1123,7 +1125,6 @@ async function setupAdminNotifications() {
 
     if (siteNameInput) siteNameInput.value = appSettings.siteName || '';
     if (siteDescriptionInput) siteDescriptionInput.value = appSettings.siteDescription || '';
-    if (inviteCodeInput) inviteCodeInput.value = appSettings.inviteCode || '';
     if (homeAnnouncementInput) homeAnnouncementInput.value = appSettings.homeAnnouncement || '';
 
     if (qattahAmountInput) qattahAmountInput.value = appSettings.qattahAmount ?? DEFAULT_APP_SETTINGS.qattahAmount;
@@ -1297,7 +1298,6 @@ async function setupAdminNotifications() {
         const nextSettings = {
             siteName: siteNameInput?.value.trim() || DEFAULT_APP_SETTINGS.siteName,
             siteDescription: siteDescriptionInput?.value.trim() || DEFAULT_APP_SETTINGS.siteDescription,
-            inviteCode: inviteCodeInput?.value.trim() || DEFAULT_APP_SETTINGS.inviteCode,
             homeAnnouncement: homeAnnouncementInput?.value.trim() || ''
         };
 
@@ -1509,7 +1509,7 @@ async function handleCompleteRegistration(e) {
     const user = auth.currentUser;
     if (!user) {
         showAlert('تحقق من رقم جوالك أولاً من صفحة الدخول.');
-        window.location.hash = '#login';
+        await navigateToHash('#login');
         return;
     }
 
@@ -1524,37 +1524,69 @@ async function handleCompleteRegistration(e) {
         return;
     }
 
-    await loadAppSettings();
-
-    if (inviteCode !== appSettings.inviteCode) {
-        showAlert('رمز الدعوة غير صحيح.');
+    if (!inviteCode) {
+        showAlert('اكتب رمز الدعوة.');
         return;
     }
 
     try {
-        await setDoc(doc(db, "users", user.uid), {
+        const completeRegistration = httpsCallable(functions, 'completeRegistration');
+        const response = await completeRegistration({
             name,
-            phone: user.phoneNumber,
-            paymentStatus: 'late',
-            createdAt: serverTimestamp()
+            inviteCode
         });
+        const registeredUser = response.data?.user || {};
 
         currentUser = {
             uid: user.uid,
-            name,
-            phone: user.phoneNumber,
-            paymentStatus: 'late'
+            name: registeredUser.name || name,
+            phone: registeredUser.phone || user.phoneNumber || '',
+            paymentStatus: registeredUser.paymentStatus || 'late',
+            disabled: registeredUser.disabled === true,
+            avatarUrl: registeredUser.avatarUrl || ''
         };
 
         document.body.classList.add('is-authenticated');
         syncShellUserState();
         showAlert('تم تسجيلك بنجاح، حيّاك الله.');
-        window.location.hash = '#home';
-        await renderPage('#home');
+        await navigateToHash('#home');
     } catch (error) {
         console.error('Registration completion failed:', error);
-        showAlert('فشل التسجيل. حاول مرة ثانية.');
+        showAlert(getRegistrationErrorMessage(error));
     }
+}
+
+function getRegistrationErrorMessage(error) {
+    const code = error?.code || '';
+    const message = error?.message || '';
+
+    if (code.includes('permission-denied')) {
+        return 'رمز الدعوة غير صحيح.';
+    }
+
+    if (code.includes('invalid-argument')) {
+        return 'تأكد من الاسم ورمز الدعوة.';
+    }
+
+    if (code.includes('already-exists')) {
+        return 'هذا الحساب مسجل مسبقاً.';
+    }
+
+    if (code.includes('unauthenticated')) {
+        return 'تحقق من رقم جوالك أولاً.';
+    }
+
+    if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+        return 'تعذر الاتصال بخدمة التسجيل. حاول مرة ثانية.';
+    }
+
+    if (code.includes('failed-precondition')) {
+        return 'التسجيل غير متاح حالياً. تواصل مع مسؤول الاستراحة.';
+    }
+
+    return message && !message.includes('internal')
+        ? 'فشل التسجيل. تأكد من البيانات وحاول مرة ثانية.'
+        : 'فشل التسجيل. حاول مرة ثانية.';
 }
 
 
@@ -1605,8 +1637,7 @@ async function handleSendCode(e, isRegister = false) {
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
         setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
         if (isRegister) {
-            window.location.hash = '#register';
-            await renderPage('#register');
+            await navigateToHash('#register');
         } else {
             const phoneForm = document.getElementById('phone-form');
             const codeForm = document.getElementById('code-form');
@@ -1704,8 +1735,7 @@ async function handleVerifyCode(e, isRegister = false) {
             sessionStorage.removeItem('firebaseVerificationId');
 
             showAlert('تم التحقق من رقمك. كمل الاسم ورمز الدعوة.');
-            window.location.hash = '#register';
-            await renderPage('#register');
+            await navigateToHash('#register');
             return;
         }
 
@@ -1714,8 +1744,7 @@ async function handleVerifyCode(e, isRegister = false) {
             const existingUserDoc = await getDoc(userDocRef);
             if (!existingUserDoc.exists()) {
                 showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
-                window.location.hash = '#register';
-                await renderPage('#register');
+                await navigateToHash('#register');
                 return;
             }
         }
@@ -1874,15 +1903,10 @@ function setupManualMemberForm() {
         if (status) status.textContent = 'جاري إضافة العضو...';
 
         try {
-            await addDoc(collection(db, "users"), {
+            const addManualMember = httpsCallable(functions, 'addManualMember');
+            await addManualMember({
                 name,
-                phone,
-                paymentStatus: 'late',
-                disabled: false,
-                avatarUrl: '',
-                manual: true,
-                createdAt: serverTimestamp(),
-                createdBy: auth.currentUser?.uid || currentUser?.uid || ''
+                phone
             });
 
             form.reset();
@@ -1950,10 +1974,11 @@ function loadMembers() {
 
             document.querySelectorAll('.toggle-payment-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const newStatus = e.target.dataset.status;
+                    const memberId = e.currentTarget.dataset.id;
+                    const newStatus = e.currentTarget.dataset.status;
                     try {
-                        await updateDoc(doc(db, "users", memberId), { paymentStatus: newStatus });
+                        const updateMemberPaymentStatus = httpsCallable(functions, 'updateMemberPaymentStatus');
+                        await updateMemberPaymentStatus({ memberId, paymentStatus: newStatus });
                         showAlert('تم تحديث الحالة بنجاح!');
                     } catch (error) {
                         console.error('Error updating payment status:', error);
@@ -1964,13 +1989,14 @@ function loadMembers() {
 
             document.querySelectorAll('.edit-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const oldName = e.target.dataset.name || '';
+                    const memberId = e.currentTarget.dataset.id;
+                    const oldName = e.currentTarget.dataset.name || '';
                     const newName = prompt('اكتب الاسم الجديد:', oldName);
                     if (!newName || !newName.trim()) return;
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), { name: newName.trim() });
+                        const updateMemberName = httpsCallable(functions, 'updateMemberName');
+                        await updateMemberName({ memberId, name: newName.trim() });
                         showAlert('تم تعديل اسم العضو بنجاح.');
                     } catch (error) {
                         console.error('Error updating member name:', error);
@@ -1982,13 +2008,12 @@ function loadMembers() {
 
             document.querySelectorAll('.disable-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const isDisabled = e.target.dataset.disabled === 'true';
+                    const memberId = e.currentTarget.dataset.id;
+                    const isDisabled = e.currentTarget.dataset.disabled === 'true';
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), {
-                            disabled: !isDisabled
-                        });
+                        const setMemberDisabled = httpsCallable(functions, 'setMemberDisabled');
+                        await setMemberDisabled({ memberId, disabled: !isDisabled });
                         showAlert(isDisabled ? 'تم تفعيل العضو.' : 'تم تعطيل العضو.');
                     } catch (error) {
                         console.error('Error toggling member disabled:', error);
@@ -1999,14 +2024,13 @@ function loadMembers() {
 
             document.querySelectorAll('.reset-avatar-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
+                    const memberId = e.currentTarget.dataset.id;
                     const confirmed = confirm('متأكد تبي تصفر صورة هذا العضو؟');
                     if (!confirmed) return;
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), {
-                            avatarUrl: ''
-                        });
+                        const resetMemberAvatar = httpsCallable(functions, 'resetMemberAvatar');
+                        await resetMemberAvatar({ memberId });
                         showAlert('تمت إعادة تعيين صورة العضو.');
                     } catch (error) {
                         console.error('Error resetting member avatar:', error);
@@ -2017,12 +2041,13 @@ function loadMembers() {
 
             document.querySelectorAll('.delete-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
+                    const memberId = e.currentTarget.dataset.id;
                     const confirmed = confirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.');
                     if (!confirmed) return;
 
                     try {
-                        await deleteDoc(doc(db, "users", memberId));
+                        const deleteMember = httpsCallable(functions, 'deleteMember');
+                        await deleteMember({ memberId });
                         showAlert('تم حذف العضو بنجاح.');
                     } catch (error) {
                         console.error('Error deleting member:', error);
@@ -2186,21 +2211,13 @@ function loadChat() {
     }
 
     try {
-        unsubscribeChatUsers = onSnapshot(
-            collection(db, "users"),
-            (snapshot) => {
-                chatUsersCache = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
-                renderChatMessages(chatBox);
-            },
-            (error) => {
-                console.warn('Chat user avatars unavailable:', error);
-            }
-        );
-
         unsubscribeChat = onSnapshot(
-            query(collection(db, "chat"), orderBy("createdAt")),
-            (snapshot) => {
-                chatMessagesCache = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+            query(collection(db, "chat"), orderBy("createdAt", "desc"), limit(50)),
+            async (snapshot) => {
+                chatMessagesCache = snapshot.docs
+                    .map((item) => ({ id: item.id, ...item.data() }))
+                    .reverse();
+                await hydrateChatUsersForMessages(chatMessagesCache);
                 renderChatMessages(chatBox);
             },
             error => {
@@ -2214,12 +2231,34 @@ function loadChat() {
     }
 }
 
+async function hydrateChatUsersForMessages(messages = []) {
+    const userIds = Array.from(new Set(
+        messages
+            .map((message) => message.userId)
+            .filter((userId) => userId && !chatUsersCache.has(userId))
+    ));
+
+    if (!userIds.length) return;
+
+    await Promise.all(userIds.map(async (userId) => {
+        try {
+            const userSnapshot = await getDoc(doc(db, 'users', userId));
+            if (userSnapshot.exists()) {
+                chatUsersCache.set(userId, userSnapshot.data());
+            }
+        } catch (error) {
+            console.warn('Chat user profile unavailable:', error);
+        }
+    }));
+}
+
 function renderChatMessages(chatBox) {
     const searchTerm = (document.getElementById('chat-search-input')?.value || '').trim().toLowerCase();
     const messages = chatMessagesCache.filter((msg) => {
         if (!searchTerm) return true;
         return `${msg.userName || ''} ${msg.text || ''}`.toLowerCase().includes(searchTerm);
     });
+    const shouldStickToBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
 
     chatBox.innerHTML = '';
 
@@ -2332,7 +2371,9 @@ function renderChatMessages(chatBox) {
         });
     });
 
-    chatBox.scrollTop = chatBox.scrollHeight;
+    if (shouldStickToBottom) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
 function formatMessageTime(timestamp) {
@@ -2759,25 +2800,17 @@ async function loadMatches(container, limit = 10, compact = false) {
         const todayUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsday.php?d=${today}&s=Soccer`;
         const saudiSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(saudiSeason)}`;
         const worldCupSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${WORLD_CUP_LEAGUE_ID}&s=${WORLD_CUP_SEASON}`;
-        const [todayResponse, saudiResponse, worldCupResponse, githubWorldCup] = await Promise.all([
-            fetch(todayUrl),
-            fetch(saudiSeasonUrl),
-            fetch(worldCupSeasonUrl),
-            fetchWorldCupGithubFixtures().catch((error) => {
-                console.warn('World Cup GitHub fallback unavailable:', error);
-                return [];
-            })
+        const [todayResult, saudiResult, worldCupResult, githubResult] = await Promise.allSettled([
+            fetchJsonWithTimeout(todayUrl),
+            fetchJsonWithTimeout(saudiSeasonUrl),
+            fetchJsonWithTimeout(worldCupSeasonUrl),
+            fetchWorldCupGithubFixtures()
         ]);
 
-        if (!todayResponse.ok || !saudiResponse.ok || !worldCupResponse.ok) {
-            throw new Error(`API returned status ${todayResponse.status}/${saudiResponse.status}/${worldCupResponse.status}`);
-        }
-
-        const [todayData, saudiData, worldCupData] = await Promise.all([
-            todayResponse.json(),
-            saudiResponse.json(),
-            worldCupResponse.json()
-        ]);
+        const todayData = getSettledValue(todayResult, { events: [] }, 'مباريات اليوم غير متاحة حالياً.');
+        const saudiData = getSettledValue(saudiResult, { events: [] }, 'جدول الدوري السعودي غير متاح حالياً.');
+        const worldCupData = getSettledValue(worldCupResult, { events: [] }, 'جدول كأس العالم من TheSportsDB غير متاح حالياً.');
+        const githubWorldCup = getSettledValue(githubResult, [], 'جدول كأس العالم الاحتياطي غير متاح حالياً.');
 
         const saudiEvents = (saudiData.events || [])
             .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
@@ -2836,6 +2869,25 @@ async function loadMatches(container, limit = 10, compact = false) {
         console.error("Error fetching matches:", error);
         container.innerHTML = `<p class="text-center">ما قدرنا نجيب المباريات. جرّب مرة ثانية.</p>`;
     }
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+        return response.json();
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+function getSettledValue(result, fallback, warning) {
+    if (result.status === 'fulfilled') return result.value || fallback;
+    console.warn(warning, result.reason);
+    return fallback;
 }
 
 async function fetchWorldCupGithubFixtures() {
@@ -2940,36 +2992,8 @@ function getEventDateKey(event) {
 }
 
 function queueNextMatchNotification(matches = []) {
-    if (localStorage.getItem('al-istiraha-matches-notification') !== 'true') return;
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-    const nextMatch = [...matches]
-        .filter((event) => getEventDateKey(event) >= getLocalDateKey())
-        .filter((event) => !['FT', 'AET', 'PEN'].includes(String(event.strStatus || '').toUpperCase()))
-        .sort(compareSportsDbEvents)[0];
-
-    if (!nextMatch) return;
-
-    const teams = getMatchNotificationTeams(nextMatch);
-    if (!teams) {
-        console.log('Skipped match notification because team names are missing.');
-        return;
-    }
-
-    const notificationKey = `match-notification-${nextMatch.idEvent || getWorldCupMatchKey(nextMatch)}`;
-    if (sessionStorage.getItem(notificationKey) === 'sent') return;
-
-    const template = MATCH_NOTIFICATION_TEMPLATES[0];
-    const title = template
-        .replace('{{homeTeam}}', teams.homeTeam)
-        .replace('{{awayTeam}}', teams.awayTeam);
-
-    try {
-        new Notification(title);
-        sessionStorage.setItem(notificationKey, 'sent');
-    } catch (error) {
-        console.warn('Match notification failed:', error);
-    }
+    if (!matches.length || localStorage.getItem('al-istiraha-matches-notification') !== 'true') return;
+    console.log('Match notifications are scheduled through Firebase Cloud Functions.');
 }
 
 function getMatchNotificationTeams(match = {}) {
@@ -3207,7 +3231,18 @@ function initApp() {
                 console.log('✓ User authenticated:', user.uid);
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
-                    currentUser = { uid: user.uid, ...userDoc.data() };
+                    const userData = userDoc.data();
+                    if (userData.disabled === true) {
+                        currentUser = null;
+                        document.body.classList.remove('is-authenticated');
+                        sidebar?.classList.remove('open');
+                        syncShellUserState();
+                        showAlert('تم تعطيل عضويتك. تواصل مع مسؤول الاستراحة.');
+                        await signOut(auth);
+                        return;
+                    }
+
+                    currentUser = { uid: user.uid, ...userData };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
                     initFirebaseMessaging()
@@ -3222,8 +3257,7 @@ function initApp() {
                     document.body.classList.remove('is-authenticated');
                     syncShellUserState();
                     appLogo.style.display = 'block';
-                    window.location.hash = '#register';
-                    await renderPage('#register');
+                    await navigateToHash('#register');
                 }
             } else {
                 console.log('✓ No user authenticated, showing login');
@@ -3232,7 +3266,7 @@ function initApp() {
                 sidebar?.classList.remove('open');
                 syncShellUserState();
                 appLogo.style.display = 'block';
-                await renderPage(currentPublicRoute());
+                await navigateToHash(currentPublicRoute());
             }
         } catch (error) {
             console.error('✗ Error in auth state change:', error);
@@ -3241,7 +3275,7 @@ function initApp() {
             sidebar?.classList.remove('open');
             syncShellUserState();
             appLogo.style.display = 'block';
-            await renderPage(currentPublicRoute());
+            await navigateToHash(currentPublicRoute());
         }
     });
 
@@ -3259,22 +3293,23 @@ function initApp() {
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');
 
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const configuredDuration = Number(appSettings.splashDuration || 1.2);
+        const splashDelay = prefersReducedMotion
+            ? 0
+            : Math.min(Math.max(configuredDuration, 0.4), 1.5) * 1000;
+
         setTimeout(() => {
             if (splash) {
                 splash.classList.add('done');
-
-                setTimeout(() => {
-                    splash.style.display = 'none';
-
-                    if (mainContent) {
-                        mainContent.style.display = 'grid';
-                        console.log('✓ Splash screen hidden, main content shown');
-                    }
-                }, Number(appSettings.splashDuration || 6) * 1000);
-            } else if (mainContent) {
-                mainContent.style.display = 'grid';
+                splash.style.display = 'none';
             }
-        }, 1300);
+
+            if (mainContent) {
+                mainContent.style.display = 'grid';
+                console.log('✓ Splash screen hidden, main content shown');
+            }
+        }, splashDelay);
     }
 
     window.addEventListener('hashchange', () => {
@@ -3299,18 +3334,7 @@ document.addEventListener('click', (event) => {
     if (!hash || hash === '#') return;
 
     event.preventDefault();
-    window.location.hash = hash;
-    renderPage(hash);
+    navigateToHash(hash).catch((error) => {
+        console.error('Navigation failed:', error);
+    });
 });
-
-document.addEventListener('click', async (event) => {
-  const link = event.target.closest('a[href="#login"], a[href="#register"]');
-  if (!link) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  const hash = link.getAttribute('href');
-  window.location.hash = hash;
-  await renderPage(hash);
-}, true);

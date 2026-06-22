@@ -14,12 +14,50 @@
     
     # (XFO) منع الموقع من العرض داخل إطار (iframe) للحماية من هجمات Clickjacking
     X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)"
     
     # (CSP) سياسة أمان المحتوى لتحديد المصادر الموثوقة فقط
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://www.gstatic.com https://apis.google.com https://www.googleapis.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://challenges.cloudflare.com https://challenges-test.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://recaptcha.net https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://us-central1-estrahaapp-9e327.cloudfunctions.net https://api.aladhan.com https://api.open-meteo.com https://www.thesportsdb.com https://raw.githubusercontent.com https://api.allorigins.win https://api.rss2json.com; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://flagcdn.com https://r2.thesportsdb.com https: https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; media-src 'self' blob:; frame-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net https://*.firebaseapp.com https://challenges.cloudflare.com https://challenges-test.cloudflare.com; child-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net; form-action 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; worker-src 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://www.gstatic.com https://apis.google.com https://www.googleapis.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://challenges.cloudflare.com https://challenges-test.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://unpkg.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://recaptcha.net https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://us-central1-estrahaapp-9e327.cloudfunctions.net https://api.aladhan.com https://api.open-meteo.com https://www.thesportsdb.com https://raw.githubusercontent.com https://api.allorigins.win https://api.rss2json.com; img-src 'self' data: https://*.googleusercontent.com https://i.imgur.com https://flagcdn.com https://r2.thesportsdb.com https: https://www.gstatic.com https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; media-src 'self' blob:; frame-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net https://*.firebaseapp.com https://challenges.cloudflare.com https://challenges-test.cloudflare.com; child-src 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net https://recaptcha.net; form-action 'self' https://www.google.com https://recaptcha.google.com https://www.recaptcha.net; worker-src 'self';"
 
 # إعدادات التخزين المؤقت (Caching) للملفات
 [[headers]]
-  for = "/assets/*"
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/firebase-messaging-sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/assets/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/assets/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+
+[[headers]]
+  for = "/assets/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/icons/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"

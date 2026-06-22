@@ -1,12 +1,14 @@
 const admin = require('firebase-admin');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const ADMIN_UID = 'tquFv8nhU3ZPGgqumfCo3Hx67k02';
+const REGISTRATION_INVITE_CODE = defineSecret('ESTRAHA_INVITE_CODE');
 const THE_SPORTS_DB_KEY = '3';
 const SAUDI_LEAGUE_ID = '4668';
 const WORLD_CUP_LEAGUE_ID = '4429';
@@ -24,69 +26,93 @@ exports.checkUpcomingMatches = onSchedule(
     region: 'us-central1'
   },
   async () => {
-    const nextMatch = await getNextUpcomingMatch();
-    if (!nextMatch) return;
+    const upcomingMatches = await getUpcomingMatches();
+    if (!upcomingMatches.length) return;
 
-    const teams = getMatchNotificationTeams(nextMatch);
-    if (!teams) {
-      console.log('Skipped match notification because team names are missing.');
-      return;
-    }
+    const notificationWindows = [
+      { minutes: 60, min: 55, max: 65 },
+      { minutes: 15, min: 10, max: 20 }
+    ];
 
-    const matchKey = getMatchKey(nextMatch);
-    const stateRef = db.collection('matchNotificationState').doc(toDocId(matchKey));
-    const stateDoc = await stateRef.get();
-    if (stateDoc.exists) return;
+    for (const match of upcomingMatches) {
+      if (!isNotifiableMatch(match)) continue;
 
-    const tokenSnapshot = await db
-      .collection('fcmTokens')
-      .where('topics.matches', '==', true)
-      .limit(500)
-      .get();
+      const kickoff = getMatchKickoffDate(match);
+      if (!kickoff) continue;
 
-    const tokens = tokenSnapshot.docs
-      .map((doc) => doc.data().token)
-      .filter(Boolean);
+      const remainingMinutes = Math.round((kickoff.getTime() - Date.now()) / 60000);
+      const windowConfig = notificationWindows.find((item) => (
+        remainingMinutes >= item.min && remainingMinutes <= item.max
+      ));
 
-    if (!tokens.length) {
-      logger.info('No FCM tokens subscribed to match notifications.');
-      return;
-    }
+      if (!windowConfig) continue;
 
-    const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
-    const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
+      const teams = getMatchNotificationTeams(match);
+      if (!teams) {
+        logger.info('Skipped match notification because team names are missing.');
+        continue;
+      }
 
-    const response = await admin.messaging().sendEachForMulticast({
-      tokens,
-      notification: {
-        title,
-        body
-      },
-      data: {
-        type: 'match',
+      const matchKey = getMatchKey(match);
+      const stateKey = `${matchKey}-${windowConfig.minutes}`;
+      const stateRef = db.collection('matchNotificationState').doc(toDocId(stateKey));
+      const stateDoc = await stateRef.get();
+      if (stateDoc.exists) continue;
+
+      const tokenSnapshot = await db
+        .collection('fcmTokens')
+        .where('topics.matches', '==', true)
+        .limit(500)
+        .get();
+
+      const tokens = tokenSnapshot.docs
+        .map((doc) => doc.data().token)
+        .filter(Boolean);
+
+      if (!tokens.length) {
+        logger.info('No FCM tokens subscribed to match notifications.');
+        continue;
+      }
+
+      const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
+      const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
+
+      const response = await admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: {
+          title,
+          body
+        },
+        data: {
+          type: 'match',
+          notificationWindow: String(windowConfig.minutes),
+          matchKey,
+          homeTeam: teams.homeTeam,
+          awayTeam: teams.awayTeam,
+          link: '/index.html#matches'
+        },
+        webpush: {
+          notification: {
+            icon: '/assets/icons/icon-192.png',
+            badge: '/assets/icons/icon-192.png',
+            tag: `match-${toDocId(stateKey)}`,
+            renotify: false
+          }
+        }
+      });
+
+      await stateRef.set({
         matchKey,
+        notificationWindow: windowConfig.minutes,
+        remainingMinutes,
         homeTeam: teams.homeTeam,
         awayTeam: teams.awayTeam,
-        link: '/index.html#matches'
-      },
-      webpush: {
-        notification: {
-          icon: '/assets/icons/icon-192.png',
-          badge: '/assets/icons/icon-192.png',
-          tag: `match-${toDocId(matchKey)}`,
-          renotify: false
-        }
-      }
-    });
-
-    await stateRef.set({
-      matchKey,
-      homeTeam: teams.homeTeam,
-      awayTeam: teams.awayTeam,
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      sentAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+        kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+        sentAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
   }
 );
 
@@ -171,9 +197,251 @@ exports.sendAdminBroadcastNotification = onCall(
   }
 );
 
+exports.completeRegistration = onCall(
+  {
+    region: 'us-central1',
+    secrets: [REGISTRATION_INVITE_CODE]
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Authentication is required.');
+    }
+
+    const uid = request.auth.uid;
+    const phone = String(request.auth.token.phone_number || '').trim();
+    const name = normalizeMemberName(request.data?.name);
+    const inviteCode = normalizeInviteCode(request.data?.inviteCode);
+    const validInviteCode = normalizeInviteCode(REGISTRATION_INVITE_CODE.value());
+
+    if (!name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    if (!validInviteCode) {
+      logger.error('Registration invite code secret is not configured.');
+      throw new HttpsError('failed-precondition', 'Registration is not configured.');
+    }
+
+    if (!inviteCode || inviteCode !== validInviteCode) {
+      throw new HttpsError('permission-denied', 'Invalid invite code.');
+    }
+
+    if (!phone) {
+      throw new HttpsError('failed-precondition', 'Verified phone number is missing.');
+    }
+
+    const userRef = db.collection('users').doc(uid);
+
+    await db.runTransaction(async (transaction) => {
+      const existingDoc = await transaction.get(userRef);
+      if (existingDoc.exists) {
+        throw new HttpsError('already-exists', 'Member account already exists.');
+      }
+
+      transaction.set(userRef, {
+        name,
+        phone,
+        paymentStatus: 'late',
+        disabled: false,
+        avatarUrl: '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    return {
+      ok: true,
+      user: {
+        uid,
+        name,
+        phone,
+        paymentStatus: 'late',
+        disabled: false,
+        avatarUrl: ''
+      }
+    };
+  }
+);
+
+exports.addManualMember = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const name = normalizeMemberName(request.data?.name);
+    const phone = String(request.data?.phone || '').trim();
+
+    if (!name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    const memberRef = await db.collection('users').add({
+      name,
+      phone,
+      paymentStatus: 'late',
+      disabled: false,
+      avatarUrl: '',
+      manual: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true, memberId: memberRef.id };
+  }
+);
+
+exports.updateMemberPaymentStatus = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const paymentStatus = String(request.data?.paymentStatus || '').trim();
+    if (!memberId || !['paid', 'late'].includes(paymentStatus)) {
+      throw new HttpsError('invalid-argument', 'Invalid member payment status.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      paymentStatus,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.updateMemberName = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const name = normalizeMemberName(request.data?.name);
+    if (!memberId || !name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      name,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.setMemberDisabled = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const disabled = request.data?.disabled === true;
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      disabled,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.resetMemberAvatar = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      avatarUrl: '',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.deleteMember = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).delete();
+    await deleteTokensForUser(memberId);
+
+    try {
+      await admin.auth().deleteUser(memberId);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-uid') {
+        return { ok: true, authDeleted: false };
+      }
+
+        logger.warn('Member Firestore document deleted, but Auth delete failed.', {
+          memberId,
+          code: error.code
+        });
+        return { ok: true, authDeleted: false };
+    }
+
+    return { ok: true, authDeleted: true };
+  }
+);
+
 function assertAdmin(request) {
   if (!request.auth || request.auth.uid !== ADMIN_UID) {
     throw new HttpsError('permission-denied', 'Admin only.');
+  }
+}
+
+function normalizeMemberName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function normalizeInviteCode(value) {
+  return String(value || '').trim();
+}
+
+function normalizeMemberId(value) {
+  return String(value || '').trim();
+}
+
+async function deleteTokensForUser(uid) {
+  const snapshot = await db
+    .collection('fcmTokens')
+    .where('uid', '==', uid)
+    .get();
+
+  const batches = chunk(snapshot.docs, 400);
+  for (const docs of batches) {
+    const batch = db.batch();
+    docs.forEach((tokenDoc) => batch.delete(tokenDoc.ref));
+    await batch.commit();
   }
 }
 
@@ -296,21 +564,27 @@ function cleanNotificationText(value) {
 }
 
 async function getNextUpcomingMatch() {
+  return (await getUpcomingMatches())[0] || null;
+}
+
+async function getUpcomingMatches() {
   const today = getLocalDateKey();
   const saudiSeason = await getSaudiLeagueSeason();
   const todayUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsday.php?d=${today}&s=Soccer`;
   const saudiSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${SAUDI_LEAGUE_ID}&s=${encodeURIComponent(saudiSeason)}`;
   const worldCupSeasonUrl = `https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/eventsseason.php?id=${WORLD_CUP_LEAGUE_ID}&s=${WORLD_CUP_SEASON}`;
 
-  const [todayData, saudiData, worldCupData, githubWorldCup] = await Promise.all([
+  const [todayResult, saudiResult, worldCupResult, githubResult] = await Promise.allSettled([
     fetchJson(todayUrl),
     fetchJson(saudiSeasonUrl),
     fetchJson(worldCupSeasonUrl),
-    fetchWorldCupGithubFixtures().catch((error) => {
-      logger.warn('World Cup GitHub fallback unavailable.', error);
-      return [];
-    })
+    fetchWorldCupGithubFixtures()
   ]);
+
+  const todayData = resultValue(todayResult, { events: [] }, 'TheSportsDB daily matches unavailable.');
+  const saudiData = resultValue(saudiResult, { events: [] }, 'TheSportsDB Saudi season unavailable.');
+  const worldCupData = resultValue(worldCupResult, { events: [] }, 'TheSportsDB World Cup season unavailable.');
+  const githubWorldCup = resultValue(githubResult, [], 'World Cup GitHub fallback unavailable.');
 
   const todayMatches = (todayData.events || [])
     .filter((event) => [SAUDI_LEAGUE_ID, WORLD_CUP_LEAGUE_ID].includes(event.idLeague));
@@ -326,14 +600,28 @@ async function getNextUpcomingMatch() {
     ...saudiUpcoming,
     ...worldCupUpcoming
   ]
-    .filter((event) => !['FT', 'AET', 'PEN'].includes(String(event.strStatus || '').toUpperCase()))
-    .sort(compareSportsDbEvents)[0] || null;
+    .filter(isNotifiableMatch)
+    .filter((event) => getMatchKickoffDate(event))
+    .sort(compareSportsDbEvents);
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
-  return response.json();
+async function fetchJson(url, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function resultValue(result, fallback, warning) {
+  if (result.status === 'fulfilled') return result.value || fallback;
+  logger.warn(warning, { message: result.reason?.message || String(result.reason || '') });
+  return fallback;
 }
 
 async function fetchWorldCupGithubFixtures() {
@@ -507,7 +795,35 @@ function getMatchKey(event) {
 }
 
 function compareSportsDbEvents(a, b) {
-  return `${getEventDateKey(a)} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${getEventDateKey(b)} ${b.strTimeLocal || b.strTime || ''}`);
+  const firstKickoff = getMatchKickoffDate(a)?.getTime() || 0;
+  const secondKickoff = getMatchKickoffDate(b)?.getTime() || 0;
+  return firstKickoff - secondKickoff;
+}
+
+function isNotifiableMatch(event = {}) {
+  const status = String(event.strStatus || '').toUpperCase();
+  return !['FT', 'AET', 'PEN', 'CANC', 'CANCELLED', 'PST', 'POSTPONED', 'ABD', 'SUSP'].includes(status);
+}
+
+function getMatchKickoffDate(event = {}) {
+  const dateValue = getEventDateKey(event);
+  const rawTime = event.strTimeLocal || event.strTime || '00:00:00';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return null;
+
+  const timeValue = normalizeMatchTime(rawTime);
+  const kickoff = new Date(`${dateValue}T${timeValue}+03:00`);
+  return Number.isNaN(kickoff.getTime()) ? null : kickoff;
+}
+
+function normalizeMatchTime(value = '') {
+  const text = String(value || '').trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return '00:00:00';
+
+  const hours = String(Math.min(Number(match[1]), 23)).padStart(2, '0');
+  const minutes = String(Math.min(Number(match[2]), 59)).padStart(2, '0');
+  const seconds = String(Math.min(Number(match[3] || 0), 59)).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 function getEventDateKey(event) {

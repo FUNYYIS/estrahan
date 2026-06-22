@@ -239,6 +239,156 @@ exports.completeRegistration = onCall(
   }
 );
 
+exports.addManualMember = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const name = normalizeMemberName(request.data?.name);
+    const phone = String(request.data?.phone || '').trim();
+
+    if (!name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    const memberRef = await db.collection('users').add({
+      name,
+      phone,
+      paymentStatus: 'late',
+      disabled: false,
+      avatarUrl: '',
+      manual: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true, memberId: memberRef.id };
+  }
+);
+
+exports.updateMemberPaymentStatus = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const paymentStatus = String(request.data?.paymentStatus || '').trim();
+    if (!memberId || !['paid', 'late'].includes(paymentStatus)) {
+      throw new HttpsError('invalid-argument', 'Invalid member payment status.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      paymentStatus,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.updateMemberName = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const name = normalizeMemberName(request.data?.name);
+    if (!memberId || !name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      name,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.setMemberDisabled = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    const disabled = request.data?.disabled === true;
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      disabled,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.resetMemberAvatar = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).update({
+      avatarUrl: '',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true };
+  }
+);
+
+exports.deleteMember = onCall(
+  {
+    region: 'us-central1'
+  },
+  async (request) => {
+    assertAdmin(request);
+
+    const memberId = normalizeMemberId(request.data?.memberId);
+    if (!memberId) {
+      throw new HttpsError('invalid-argument', 'Invalid member id.');
+    }
+
+    await db.collection('users').doc(memberId).delete();
+    await deleteTokensForUser(memberId);
+
+    try {
+      await admin.auth().deleteUser(memberId);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-uid') {
+        return { ok: true, authDeleted: false };
+      }
+
+        logger.warn('Member Firestore document deleted, but Auth delete failed.', {
+          memberId,
+          code: error.code
+        });
+        return { ok: true, authDeleted: false };
+    }
+
+    return { ok: true, authDeleted: true };
+  }
+);
+
 function assertAdmin(request) {
   if (!request.auth || request.auth.uid !== ADMIN_UID) {
     throw new HttpsError('permission-denied', 'Admin only.');
@@ -251,6 +401,24 @@ function normalizeMemberName(value) {
 
 function normalizeInviteCode(value) {
   return String(value || '').trim();
+}
+
+function normalizeMemberId(value) {
+  return String(value || '').trim();
+}
+
+async function deleteTokensForUser(uid) {
+  const snapshot = await db
+    .collection('fcmTokens')
+    .where('uid', '==', uid)
+    .get();
+
+  const batches = chunk(snapshot.docs, 400);
+  for (const docs of batches) {
+    const batch = db.batch();
+    docs.forEach((tokenDoc) => batch.delete(tokenDoc.ref));
+    await batch.commit();
+  }
 }
 
 async function buildAdminTestMessage(type) {

@@ -1903,15 +1903,10 @@ function setupManualMemberForm() {
         if (status) status.textContent = 'جاري إضافة العضو...';
 
         try {
-            await addDoc(collection(db, "users"), {
+            const addManualMember = httpsCallable(functions, 'addManualMember');
+            await addManualMember({
                 name,
-                phone,
-                paymentStatus: 'late',
-                disabled: false,
-                avatarUrl: '',
-                manual: true,
-                createdAt: serverTimestamp(),
-                createdBy: auth.currentUser?.uid || currentUser?.uid || ''
+                phone
             });
 
             form.reset();
@@ -1979,10 +1974,11 @@ function loadMembers() {
 
             document.querySelectorAll('.toggle-payment-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const newStatus = e.target.dataset.status;
+                    const memberId = e.currentTarget.dataset.id;
+                    const newStatus = e.currentTarget.dataset.status;
                     try {
-                        await updateDoc(doc(db, "users", memberId), { paymentStatus: newStatus });
+                        const updateMemberPaymentStatus = httpsCallable(functions, 'updateMemberPaymentStatus');
+                        await updateMemberPaymentStatus({ memberId, paymentStatus: newStatus });
                         showAlert('تم تحديث الحالة بنجاح!');
                     } catch (error) {
                         console.error('Error updating payment status:', error);
@@ -1993,13 +1989,14 @@ function loadMembers() {
 
             document.querySelectorAll('.edit-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const oldName = e.target.dataset.name || '';
+                    const memberId = e.currentTarget.dataset.id;
+                    const oldName = e.currentTarget.dataset.name || '';
                     const newName = prompt('اكتب الاسم الجديد:', oldName);
                     if (!newName || !newName.trim()) return;
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), { name: newName.trim() });
+                        const updateMemberName = httpsCallable(functions, 'updateMemberName');
+                        await updateMemberName({ memberId, name: newName.trim() });
                         showAlert('تم تعديل اسم العضو بنجاح.');
                     } catch (error) {
                         console.error('Error updating member name:', error);
@@ -2011,13 +2008,12 @@ function loadMembers() {
 
             document.querySelectorAll('.disable-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
-                    const isDisabled = e.target.dataset.disabled === 'true';
+                    const memberId = e.currentTarget.dataset.id;
+                    const isDisabled = e.currentTarget.dataset.disabled === 'true';
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), {
-                            disabled: !isDisabled
-                        });
+                        const setMemberDisabled = httpsCallable(functions, 'setMemberDisabled');
+                        await setMemberDisabled({ memberId, disabled: !isDisabled });
                         showAlert(isDisabled ? 'تم تفعيل العضو.' : 'تم تعطيل العضو.');
                     } catch (error) {
                         console.error('Error toggling member disabled:', error);
@@ -2028,14 +2024,13 @@ function loadMembers() {
 
             document.querySelectorAll('.reset-avatar-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
+                    const memberId = e.currentTarget.dataset.id;
                     const confirmed = confirm('متأكد تبي تصفر صورة هذا العضو؟');
                     if (!confirmed) return;
 
                     try {
-                        await updateDoc(doc(db, "users", memberId), {
-                            avatarUrl: ''
-                        });
+                        const resetMemberAvatar = httpsCallable(functions, 'resetMemberAvatar');
+                        await resetMemberAvatar({ memberId });
                         showAlert('تمت إعادة تعيين صورة العضو.');
                     } catch (error) {
                         console.error('Error resetting member avatar:', error);
@@ -2046,12 +2041,13 @@ function loadMembers() {
 
             document.querySelectorAll('.delete-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
-                    const memberId = e.target.dataset.id;
+                    const memberId = e.currentTarget.dataset.id;
                     const confirmed = confirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.');
                     if (!confirmed) return;
 
                     try {
-                        await deleteDoc(doc(db, "users", memberId));
+                        const deleteMember = httpsCallable(functions, 'deleteMember');
+                        await deleteMember({ memberId });
                         showAlert('تم حذف العضو بنجاح.');
                     } catch (error) {
                         console.error('Error deleting member:', error);
@@ -3236,7 +3232,18 @@ function initApp() {
                 console.log('✓ User authenticated:', user.uid);
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
-                    currentUser = { uid: user.uid, ...userDoc.data() };
+                    const userData = userDoc.data();
+                    if (userData.disabled === true) {
+                        currentUser = null;
+                        document.body.classList.remove('is-authenticated');
+                        sidebar?.classList.remove('open');
+                        syncShellUserState();
+                        showAlert('تم تعطيل عضويتك. تواصل مع مسؤول الاستراحة.');
+                        await signOut(auth);
+                        return;
+                    }
+
+                    currentUser = { uid: user.uid, ...userData };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
                     initFirebaseMessaging()

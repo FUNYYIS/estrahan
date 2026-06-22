@@ -41,7 +41,6 @@ service cloud.firestore {
           signedIn()
           && request.auth.uid == userId
           && resource.data.disabled != true
-          && request.resource.data.userId == resource.data.userId
           && onlyChanged(['avatarUrl', 'updatedAt'])
         );
       allow delete: if isAdmin();

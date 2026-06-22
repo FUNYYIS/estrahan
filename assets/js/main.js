@@ -2971,36 +2971,8 @@ function getEventDateKey(event) {
 }
 
 function queueNextMatchNotification(matches = []) {
-    if (localStorage.getItem('al-istiraha-matches-notification') !== 'true') return;
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-    const nextMatch = [...matches]
-        .filter((event) => getEventDateKey(event) >= getLocalDateKey())
-        .filter((event) => !['FT', 'AET', 'PEN'].includes(String(event.strStatus || '').toUpperCase()))
-        .sort(compareSportsDbEvents)[0];
-
-    if (!nextMatch) return;
-
-    const teams = getMatchNotificationTeams(nextMatch);
-    if (!teams) {
-        console.log('Skipped match notification because team names are missing.');
-        return;
-    }
-
-    const notificationKey = `match-notification-${nextMatch.idEvent || getWorldCupMatchKey(nextMatch)}`;
-    if (sessionStorage.getItem(notificationKey) === 'sent') return;
-
-    const template = MATCH_NOTIFICATION_TEMPLATES[0];
-    const title = template
-        .replace('{{homeTeam}}', teams.homeTeam)
-        .replace('{{awayTeam}}', teams.awayTeam);
-
-    try {
-        new Notification(title);
-        sessionStorage.setItem(notificationKey, 'sent');
-    } catch (error) {
-        console.warn('Match notification failed:', error);
-    }
+    if (!matches.length || localStorage.getItem('al-istiraha-matches-notification') !== 'true') return;
+    console.log('Match notifications are scheduled through Firebase Cloud Functions.');
 }
 
 function getMatchNotificationTeams(match = {}) {

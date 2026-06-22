@@ -1,12 +1,18 @@
-/* Compact Al Arabiya football news and reliable qibla controls */
-.compact-arabiya-news {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 8px !important;
-  width: 100% !important;
+/* Compact Al Arabiya football news, home spacing and qibla controls */
+.compact-news-heading {
+  margin-bottom: 10px !important;
+  padding: 12px 14px !important;
 }
 
-#home-news-list.compact-arabiya-news {
+.compact-news-heading .panel-head {
+  margin: 0 !important;
+}
+
+.compact-arabiya-news {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 9px !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
@@ -14,26 +20,46 @@
 }
 
 .compact-news-item {
+  width: 100%;
   min-width: 0;
-  min-height: 50px;
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  min-height: 82px;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(215, 187, 118, 0.18);
-  border-radius: 16px;
+  gap: 12px;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 1px solid rgba(215, 187, 118, 0.2);
+  border-radius: 17px;
   color: #fff;
-  background: rgba(7, 26, 21, 0.88);
+  background: rgba(7, 26, 21, 0.9);
   text-decoration: none;
+  direction: rtl;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  transition: transform .18s ease, border-color .18s ease;
 }
 
 .compact-news-item:hover,
 .compact-news-item:focus-visible {
-  border-color: rgba(215, 187, 118, 0.5);
+  border-color: rgba(215, 187, 118, 0.52);
   transform: translateY(-1px);
+}
+
+.compact-news-thumb {
+  width: 88px;
+  height: 64px;
+  flex: 0 0 88px;
+  display: block;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(255,255,255,.06);
+}
+
+.compact-news-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 5px;
 }
 
 .compact-news-item strong {
@@ -42,30 +68,43 @@
   margin: 0;
   overflow: hidden;
   color: #fff;
-  font-size: 0.96rem;
-  font-weight: 800;
-  line-height: 1.55;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .compact-news-item small {
   color: #d7bb76;
-  font-size: 0.76rem;
+  font-size: .76rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
-.compact-news-index {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: #071a15;
-  background: #d7bb76;
-  font-size: 0.78rem;
-  font-weight: 900;
+#home-news-list .compact-news-item {
+  min-height: 72px;
+  padding: 7px 9px;
+}
+
+#home-news-list .compact-news-thumb {
+  width: 76px;
+  height: 56px;
+  flex-basis: 76px;
+}
+
+body.is-authenticated:has(.estraha-reference-home) #page-content {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+}
+
+.estraha-reference-home {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.estraha-reference-home > :last-child,
+#home-chat-preview {
+  margin-bottom: 0 !important;
 }
 
 .qibla-enable-button {
@@ -91,27 +130,43 @@
 
 @media (max-width: 600px) {
   .compact-arabiya-news {
-    gap: 7px !important;
+    gap: 8px !important;
   }
 
   .compact-news-item {
-    min-height: 46px;
-    grid-template-columns: 26px minmax(0, 1fr);
-    padding: 9px 10px;
-    border-radius: 14px;
+    min-height: 76px;
+    gap: 9px;
+    padding: 7px 8px;
+    border-radius: 15px;
+  }
+
+  .compact-news-thumb {
+    width: 78px;
+    height: 58px;
+    flex-basis: 78px;
+    border-radius: 11px;
   }
 
   .compact-news-item strong {
-    font-size: 0.9rem;
+    font-size: .91rem;
+    line-height: 1.45;
   }
 
   .compact-news-item small {
-    display: none;
+    font-size: .7rem;
   }
 
-  .compact-news-index {
-    width: 25px;
-    height: 25px;
-    font-size: 0.72rem;
+  #home-news-list .compact-news-item {
+    min-height: 68px;
+  }
+
+  #home-news-list .compact-news-thumb {
+    width: 70px;
+    height: 52px;
+    flex-basis: 70px;
+  }
+
+  body.is-authenticated:has(.estraha-reference-home) #page-content {
+    padding-bottom: calc(66px + env(safe-area-inset-bottom)) !important;
   }
 }

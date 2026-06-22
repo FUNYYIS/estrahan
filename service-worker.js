@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v257';
+const CACHE_NAME = 'estraha-cache-v258';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',

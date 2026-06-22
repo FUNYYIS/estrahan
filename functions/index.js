@@ -1,12 +1,14 @@
 const admin = require('firebase-admin');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const ADMIN_UID = 'tquFv8nhU3ZPGgqumfCo3Hx67k02';
+const REGISTRATION_INVITE_CODE = defineSecret('ESTRAHA_INVITE_CODE');
 const THE_SPORTS_DB_KEY = '3';
 const SAUDI_LEAGUE_ID = '4668';
 const WORLD_CUP_LEAGUE_ID = '4429';
@@ -171,10 +173,84 @@ exports.sendAdminBroadcastNotification = onCall(
   }
 );
 
+exports.completeRegistration = onCall(
+  {
+    region: 'us-central1',
+    secrets: [REGISTRATION_INVITE_CODE]
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Authentication is required.');
+    }
+
+    const uid = request.auth.uid;
+    const phone = String(request.auth.token.phone_number || '').trim();
+    const name = normalizeMemberName(request.data?.name);
+    const inviteCode = normalizeInviteCode(request.data?.inviteCode);
+    const validInviteCode = normalizeInviteCode(REGISTRATION_INVITE_CODE.value());
+
+    if (!name || name.length < 2 || name.length > 60) {
+      throw new HttpsError('invalid-argument', 'Invalid member name.');
+    }
+
+    if (!validInviteCode) {
+      logger.error('Registration invite code secret is not configured.');
+      throw new HttpsError('failed-precondition', 'Registration is not configured.');
+    }
+
+    if (!inviteCode || inviteCode !== validInviteCode) {
+      throw new HttpsError('permission-denied', 'Invalid invite code.');
+    }
+
+    if (!phone) {
+      throw new HttpsError('failed-precondition', 'Verified phone number is missing.');
+    }
+
+    const userRef = db.collection('users').doc(uid);
+
+    await db.runTransaction(async (transaction) => {
+      const existingDoc = await transaction.get(userRef);
+      if (existingDoc.exists) {
+        throw new HttpsError('already-exists', 'Member account already exists.');
+      }
+
+      transaction.set(userRef, {
+        name,
+        phone,
+        paymentStatus: 'late',
+        disabled: false,
+        avatarUrl: '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    return {
+      ok: true,
+      user: {
+        uid,
+        name,
+        phone,
+        paymentStatus: 'late',
+        disabled: false,
+        avatarUrl: ''
+      }
+    };
+  }
+);
+
 function assertAdmin(request) {
   if (!request.auth || request.auth.uid !== ADMIN_UID) {
     throw new HttpsError('permission-denied', 'Admin only.');
   }
+}
+
+function normalizeMemberName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function normalizeInviteCode(value) {
+  return String(value || '').trim();
 }
 
 async function buildAdminTestMessage(type) {

@@ -701,17 +701,8 @@ function attachEventListeners(hash) {
     if (pageId === 'register') {
         console.log('Setting up register page event listeners');
 
-        // Clean up old verifier if switching pages
-        recaptchaManager.destroy('recaptcha-container-register');
-
         const registerForm = document.getElementById('register-form');
         if (registerForm) registerForm.addEventListener('submit', handleCompleteRegistration);
-
-        // Setup recaptcha with validation
-        const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container-register');
-        if (!recaptchaSetupSuccess) {
-            console.error('Failed to set up reCAPTCHA on register page');
-        }
     }
 
     if (pageId === 'settings') {

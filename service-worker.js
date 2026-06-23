@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v264';
+const CACHE_NAME = 'estraha-cache-v265';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -9,7 +9,6 @@ const APP_SHELL_URLS = [
   '/assets/css/home-layout-fix.css',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
-  '/assets/js/home-ui-fix.js',
   '/assets/images/estraha-logo.svg',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',

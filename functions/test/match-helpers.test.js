@@ -114,3 +114,29 @@ test('builds upcoming matches while tolerating invalid source payloads', () => {
   assert.equal(result.length, 1);
   assert.equal(result[0].strHomeTeam, 'Al Hilal');
 });
+
+test('ignores null events inside arrays', () => {
+  const validMatch = {
+    idLeague: '4668',
+    dateEvent: '2026-06-24',
+    strTime: '20:00:00',
+    strHomeTeam: 'Al Hilal',
+    strAwayTeam: 'Al Nassr',
+    strStatus: 'NS'
+  };
+
+  const result = buildUpcomingMatchesFromSources({
+    today: '2026-06-23',
+    saudiLeagueId: '4668',
+    worldCupLeagueId: '4429',
+    todayData: {
+      events: [null, validMatch]
+    },
+    saudiData: {},
+    worldCupData: {},
+    githubWorldCup: null
+  });
+
+  assert.equal(result.length, 1);
+  assert.equal(result[0].strHomeTeam, 'Al Hilal');
+});

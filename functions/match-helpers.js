@@ -126,14 +126,21 @@ function buildUpcomingMatchesFromSources({
   const saudiEvents = Array.isArray(saudiData.events) ? saudiData.events : [];
   const worldCupEvents = Array.isArray(worldCupData.events) ? worldCupData.events : [];
   const githubEvents = Array.isArray(githubWorldCup) ? githubWorldCup : [];
+  const isValidEvent = (event) => event && typeof event === 'object' && !Array.isArray(event);
 
   const todayMatches = todayEvents
+    .filter(isValidEvent)
     .filter((event) => [saudiLeagueId, worldCupLeagueId].includes(event.idLeague));
   const saudiUpcoming = saudiEvents
+    .filter(isValidEvent)
     .filter((event) => event.idLeague === saudiLeagueId && getEventDateKey(event) >= today);
   const sportsDbWorldCup = worldCupEvents
+    .filter(isValidEvent)
     .filter((event) => event.idLeague === worldCupLeagueId);
-  const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubEvents)
+  const worldCupUpcoming = mergeWorldCupFixtures(
+    sportsDbWorldCup,
+    githubEvents.filter(isValidEvent)
+  )
     .filter((event) => getEventDateKey(event) >= today);
 
   return [

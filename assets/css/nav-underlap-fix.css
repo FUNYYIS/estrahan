@@ -1,0 +1,41 @@
+/* Keep page content visually separated from the fixed bottom navigation. */
+body.is-authenticated::after {
+  content: "";
+  position: fixed;
+  z-index: 110;
+  left: 50%;
+  right: auto;
+  bottom: 0;
+  width: min(100vw, 760px);
+  height: calc(96px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(7, 19, 15, 1) 0%,
+    rgba(7, 19, 15, 0.99) 70%,
+    rgba(7, 19, 15, 0.92) 84%,
+    rgba(7, 19, 15, 0) 100%
+  );
+}
+
+body.is-authenticated .main,
+body.is-authenticated:has(.estraha-reference-home) .main {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
+}
+
+body.is-authenticated #bottom-nav,
+body.is-authenticated #bottom-nav.nav,
+body.is-authenticated:has(.estraha-reference-home) #bottom-nav {
+  z-index: 120 !important;
+  isolation: isolate;
+  background: #161b18 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (min-width: 760px) {
+  body.is-authenticated::after {
+    width: min(100vw, 760px);
+  }
+}

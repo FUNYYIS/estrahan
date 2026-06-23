@@ -7,8 +7,8 @@
 
 .estraha-reference-home .home-weather-card {
   order: 1 !important;
-  min-height: 168px !important;
-  padding: 18px !important;
+  min-height: 142px !important;
+  padding: 14px 16px !important;
 }
 
 .estraha-reference-home .home-prayer-card {
@@ -17,19 +17,31 @@
   padding: 16px 18px !important;
 }
 
-.estraha-reference-home .home-weather-card .home-reference-card-title,
+.estraha-reference-home .home-weather-card .home-reference-card-title {
+  margin-bottom: 6px !important;
+}
+
 .estraha-reference-home .home-prayer-card .home-reference-card-title {
   margin-bottom: 10px !important;
 }
 
 .estraha-reference-home .home-weather-card .reference-weather-body {
-  grid-template-columns: 86px minmax(0, 1fr) !important;
-  gap: 16px !important;
+  grid-template-columns: 70px minmax(0, 1fr) !important;
+  gap: 12px !important;
 }
 
 .estraha-reference-home .home-weather-card .reference-weather-icon {
-  width: 80px !important;
-  height: 80px !important;
+  width: 64px !important;
+  height: 64px !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-body strong {
+  font-size: 2.65rem !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-date {
+  margin-top: 8px !important;
+  font-size: 0.72rem !important;
 }
 
 .estraha-reference-home .home-prayer-card .reference-prayer-strip {
@@ -55,6 +67,36 @@
   justify-self: end;
 }
 
+/* Slimmer home match rows while preserving readability. */
+.estraha-reference-home .reference-match-card {
+  min-height: 82px !important;
+}
+
+.estraha-reference-home .reference-match-card .match-card {
+  min-height: 82px !important;
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+.estraha-reference-home .reference-match-card .team-logo {
+  width: 46px !important;
+  height: 46px !important;
+  flex-basis: 46px !important;
+}
+
+.estraha-reference-home .reference-match-card .match-score {
+  font-size: 1.45rem !important;
+}
+
+.estraha-reference-home .reference-match-card .match-teams span {
+  gap: 5px !important;
+  font-size: 0.88rem !important;
+}
+
+.estraha-reference-home .reference-match-card .muted {
+  font-size: 0.76rem !important;
+}
+
 @media (max-width: 360px) {
   .estraha-reference-home .home-weather-card,
   .estraha-reference-home .home-prayer-card {
@@ -71,5 +113,9 @@
 
   .estraha-reference-home .home-prayer-card .reference-prayer-strip .stat strong {
     font-size: 0.72rem !important;
+  }
+
+  .estraha-reference-home .reference-match-card .match-card {
+    padding-inline: 10px !important;
   }
 }

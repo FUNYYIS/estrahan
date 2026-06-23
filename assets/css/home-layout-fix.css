@@ -1,14 +1,24 @@
 /* Weather first, prayer times below in a wide rectangular card. */
 .estraha-reference-home .home-reference-widgets {
+  position: relative;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
   gap: 12px !important;
+  margin-top: 2px !important;
+  padding: 16px 0 18px !important;
+  border-top: 1px solid var(--es-border) !important;
+  border-bottom: 1px solid var(--es-border) !important;
+}
+
+.estraha-reference-home .home-reference-widgets + .reference-section-head {
+  margin-top: 2px !important;
+  padding-top: 2px !important;
 }
 
 .estraha-reference-home .home-weather-card {
   order: 1 !important;
-  min-height: 142px !important;
-  padding: 14px 16px !important;
+  min-height: 116px !important;
+  padding: 10px 14px !important;
 }
 
 .estraha-reference-home .home-prayer-card {
@@ -18,7 +28,16 @@
 }
 
 .estraha-reference-home .home-weather-card .home-reference-card-title {
-  margin-bottom: 6px !important;
+  margin-bottom: 2px !important;
+}
+
+.estraha-reference-home .home-weather-card .home-reference-card-title h3 {
+  font-size: 1.1rem !important;
+}
+
+.estraha-reference-home .home-weather-card .home-reference-card-title svg {
+  width: 21px !important;
+  height: 21px !important;
 }
 
 .estraha-reference-home .home-prayer-card .home-reference-card-title {
@@ -26,22 +45,35 @@
 }
 
 .estraha-reference-home .home-weather-card .reference-weather-body {
-  grid-template-columns: 70px minmax(0, 1fr) !important;
-  gap: 12px !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  gap: 10px !important;
 }
 
 .estraha-reference-home .home-weather-card .reference-weather-icon {
-  width: 64px !important;
-  height: 64px !important;
+  width: 52px !important;
+  height: 52px !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-body > div {
+  gap: 0 !important;
 }
 
 .estraha-reference-home .home-weather-card .reference-weather-body strong {
-  font-size: 2.65rem !important;
+  font-size: 2.25rem !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-body span {
+  font-size: 0.9rem !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-body small {
+  font-size: 0.78rem !important;
 }
 
 .estraha-reference-home .home-weather-card .reference-date {
-  margin-top: 8px !important;
-  font-size: 0.72rem !important;
+  margin-top: 4px !important;
+  font-size: 0.68rem !important;
+  line-height: 1.2 !important;
 }
 
 .estraha-reference-home .home-prayer-card .reference-prayer-strip {
@@ -98,6 +130,10 @@
 }
 
 @media (max-width: 360px) {
+  .estraha-reference-home .home-reference-widgets {
+    padding-block: 14px 16px !important;
+  }
+
   .estraha-reference-home .home-weather-card,
   .estraha-reference-home .home-prayer-card {
     padding-inline: 12px !important;

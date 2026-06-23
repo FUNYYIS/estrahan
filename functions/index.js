@@ -3,6 +3,18 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
+const {
+  buildUpcomingMatchesFromSources,
+  chunk,
+  getLocalDateKey,
+  getMatchKey,
+  getMatchKickoffDate,
+  getMatchNotificationTeams,
+  isNotifiableMatch,
+  parseWorldCupLocalDate,
+  renderMatchNotification,
+  toDocId
+} = require('./match-helpers');
 
 admin.initializeApp();
 
@@ -37,83 +49,102 @@ exports.checkUpcomingMatches = onSchedule(
     region: 'us-central1'
   },
   async () => {
-    const upcomingMatches = await getUpcomingMatches();
-    if (!upcomingMatches.length) return;
+    try {
+      const upcomingMatches = await getUpcomingMatches();
+      if (!upcomingMatches.length) return;
 
-    const notificationWindows = [
-      { minutes: 60, min: 55, max: 65 },
-      { minutes: 15, min: 10, max: 20 }
-    ];
+      const notificationWindows = [
+        { minutes: 60, min: 55, max: 65 },
+        { minutes: 15, min: 10, max: 20 }
+      ];
 
-    for (const match of upcomingMatches) {
-      if (!isNotifiableMatch(match)) continue;
+      for (const match of upcomingMatches) {
+        try {
+          if (!isNotifiableMatch(match)) continue;
 
-      const kickoff = getMatchKickoffDate(match);
-      if (!kickoff) continue;
+          const kickoff = getMatchKickoffDate(match);
+          if (!kickoff) continue;
 
-      const remainingMinutes = Math.round((kickoff.getTime() - Date.now()) / 60000);
-      const windowConfig = notificationWindows.find((item) => (
-        remainingMinutes >= item.min && remainingMinutes <= item.max
-      ));
+          const remainingMinutes = Math.round((kickoff.getTime() - Date.now()) / 60000);
+          const windowConfig = notificationWindows.find((item) => (
+            remainingMinutes >= item.min && remainingMinutes <= item.max
+          ));
 
-      if (!windowConfig) continue;
+          if (!windowConfig) continue;
 
-      const teams = getMatchNotificationTeams(match);
-      if (!teams) {
-        logger.info('Skipped match notification because team names are missing.');
-        continue;
-      }
-
-      const matchKey = getMatchKey(match);
-      const stateKey = `${matchKey}-${windowConfig.minutes}`;
-      const stateRef = db.collection('matchNotificationState').doc(toDocId(stateKey));
-      const stateDoc = await stateRef.get();
-      if (stateDoc.exists) continue;
-
-      const tokenRecords = await getTokenRecordsByTopic('matches');
-
-      if (!tokenRecords.length) {
-        logger.info('No FCM tokens subscribed to match notifications.');
-        continue;
-      }
-
-      const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
-      const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
-
-      const result = await sendNotificationToTokenRecords(tokenRecords, {
-        notification: {
-          title,
-          body
-        },
-        data: {
-          type: 'match',
-          notificationWindow: String(windowConfig.minutes),
-          matchKey,
-          homeTeam: teams.homeTeam,
-          awayTeam: teams.awayTeam,
-          link: '/index.html#matches'
-        },
-        webpush: {
-          notification: {
-            icon: '/assets/icons/icon-192.png',
-            badge: '/assets/icons/icon-192.png',
-            tag: `match-${toDocId(stateKey)}`,
-            renotify: false
+          const teams = getMatchNotificationTeams(match);
+          if (!teams) {
+            logger.info('Skipped match notification because team names are missing.', {
+              operation: 'checkUpcomingMatches',
+              matchIdentifier: getMatchKey(match)
+            });
+            continue;
           }
-        }
-      });
 
-      await stateRef.set({
-        matchKey,
-        notificationWindow: windowConfig.minutes,
-        remainingMinutes,
-        homeTeam: teams.homeTeam,
-        awayTeam: teams.awayTeam,
-        kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
-        targetedTokens: result.targetedTokens,
-        successCount: result.successCount,
-        failureCount: result.failureCount,
-        sentAt: admin.firestore.FieldValue.serverTimestamp()
+          const matchKey = getMatchKey(match);
+          const stateKey = `${matchKey}-${windowConfig.minutes}`;
+          const stateRef = db.collection('matchNotificationState').doc(toDocId(stateKey));
+          const stateDoc = await stateRef.get();
+          if (stateDoc.exists) continue;
+
+          const tokenRecords = await getTokenRecordsByTopic('matches');
+
+          if (!tokenRecords.length) {
+            logger.info('No FCM tokens subscribed to match notifications.', {
+              operation: 'checkUpcomingMatches',
+              matchIdentifier: matchKey
+            });
+            continue;
+          }
+
+          const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
+          const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
+
+          const result = await sendNotificationToTokenRecords(tokenRecords, {
+            notification: {
+              title,
+              body
+            },
+            data: {
+              type: 'match',
+              notificationWindow: String(windowConfig.minutes),
+              matchKey,
+              homeTeam: teams.homeTeam,
+              awayTeam: teams.awayTeam,
+              link: '/index.html#matches'
+            },
+            webpush: {
+              notification: {
+                icon: '/assets/icons/icon-192.png',
+                badge: '/assets/icons/icon-192.png',
+                tag: `match-${toDocId(stateKey)}`,
+                renotify: false
+              }
+            }
+          });
+
+          await stateRef.set({
+            matchKey,
+            notificationWindow: windowConfig.minutes,
+            remainingMinutes,
+            homeTeam: teams.homeTeam,
+            awayTeam: teams.awayTeam,
+            kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
+            targetedTokens: result.targetedTokens,
+            successCount: result.successCount,
+            failureCount: result.failureCount,
+            sentAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        } catch (error) {
+          logMatchScheduleError(error, {
+            operation: 'checkUpcomingMatches.processMatch',
+            matchIdentifier: getMatchKey(match)
+          });
+        }
+      }
+    } catch (error) {
+      logMatchScheduleError(error, {
+        operation: 'checkUpcomingMatches'
       });
     }
   }
@@ -867,14 +898,6 @@ function assertNotificationDeliveryResult(result) {
   }
 }
 
-function chunk(items, size) {
-  const chunks = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
-}
-
 function cleanNotificationText(value) {
   return String(value || '').trim().slice(0, 240);
 }
@@ -971,6 +994,25 @@ function getRiyadhParts(date = new Date()) {
   };
 }
 
+function logMatchScheduleError(error, context = {}, level = 'error') {
+  const payload = {
+    operation: context.operation || 'checkUpcomingMatches',
+    dataSource: context.dataSource || null,
+    leagueId: context.leagueId || null,
+    season: context.season || null,
+    matchIdentifier: context.matchIdentifier || null,
+    errorMessage: error?.message || String(error || ''),
+    errorCode: error?.code || null
+  };
+
+  if (level === 'warn') {
+    logger.warn('Match notification workflow warning.', payload);
+    return;
+  }
+
+  logger.error('Match notification workflow failed.', payload);
+}
+
 async function getNextUpcomingMatch() {
   return (await getUpcomingMatches())[0] || null;
 }
@@ -989,28 +1031,40 @@ async function getUpcomingMatches() {
     fetchWorldCupGithubFixtures()
   ]);
 
-  const todayData = resultValue(todayResult, { events: [] }, 'TheSportsDB daily matches unavailable.');
-  const saudiData = resultValue(saudiResult, { events: [] }, 'TheSportsDB Saudi season unavailable.');
-  const worldCupData = resultValue(worldCupResult, { events: [] }, 'TheSportsDB World Cup season unavailable.');
-  const githubWorldCup = resultValue(githubResult, [], 'World Cup GitHub fallback unavailable.');
+  const todayData = resultValue(todayResult, { events: [] }, {
+    operation: 'getUpcomingMatches',
+    dataSource: 'TheSportsDB daily events',
+    leagueId: `${SAUDI_LEAGUE_ID},${WORLD_CUP_LEAGUE_ID}`,
+    season: today
+  });
+  const saudiData = resultValue(saudiResult, { events: [] }, {
+    operation: 'getUpcomingMatches',
+    dataSource: 'TheSportsDB Saudi season',
+    leagueId: SAUDI_LEAGUE_ID,
+    season: saudiSeason
+  });
+  const worldCupData = resultValue(worldCupResult, { events: [] }, {
+    operation: 'getUpcomingMatches',
+    dataSource: 'TheSportsDB World Cup season',
+    leagueId: WORLD_CUP_LEAGUE_ID,
+    season: WORLD_CUP_SEASON
+  });
+  const githubWorldCup = resultValue(githubResult, [], {
+    operation: 'getUpcomingMatches',
+    dataSource: 'GitHub World Cup fallback',
+    leagueId: WORLD_CUP_LEAGUE_ID,
+    season: WORLD_CUP_SEASON
+  });
 
-  const todayMatches = (todayData.events || [])
-    .filter((event) => [SAUDI_LEAGUE_ID, WORLD_CUP_LEAGUE_ID].includes(event.idLeague));
-  const saudiUpcoming = (saudiData.events || [])
-    .filter((event) => event.idLeague === SAUDI_LEAGUE_ID && getEventDateKey(event) >= today);
-  const sportsDbWorldCup = (worldCupData.events || [])
-    .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID);
-  const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
-    .filter((event) => getEventDateKey(event) >= today);
-
-  return [
-    ...todayMatches,
-    ...saudiUpcoming,
-    ...worldCupUpcoming
-  ]
-    .filter(isNotifiableMatch)
-    .filter((event) => getMatchKickoffDate(event))
-    .sort(compareSportsDbEvents);
+  return buildUpcomingMatchesFromSources({
+    todayData,
+    saudiData,
+    worldCupData,
+    githubWorldCup,
+    today,
+    saudiLeagueId: SAUDI_LEAGUE_ID,
+    worldCupLeagueId: WORLD_CUP_LEAGUE_ID
+  });
 }
 
 async function fetchJson(url, timeoutMs = 8000) {
@@ -1026,17 +1080,33 @@ async function fetchJson(url, timeoutMs = 8000) {
   }
 }
 
-function resultValue(result, fallback, warning) {
+function resultValue(result, fallback, context) {
   if (result.status === 'fulfilled') return result.value || fallback;
-  logger.warn(warning, { message: result.reason?.message || String(result.reason || '') });
+  logMatchScheduleError(result.reason, context, 'warn');
   return fallback;
 }
 
 async function fetchWorldCupGithubFixtures() {
-  const [matches, teams] = await Promise.all([
+  const [matchesResult, teamsResult] = await Promise.allSettled([
     fetchJson('https://raw.githubusercontent.com/rezarahiminia/worldcup2026/main/football.matches.json'),
     fetchJson('https://raw.githubusercontent.com/rezarahiminia/worldcup2026/main/football.teams.json')
   ]);
+
+  const matches = resultValue(matchesResult, [], {
+    operation: 'fetchWorldCupGithubFixtures',
+    dataSource: 'GitHub football.matches.json',
+    leagueId: WORLD_CUP_LEAGUE_ID,
+    season: WORLD_CUP_SEASON
+  });
+  const teams = resultValue(teamsResult, [], {
+    operation: 'fetchWorldCupGithubFixtures',
+    dataSource: 'GitHub football.teams.json',
+    leagueId: WORLD_CUP_LEAGUE_ID,
+    season: WORLD_CUP_SEASON
+  });
+
+  if (!Array.isArray(matches) || !matches.length) return [];
+
   const teamsById = new Map((teams || []).map((team) => [String(team.id), team]));
 
   return (matches || []).map((match) => normalizeGithubWorldCupMatch(match, teamsById));
@@ -1061,203 +1131,17 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
 }
 
 
-const TEAM_AR_NAMES = {
-  "Saudi Arabia":"السعودية",
-  "Qatar":"قطر",
-  "United Arab Emirates":"الإمارات",
-  "UAE":"الإمارات",
-  "Iraq":"العراق",
-  "Jordan":"الأردن",
-  "Oman":"عُمان",
-  "Bahrain":"البحرين",
-  "Kuwait":"الكويت",
-  "Yemen":"اليمن",
-
-  "Argentina":"الأرجنتين",
-  "Brazil":"البرازيل",
-  "Uruguay":"أوروغواي",
-  "Paraguay":"باراغواي",
-  "Chile":"تشيلي",
-  "Colombia":"كولومبيا",
-  "Ecuador":"الإكوادور",
-
-  "United States":"أمريكا",
-  "USA":"أمريكا",
-  "Mexico":"المكسيك",
-  "Canada":"كندا",
-
-  "England":"إنجلترا",
-  "France":"فرنسا",
-  "Spain":"إسبانيا",
-  "Germany":"ألمانيا",
-  "Italy":"إيطاليا",
-  "Portugal":"البرتغال",
-  "Netherlands":"هولندا",
-  "Belgium":"بلجيكا",
-  "Croatia":"كرواتيا",
-  "Switzerland":"سويسرا",
-
-  "Morocco":"المغرب",
-  "Tunisia":"تونس",
-  "Algeria":"الجزائر",
-  "Egypt":"مصر",
-  "Senegal":"السنغال",
-  "Cameroon":"الكاميرون",
-  "Nigeria":"نيجيريا",
-
-  "Japan":"اليابان",
-  "South Korea":"كوريا الجنوبية",
-  "Australia":"أستراليا",
-  "Iran":"إيران",
-  "Uzbekistan":"أوزبكستان",
-
-  "Al Hilal":"الهلال",
-  "Al Nassr":"النصر",
-  "Al Ittihad":"الاتحاد",
-  "Al Ahli":"الأهلي",
-  "Al Shabab":"الشباب",
-  "Al Ettifaq":"الاتفاق",
-  "Al Taawoun":"التعاون",
-  "Al Fateh":"الفتح",
-  "Al Fayha":"الفيحاء",
-  "Al Raed":"الرائد",
-  "Al Khaleej":"الخليج",
-  "Damac":"ضمك",
-  "Al Okhdood":"الأخدود",
-  "Al Wehda":"الوحدة",
-  "Al Riyadh":"الرياض",
-  "Al Qadsiah":"القادسية",
-  "Al Kholood":"الخلود",
-  "Al Orobah":"العروبة",
-
-  "Al-Ahli":"الأهلي",
-  "Al-Hilal":"الهلال",
-  "Al-Nassr":"النصر",
-  "Al-Ittihad":"الاتحاد"
-};
-
-function translateTeamName(name = "") {
-  const clean = String(name).trim();
-  return TEAM_AR_NAMES[clean] || clean;
-}
-
-
-function getMatchNotificationTeams(match = {}) {
-  const homeTeam = cleanMatchTeamName(
-    match.homeTeam ||
-    match.teamHome ||
-    match.strHomeTeam ||
-    match.home_team ||
-    match.home?.name
-  );
-  const awayTeam = cleanMatchTeamName(
-    match.awayTeam ||
-    match.teamAway ||
-    match.strAwayTeam ||
-    match.away_team ||
-    match.away?.name
-  );
-
-  if (!homeTeam || !awayTeam) return null;
-  return {
-    homeTeam: translateTeamName(homeTeam),
-    awayTeam: translateTeamName(awayTeam)
-  };
-}
-
-function cleanMatchTeamName(value) {
-  const teamName = String(value || '').trim();
-  if (!teamName || /^(tbd|فريق|-|null|undefined|\[object Object\])$/i.test(teamName)) return '';
-  return teamName;
-}
-
-function renderMatchNotification(template, teams) {
-  return template
-    .replace('{{homeTeam}}', teams.homeTeam)
-    .replace('{{awayTeam}}', teams.awayTeam);
-}
-
 async function getSaudiLeagueSeason() {
   try {
     const data = await fetchJson(`https://www.thesportsdb.com/api/v1/json/${THE_SPORTS_DB_KEY}/lookupleague.php?id=${SAUDI_LEAGUE_ID}`);
     return data.leagues?.[0]?.strCurrentSeason || '2025-2026';
-  } catch {
+  } catch (error) {
+    logMatchScheduleError(error, {
+      operation: 'getSaudiLeagueSeason',
+      dataSource: 'TheSportsDB lookupleague',
+      leagueId: SAUDI_LEAGUE_ID,
+      season: '2025-2026'
+    }, 'warn');
     return '2025-2026';
   }
-}
-
-function mergeWorldCupFixtures(primary = [], fallback = []) {
-  const merged = new Map();
-  fallback.forEach((event) => merged.set(getMatchKey(event), event));
-  primary.forEach((event) => merged.set(getMatchKey(event), event));
-  return Array.from(merged.values());
-}
-
-function getMatchKey(event) {
-  return [
-    getEventDateKey(event),
-    event.strTimeLocal || event.strTime || '',
-    event.homeTeam || event.teamHome || event.strHomeTeam || event.home_team || event.home?.name || '',
-    event.awayTeam || event.teamAway || event.strAwayTeam || event.away_team || event.away?.name || ''
-  ].join('|');
-}
-
-function compareSportsDbEvents(a, b) {
-  const firstKickoff = getMatchKickoffDate(a)?.getTime() || 0;
-  const secondKickoff = getMatchKickoffDate(b)?.getTime() || 0;
-  return firstKickoff - secondKickoff;
-}
-
-function isNotifiableMatch(event = {}) {
-  const status = String(event.strStatus || '').toUpperCase();
-  return !['FT', 'AET', 'PEN', 'CANC', 'CANCELLED', 'PST', 'POSTPONED', 'ABD', 'SUSP'].includes(status);
-}
-
-function getMatchKickoffDate(event = {}) {
-  const dateValue = getEventDateKey(event);
-  const rawTime = event.strTimeLocal || event.strTime || '00:00:00';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return null;
-
-  const timeValue = normalizeMatchTime(rawTime);
-  const kickoff = new Date(`${dateValue}T${timeValue}+03:00`);
-  return Number.isNaN(kickoff.getTime()) ? null : kickoff;
-}
-
-function normalizeMatchTime(value = '') {
-  const text = String(value || '').trim();
-  const match = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (!match) return '00:00:00';
-
-  const hours = String(Math.min(Number(match[1]), 23)).padStart(2, '0');
-  const minutes = String(Math.min(Number(match[2]), 59)).padStart(2, '0');
-  const seconds = String(Math.min(Number(match[3] || 0), 59)).padStart(2, '0');
-  return `${hours}:${minutes}:${seconds}`;
-}
-
-function getEventDateKey(event) {
-  return event.dateEventLocal || event.dateEvent || '';
-}
-
-function parseWorldCupLocalDate(value = '') {
-  const [dateValue = '', timeValue = ''] = String(value).split(' ');
-  const [month, day, year] = dateValue.split('/');
-  const date = year && month && day
-    ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-    : '';
-  const time = timeValue ? `${timeValue}:00`.slice(0, 8) : '';
-  return { date, time };
-}
-
-function getLocalDateKey(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Riyadh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-  return formatter.format(date);
-}
-
-function toDocId(value) {
-  return Buffer.from(String(value)).toString('base64url');
 }

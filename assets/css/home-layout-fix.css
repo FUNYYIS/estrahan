@@ -1,0 +1,75 @@
+/* Weather first, prayer times below in a wide rectangular card. */
+.estraha-reference-home .home-reference-widgets {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+
+.estraha-reference-home .home-weather-card {
+  order: 1 !important;
+  min-height: 168px !important;
+  padding: 18px !important;
+}
+
+.estraha-reference-home .home-prayer-card {
+  order: 2 !important;
+  min-height: 132px !important;
+  padding: 16px 18px !important;
+}
+
+.estraha-reference-home .home-weather-card .home-reference-card-title,
+.estraha-reference-home .home-prayer-card .home-reference-card-title {
+  margin-bottom: 10px !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-body {
+  grid-template-columns: 86px minmax(0, 1fr) !important;
+  gap: 16px !important;
+}
+
+.estraha-reference-home .home-weather-card .reference-weather-icon {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+.estraha-reference-home .home-prayer-card .reference-prayer-strip {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+}
+
+.estraha-reference-home .home-prayer-card .reference-prayer-strip .stat {
+  min-width: 0 !important;
+  padding: 8px 3px !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.estraha-reference-home .home-prayer-card .reference-prayer-strip .stat span,
+.estraha-reference-home .home-prayer-card .reference-prayer-strip .stat strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.estraha-reference-home .home-prayer-card > .reference-section-link {
+  justify-self: end;
+}
+
+@media (max-width: 360px) {
+  .estraha-reference-home .home-weather-card,
+  .estraha-reference-home .home-prayer-card {
+    padding-inline: 12px !important;
+  }
+
+  .estraha-reference-home .home-prayer-card .reference-prayer-strip {
+    gap: 3px !important;
+  }
+
+  .estraha-reference-home .home-prayer-card .reference-prayer-strip .stat span {
+    font-size: 0.66rem !important;
+  }
+
+  .estraha-reference-home .home-prayer-card .reference-prayer-strip .stat strong {
+    font-size: 0.72rem !important;
+  }
+}

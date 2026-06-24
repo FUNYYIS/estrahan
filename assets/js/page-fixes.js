@@ -1,6 +1,5 @@
 const NEWS_ENDPOINT = '/.netlify/functions/alarabiya-news-v2';
 const IMAGE_PROXY_ENDPOINT = '/.netlify/functions/alarabiya-image';
-const NEWS_PLACEHOLDER_IMAGE = 'assets/images/news-placeholder.svg';
 const HOME_NEWS_LIMIT = 3;
 const FULL_NEWS_LIMIT = 18;
 let orientationHandler = null;
@@ -32,7 +31,8 @@ function safeNewsImageUrl(value = '') {
     const url = new URL(cleaned);
     const blockedGoogleImage = /(^|\.)((news\.)?google\.com|gstatic\.com|googleusercontent\.com)$/i.test(url.hostname);
     const genericAsset = /(?:^|[\/_-])(logo|icon|favicon|sprite|placeholder|google[-_]?news)(?:[\/_-]|\.|$)/i.test(url.pathname);
-    return blockedGoogleImage || genericAsset ? '' : url.href;
+    const unsupported = url.protocol !== 'https:' || url.pathname.toLowerCase().endsWith('.svg');
+    return blockedGoogleImage || genericAsset || unsupported ? '' : url.href;
   } catch {
     return '';
   }
@@ -81,11 +81,9 @@ function bindNewsImageFallbacks(container) {
         return;
       }
 
-      if (imageElement.dataset.placeholderApplied !== 'true') {
-        imageElement.dataset.placeholderApplied = 'true';
-        imageElement.src = NEWS_PLACEHOLDER_IMAGE;
-        imageElement.closest('.compact-news-item')?.classList.add('no-image');
-      }
+      const card = imageElement.closest('.compact-news-item');
+      card?.classList.add('no-image');
+      imageElement.remove();
     });
   });
 }
@@ -106,13 +104,13 @@ function renderNewsItems(container, articles, compact) {
     const url = safeUrl(article.url);
     const image = safeNewsImageUrl(article.image);
     const title = String(article.title || 'خبر رياضي').trim();
-    const imageSource = image
-      ? `${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}`
-      : NEWS_PLACEHOLDER_IMAGE;
+    const imageMarkup = image
+      ? `<img class="compact-news-thumb" src="${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}" data-direct-src="${escapeMarkup(image)}" alt="${escapeMarkup(title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+      : '';
 
     return `
       <a class="compact-news-item${image ? '' : ' no-image'}" href="${escapeMarkup(url || '#')}" target="_blank" rel="noopener noreferrer">
-        <img class="compact-news-thumb" src="${escapeMarkup(imageSource)}" data-direct-src="${escapeMarkup(image)}" alt="${escapeMarkup(title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        ${imageMarkup}
         <span class="compact-news-copy">
           <strong title="${escapeMarkup(title)}">${escapeMarkup(title)}</strong>
           <small>العربية رياضة</small>

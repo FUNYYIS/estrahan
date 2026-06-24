@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" role="img" aria-labelledby="title desc">
+  <title id="title">صورة خبر رياضي</title>
+  <desc id="desc">خلفية رياضية خضراء مع كرة قدم</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123c30"/>
+      <stop offset="1" stop-color="#061a15"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="74%" cy="28%" r="65%">
+      <stop offset="0" stop-color="#9ab46f" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#9ab46f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="320" height="220" rx="28" fill="url(#bg)"/>
+  <rect width="320" height="220" rx="28" fill="url(#glow)"/>
+  <path d="M0 167c55-25 101-18 149 3 45 20 97 26 171-12v62H0z" fill="#8ca45f" opacity=".16"/>
+  <g transform="translate(160 108)">
+    <circle r="67" fill="#f3f1e8"/>
+    <circle r="61" fill="none" stroke="#d3d0c3" stroke-width="4"/>
+    <path d="M0-25 24-8 15 21h-30L-24-8z" fill="#173b31"/>
+    <path d="M0-25 0-57M24-8 54-18M15 21 35 48M-15 21-35 48M-24-8-54-18" fill="none" stroke="#173b31" stroke-width="7" stroke-linecap="round"/>
+    <path d="M0-57 28-51 54-18M54-18 59 11 35 48M35 48 7 59-35 48M-35 48-59 11-54-18M-54-18-28-51 0-57" fill="none" stroke="#173b31" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+</svg>

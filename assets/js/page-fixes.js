@@ -1,4 +1,4 @@
-const NEWS_ENDPOINT = '/api/alarabiya-news';
+const NEWS_ENDPOINT = '/.netlify/functions/alarabiya-news-v2';
 const IMAGE_PROXY_ENDPOINT = '/.netlify/functions/alarabiya-image';
 const NEWS_PLACEHOLDER_IMAGE = 'assets/images/news-placeholder.svg';
 const HOME_NEWS_LIMIT = 3;
@@ -19,6 +19,20 @@ function safeUrl(value = '') {
   try {
     const url = new URL(value, window.location.origin);
     return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function safeNewsImageUrl(value = '') {
+  const cleaned = safeUrl(value);
+  if (!cleaned) return '';
+
+  try {
+    const url = new URL(cleaned);
+    const blockedGoogleImage = /(^|\.)((news\.)?google\.com|gstatic\.com|googleusercontent\.com)$/i.test(url.hostname);
+    const genericAsset = /(?:^|[\/_-])(logo|icon|favicon|sprite|placeholder|google[-_]?news)(?:[\/_-]|\.|$)/i.test(url.pathname);
+    return blockedGoogleImage || genericAsset ? '' : url.href;
   } catch {
     return '';
   }
@@ -50,7 +64,7 @@ function selectVisibleNews(articles, compact) {
   const withImages = [];
   const withoutImages = [];
   list.forEach((article) => {
-    (safeUrl(article?.image) ? withImages : withoutImages).push(article);
+    (safeNewsImageUrl(article?.image) ? withImages : withoutImages).push(article);
   });
 
   return [...withImages, ...withoutImages].slice(0, limit);
@@ -59,7 +73,7 @@ function selectVisibleNews(articles, compact) {
 function bindNewsImageFallbacks(container) {
   container.querySelectorAll('.compact-news-thumb').forEach((imageElement) => {
     imageElement.addEventListener('error', () => {
-      const directImage = imageElement.dataset.directSrc || '';
+      const directImage = safeNewsImageUrl(imageElement.dataset.directSrc || '');
 
       if (directImage && imageElement.dataset.directTried !== 'true') {
         imageElement.dataset.directTried = 'true';
@@ -70,6 +84,7 @@ function bindNewsImageFallbacks(container) {
       if (imageElement.dataset.placeholderApplied !== 'true') {
         imageElement.dataset.placeholderApplied = 'true';
         imageElement.src = NEWS_PLACEHOLDER_IMAGE;
+        imageElement.closest('.compact-news-item')?.classList.add('no-image');
       }
     });
   });
@@ -89,7 +104,7 @@ function renderNewsItems(container, articles, compact) {
 
   container.innerHTML = visible.map((article) => {
     const url = safeUrl(article.url);
-    const image = safeUrl(article.image);
+    const image = safeNewsImageUrl(article.image);
     const title = String(article.title || 'خبر رياضي').trim();
     const imageSource = image
       ? `${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}`

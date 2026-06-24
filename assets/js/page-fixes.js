@@ -1,5 +1,8 @@
 const NEWS_ENDPOINT = '/api/alarabiya-news';
 const IMAGE_PROXY_ENDPOINT = '/.netlify/functions/alarabiya-image';
+const NEWS_PLACEHOLDER_IMAGE = 'assets/images/news-placeholder.svg';
+const HOME_NEWS_LIMIT = 3;
+const FULL_NEWS_LIMIT = 18;
 let orientationHandler = null;
 
 function escapeMarkup(value = '') {
@@ -39,9 +42,41 @@ async function fetchArabiyaNews() {
   return data.articles;
 }
 
+function selectVisibleNews(articles, compact) {
+  const list = Array.isArray(articles) ? articles : [];
+  const limit = compact ? HOME_NEWS_LIMIT : FULL_NEWS_LIMIT;
+  if (!compact) return list.slice(0, limit);
+
+  const withImages = [];
+  const withoutImages = [];
+  list.forEach((article) => {
+    (safeUrl(article?.image) ? withImages : withoutImages).push(article);
+  });
+
+  return [...withImages, ...withoutImages].slice(0, limit);
+}
+
+function bindNewsImageFallbacks(container) {
+  container.querySelectorAll('.compact-news-thumb').forEach((imageElement) => {
+    imageElement.addEventListener('error', () => {
+      const directImage = imageElement.dataset.directSrc || '';
+
+      if (directImage && imageElement.dataset.directTried !== 'true') {
+        imageElement.dataset.directTried = 'true';
+        imageElement.src = directImage;
+        return;
+      }
+
+      if (imageElement.dataset.placeholderApplied !== 'true') {
+        imageElement.dataset.placeholderApplied = 'true';
+        imageElement.src = NEWS_PLACEHOLDER_IMAGE;
+      }
+    });
+  });
+}
+
 function renderNewsItems(container, articles, compact) {
-  const limit = compact ? 8 : 18;
-  const visible = articles.slice(0, limit);
+  const visible = selectVisibleNews(articles, compact);
 
   if (!visible.length) {
     throw new Error('No Al Arabiya football articles');
@@ -56,13 +91,13 @@ function renderNewsItems(container, articles, compact) {
     const url = safeUrl(article.url);
     const image = safeUrl(article.image);
     const title = String(article.title || 'خبر رياضي').trim();
-    const imageMarkup = image
-      ? `<img class="compact-news-thumb" src="${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}" alt="" loading="lazy" decoding="async" onerror="this.remove();this.closest('.compact-news-item')?.classList.add('no-image')">`
-      : '';
+    const imageSource = image
+      ? `${IMAGE_PROXY_ENDPOINT}?url=${encodeURIComponent(image)}`
+      : NEWS_PLACEHOLDER_IMAGE;
 
     return `
       <a class="compact-news-item${image ? '' : ' no-image'}" href="${escapeMarkup(url || '#')}" target="_blank" rel="noopener noreferrer">
-        ${imageMarkup}
+        <img class="compact-news-thumb" src="${escapeMarkup(imageSource)}" data-direct-src="${escapeMarkup(image)}" alt="${escapeMarkup(title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
         <span class="compact-news-copy">
           <strong title="${escapeMarkup(title)}">${escapeMarkup(title)}</strong>
           <small>العربية رياضة</small>
@@ -70,6 +105,8 @@ function renderNewsItems(container, articles, compact) {
       </a>
     `;
   }).join('');
+
+  bindNewsImageFallbacks(container);
 }
 
 function renderNewsError(container, compact) {

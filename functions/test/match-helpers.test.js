@@ -3,12 +3,14 @@ const assert = require('node:assert/strict');
 const {
   buildUpcomingMatchesFromSources,
   chunk,
+  getLocalDateKey,
   getMatchKey,
   getMatchKickoffDate,
   getMatchNotificationTeams,
   isNotifiableMatch,
   parseWorldCupLocalDate,
   renderMatchNotification,
+  toDocId,
   translateTeamName
 } = require('../match-helpers');
 
@@ -79,6 +81,23 @@ test('parses World Cup local date strings', () => {
     time: '18:00:00'
   });
   assert.deepEqual(parseWorldCupLocalDate('bad'), { date: '', time: '' });
+});
+
+test('builds Riyadh local date keys across UTC date boundaries', () => {
+  assert.equal(getLocalDateKey(new Date('2026-06-23T20:59:59.000Z')), '2026-06-23');
+  assert.equal(getLocalDateKey(new Date('2026-06-23T21:00:00.000Z')), '2026-06-24');
+});
+
+test('builds stable Firestore-safe document ids from text input', () => {
+  assert.equal(toDocId('Al Hilal vs Al Nassr'), 'QWwgSGlsYWwgdnMgQWwgTmFzc3I');
+  assert.equal(toDocId('الهلال ضد النصر'), '2KfZhNmH2YTYp9mEINi22K8g2KfZhNmG2LXYsQ');
+  assert.equal(toDocId(' match | 2026/06/24 #1 '), 'IG1hdGNoIHwgMjAyNi8wNi8yNCAjMSA');
+  assert.equal(toDocId(''), '');
+});
+
+test('preserves current document id behavior for nullish values', () => {
+  assert.equal(toDocId(null), 'bnVsbA');
+  assert.equal(toDocId(undefined), 'dW5kZWZpbmVk');
 });
 
 test('builds upcoming matches while tolerating invalid source payloads', () => {

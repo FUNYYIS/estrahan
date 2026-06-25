@@ -1,0 +1,47 @@
+name: Validate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - fix/production-readiness-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Validate PR patch whitespace
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
+          git diff --check "origin/${{ github.event.pull_request.base.ref }}...HEAD"
+
+      - name: Validate branch patch whitespace
+        if: github.event_name == 'push'
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git diff --check origin/main...HEAD
+
+      - name: Run validation
+        run: npm run validate

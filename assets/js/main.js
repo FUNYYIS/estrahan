@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '254';
+const APP_ASSET_VERSION = '270';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -374,11 +374,12 @@ const recaptchaManager = {
 
 // --- وظائف مساعدة ---
 function showAlert(message) {
+    if (!customAlert || !alertMessage) return;
     alertMessage.textContent = message;
     customAlert.style.display = 'flex';
 }
-alertCloseBtn.addEventListener('click', () => {
-    customAlert.style.display = 'none';
+alertCloseBtn?.addEventListener('click', () => {
+    if (customAlert) customAlert.style.display = 'none';
 });
 
 function copyToClipboard(text) {
@@ -1094,15 +1095,17 @@ async function setupAdminNotifications() {
     await loadAppSettings();
     loadAdminStats();
 
-    const tabList = document.querySelector('.admin-notifications-page .admin-tabs');
-    const tabButtons = document.querySelectorAll('[data-admin-tab-target]');
-    const tabSections = document.querySelectorAll('[data-admin-tab]');
+    const adminPage = document.querySelector('.admin-notifications-page');
+    const tabList = adminPage?.querySelector('.admin-tabs');
+    const tabButtons = adminPage ? adminPage.querySelectorAll('[data-admin-tab-target]') : [];
+    const tabSections = adminPage ? adminPage.querySelectorAll('[data-admin-tab]') : [];
 
     const activateAdminTab = (targetTab = 'general') => {
         tabButtons.forEach((button) => {
             const isActive = button.dataset.adminTabTarget === targetTab;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-selected', String(isActive));
+            button.setAttribute('tabindex', isActive ? '0' : '-1');
             if (isActive) {
                 button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
             }
@@ -1110,8 +1113,11 @@ async function setupAdminNotifications() {
 
         tabSections.forEach((section) => {
             const isActive = section.dataset.adminTab === targetTab;
-            section.style.display = isActive ? '' : 'none';
-            section.setAttribute('aria-hidden', String(!isActive));
+            const isDeferredReport = section.id === 'admin-notification-report'
+                && section.dataset.reportReady !== 'true';
+            const shouldShow = isActive && !isDeferredReport;
+            section.hidden = !shouldShow;
+            section.setAttribute('aria-hidden', String(!shouldShow));
         });
     };
 
@@ -1121,6 +1127,28 @@ async function setupAdminNotifications() {
             if (!button || !tabList.contains(button)) return;
 
             activateAdminTab(button.dataset.adminTabTarget || 'general');
+            button.focus();
+        });
+        tabList.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+
+            const buttons = Array.from(tabButtons);
+            const currentIndex = buttons.indexOf(document.activeElement);
+            if (currentIndex === -1) return;
+
+            event.preventDefault();
+            const lastIndex = buttons.length - 1;
+            // RTL visual order places the first tab on the right, so ArrowRight moves to the previous DOM tab.
+            const nextIndex = event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                    ? lastIndex
+                    : event.key === 'ArrowLeft'
+                        ? (currentIndex + 1) % buttons.length
+                        : (currentIndex - 1 + buttons.length) % buttons.length;
+            const nextButton = buttons[nextIndex];
+            nextButton.focus();
+            activateAdminTab(nextButton.dataset.adminTabTarget || 'general');
         });
         tabList.dataset.adminTabsBound = 'true';
     }
@@ -1553,7 +1581,11 @@ async function setupAdminNotifications() {
     };
 
     const renderReport = (result = {}) => {
-        if (report) report.hidden = false;
+        if (report) {
+            report.dataset.reportReady = 'true';
+            report.hidden = false;
+            report.setAttribute('aria-hidden', 'false');
+        }
         if (targetCount) targetCount.textContent = String(result.targetedTokens || 0);
         if (successCount) successCount.textContent = String(result.successCount || 0);
         if (failureCount) failureCount.textContent = String(result.failureCount || 0);
@@ -2750,6 +2782,11 @@ async function loadHomePrayerAndDate() {
         console.error("Could not fetch Hijri date:", error);
     }
 
+    if (!navigator.geolocation) {
+        prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">جهازك ما يدعم تحديد الموقع.</p>`;
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             try {
@@ -2919,6 +2956,11 @@ async function loadPrayerTimes() {
     if (!container) return;
 
     container.innerHTML = `<p class="text-center w-full">اسمح بالموقع عشان نجيب المواقيت...</p>`;
+
+    if (!navigator.geolocation) {
+        container.innerHTML = `<p class="text-yellow-400 text-center w-full">جهازك ما يدعم تحديد الموقع.</p>`;
+        return;
+    }
 
     navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -3492,7 +3534,7 @@ function initApp() {
                     initFirebaseMessaging()
                         .then(() => syncFcmTokenWithPreferences())
                         .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
-                    appLogo.style.display = 'block';
+                    if (appLogo) appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
                 } else {
@@ -3500,7 +3542,7 @@ function initApp() {
                     currentUser = null;
                     document.body.classList.remove('is-authenticated');
                     syncShellUserState();
-                    appLogo.style.display = 'block';
+                    if (appLogo) appLogo.style.display = 'block';
                     await navigateToHash('#register');
                 }
             } else {
@@ -3509,7 +3551,7 @@ function initApp() {
                 document.body.classList.remove('is-authenticated');
                 sidebar?.classList.remove('open');
                 syncShellUserState();
-                appLogo.style.display = 'block';
+                if (appLogo) appLogo.style.display = 'block';
                 await navigateToHash(currentPublicRoute());
             }
         } catch (error) {
@@ -3518,7 +3560,7 @@ function initApp() {
             document.body.classList.remove('is-authenticated');
             sidebar?.classList.remove('open');
             syncShellUserState();
-            appLogo.style.display = 'block';
+            if (appLogo) appLogo.style.display = 'block';
             await navigateToHash(currentPublicRoute());
         }
     });

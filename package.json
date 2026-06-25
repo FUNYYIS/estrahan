@@ -1,0 +1,9 @@
+{
+  "name": "estraha-pwa",
+  "private": true,
+  "scripts": {
+    "check": "node scripts/validate-js-syntax.js && npm --prefix functions run check",
+    "test": "npm --prefix functions test",
+    "validate": "npm run check && npm test && node scripts/validate-json.js && node scripts/validate-pwa-version.js && node scripts/validate-firebase-config.js"
+  }
+}

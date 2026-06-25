@@ -48,6 +48,7 @@ const INVALID_FCM_TOKEN_CODES = new Set([
   'messaging/invalid-registration-token'
 ]);
 const callableRateLimiter = createInMemoryRateLimiter({ maxEntries: 500 });
+const prayerScheduleMemoryCache = new Map();
 const RATE_LIMITS = {
   adminTestNotification: { limit: 12, windowMs: 60 * 1000 },
   adminBroadcastNotification: { limit: 5, windowMs: 60 * 1000 },
@@ -171,9 +172,7 @@ exports.checkPrayerNotifications = onSchedule(
 
       for (const group of groups) {
         try {
-          const schedule = group.location.mode === 'coordinates'
-            ? await fetchPrayerScheduleByCoordinates(group.location.latitude, group.location.longitude)
-            : await fetchPrayerScheduleByCity(group.location.city, group.location.country);
+          const schedule = await getCachedPrayerSchedule(group);
 
           const timeZone = schedule.timeZone || group.location.timeZone || 'Asia/Riyadh';
           const dateKey = getDateKeyForTimeZone(new Date(), timeZone);
@@ -1061,15 +1060,64 @@ function getRiyadhParts(date = new Date()) {
   };
 }
 
+async function getCachedPrayerSchedule(group) {
+  const preferredTimeZone = group.location.timeZone || 'Asia/Riyadh';
+  const dateKey = getDateKeyForTimeZone(new Date(), preferredTimeZone);
+  const cacheKey = dateKey + '|' + group.key;
+
+  if (prayerScheduleMemoryCache.has(cacheKey)) {
+    return prayerScheduleMemoryCache.get(cacheKey);
+  }
+
+  const cacheRef = db.collection('prayerTimingCache').doc(toDocId(cacheKey));
+  const cachedSnapshot = await cacheRef.get();
+  const cachedData = cachedSnapshot.data();
+
+  if (cachedSnapshot.exists && cachedData && cachedData.dateKey === dateKey && cachedData.timings) {
+    const cachedSchedule = {
+      timings: cachedData.timings,
+      timeZone: cachedData.timeZone || preferredTimeZone
+    };
+    prayerScheduleMemoryCache.set(cacheKey, cachedSchedule);
+    return cachedSchedule;
+  }
+
+  const schedule = group.location.mode === 'coordinates'
+    ? await fetchPrayerScheduleByCoordinates(group.location.latitude, group.location.longitude)
+    : await fetchPrayerScheduleByCity(group.location.city, group.location.country);
+
+  prayerScheduleMemoryCache.clear();
+  prayerScheduleMemoryCache.set(cacheKey, schedule);
+  await cacheRef.set({
+    dateKey,
+    locationKey: group.key,
+    timings: schedule.timings,
+    timeZone: schedule.timeZone || preferredTimeZone,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: false });
+
+  return schedule;
+}
+
 async function claimNotificationState(stateRef, payload = {}) {
+  const staleBefore = Date.now() - 5 * 60 * 1000;
+
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(stateRef);
-    if (snapshot.exists) return false;
-    transaction.create(stateRef, {
+    if (snapshot.exists) {
+      const existing = snapshot.data() || {};
+      const claimedAt = existing.claimedAt && typeof existing.claimedAt.toMillis === 'function'
+        ? existing.claimedAt.toMillis()
+        : 0;
+      const isStaleSendingClaim = existing.status === 'sending' && claimedAt > 0 && claimedAt < staleBefore;
+      if (!isStaleSendingClaim) return false;
+    }
+
+    transaction.set(stateRef, {
       ...payload,
       status: 'sending',
       claimedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    }, { merge: false });
     return true;
   });
 }

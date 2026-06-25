@@ -1,0 +1,289 @@
+.payment-screen {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.payment-secure {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  color: var(--muted);
+}
+
+.payment-secure div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.payment-secure strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.payment-secure span {
+  color: var(--date);
+  font-weight: 800;
+}
+
+.payment-secure svg {
+  width: 34px;
+  height: 34px;
+  color: #8ea1b2;
+}
+
+.payment-plan-card,
+.payment-options,
+.payment-total-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(13, 31, 42, 0.92), rgba(5, 14, 22, 0.9));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.payment-plan-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(150px, 220px);
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.35rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.payment-plan-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 88% 18%, rgba(46, 230, 154, 0.13), transparent 24rem);
+  pointer-events: none;
+}
+
+.plan-wallet {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffd15a;
+  background: radial-gradient(circle, rgba(46, 230, 154, 0.22), rgba(3, 55, 41, 0.38));
+  box-shadow: inset 0 0 0 1px rgba(46, 230, 154, 0.24), 0 20px 45px rgba(0, 0, 0, 0.24);
+}
+
+.plan-wallet svg {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 8px 12px rgba(255, 209, 90, 0.24));
+}
+
+.plan-copy,
+.plan-price {
+  position: relative;
+}
+
+.plan-copy h2,
+.payment-options h2 {
+  margin-bottom: 0.45rem;
+  font-size: 1.55rem;
+}
+
+.plan-copy p {
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.plan-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.plan-perks span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #cad4df;
+  font-size: 0.9rem;
+}
+
+.plan-perks svg {
+  width: 18px;
+  height: 18px;
+  color: var(--date);
+}
+
+.plan-price {
+  display: grid;
+  place-items: center;
+  gap: 0.25rem;
+  min-height: 118px;
+  padding: 1rem;
+  border: 1px solid rgba(122, 151, 173, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+
+.plan-price strong {
+  color: var(--date);
+  font-size: 2.1rem;
+}
+
+.plan-price span {
+  color: #b8c4cf;
+}
+
+.payment-options {
+  padding: 1.25rem;
+}
+
+.payment-methods {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.9rem;
+}
+
+.payment-method {
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(122, 151, 173, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(15, 30, 43, 0.78), rgba(8, 18, 29, 0.78));
+}
+
+.payment-method.selected {
+  border-color: rgba(46, 230, 154, 0.9);
+  box-shadow: 0 0 0 1px rgba(46, 230, 154, 0.2), 0 0 35px rgba(46, 230, 154, 0.08);
+}
+
+.payment-method-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.payment-method-label > span:last-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.payment-method-label strong {
+  font-size: 1.1rem;
+}
+
+.payment-method-label small {
+  color: var(--muted);
+}
+
+.payment-brand {
+  display: inline-grid;
+  place-items: center;
+  width: 136px;
+  height: 66px;
+  flex: 0 0 136px;
+  border-radius: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.apple-brand {
+  color: #050505;
+  background: #fff;
+  font-size: 1.35rem;
+}
+
+.stc-brand {
+  color: #fff;
+  background: linear-gradient(135deg, #172235, #243348);
+  font-size: 1.6rem;
+}
+
+.stc-brand b {
+  color: var(--date);
+}
+
+.card-brand {
+  color: var(--date);
+  background: linear-gradient(135deg, #142436, #1e3146);
+}
+
+.card-brand svg {
+  width: 58px;
+  height: 58px;
+}
+
+.payment-radio {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 2px solid rgba(142, 161, 178, 0.48);
+  border-radius: 50%;
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.payment-method.selected .payment-radio {
+  border-color: var(--date);
+  background: rgba(46, 230, 154, 0.12);
+}
+
+.payment-radio span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--date);
+  box-shadow: 0 0 0 5px rgba(46, 230, 154, 0.18);
+}
+
+.payment-total-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+}
+
+.payment-total-card span,
+.payment-total-card small {
+  color: var(--muted);
+}
+
+.payment-total-card strong {
+  display: block;
+  margin: 0.25rem 0;
+  color: var(--date);
+  font-size: 2.3rem;
+}
+
+.pay-now-button {
+  min-height: 62px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  color: #f5fff9;
+  background: linear-gradient(135deg, #34e7a0, #00a96f);
+  font-size: 1.35rem;
+  font-weight: 900;
+  cursor: not-allowed;
+  opacity: 0.88;
+}
+
+.pay-now-button svg {
+  width: 22px;
+  height: 22px;
+}

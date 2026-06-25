@@ -1,0 +1,160 @@
+.chat-box,
+.list-item-card,
+.content-body,
+#chat-box {
+  border-color: #E4E1D8;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 50, 42, 0.08);
+}
+
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .stat,
+body[data-theme="dark"] .table-wrap,
+body[data-theme="dark"] .chat-box,
+body[data-theme="dark"] .list-item-card,
+body[data-theme="dark"] #chat-box,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .alert-content {
+  background: rgba(255, 253, 248, 0.9);
+}
+
+.payment-screen {
+  gap: 18px;
+}
+
+.payment-secure {
+  color: #5f6a63;
+}
+
+.payment-secure strong {
+  color: #164535;
+}
+
+.payment-secure span,
+.payment-secure svg {
+  color: #2E7A5E;
+}
+
+.payment-plan-card,
+.payment-options,
+.payment-total-card {
+  border: 1px solid #E4E1D8;
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 50, 42, 0.08);
+  backdrop-filter: none;
+}
+
+.payment-plan-card {
+  background: linear-gradient(160deg, #1F5A46, #164535);
+  color: #fffaf1;
+}
+
+.payment-plan-card::before {
+  background: radial-gradient(circle at 18% 20%, rgba(245, 243, 238, 0.14), transparent 26rem);
+}
+
+.plan-wallet {
+  color: #f2d77d;
+  background: rgba(245, 243, 238, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(245, 243, 238, 0.22);
+}
+
+.plan-copy h2,
+.payment-options h2 {
+  color: inherit;
+}
+
+.plan-copy p,
+.plan-perks span,
+.plan-price span {
+  color: rgba(255, 250, 241, 0.74);
+}
+
+.plan-perks svg,
+.plan-price strong {
+  color: #d8d3b4;
+}
+
+.plan-price {
+  border-color: rgba(245, 243, 238, 0.18);
+  background: rgba(245, 243, 238, 0.08);
+}
+
+.payment-options h2 {
+  color: #164535;
+}
+
+.payment-method {
+  min-height: 104px;
+  border: 1px solid #E4E1D8;
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: 0 8px 20px rgba(31, 50, 42, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.payment-method:hover {
+  border-color: rgba(31, 90, 70, 0.34);
+  box-shadow: 0 12px 24px rgba(31, 50, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.payment-method.selected {
+  border-color: #2E7A5E;
+  box-shadow: 0 0 0 1px rgba(46, 122, 94, 0.16), 0 14px 28px rgba(31, 90, 70, 0.12);
+}
+
+.payment-method-label strong {
+  color: #1C2B24;
+}
+
+.payment-method-label small,
+.payment-total-card span,
+.payment-total-card small {
+  color: #6f746d;
+}
+
+.apple-brand {
+  color: #050505;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #E4E1D8;
+}
+
+.stc-brand {
+  color: #fff;
+  background: linear-gradient(135deg, #1F5A46, #164535);
+}
+
+.stc-brand b {
+  color: #d8d3b4;
+}
+
+.card-brand {
+  color: #2E7A5E;
+  background: #EEEAE1;
+}
+
+.payment-radio {
+  border-color: rgba(31, 90, 70, 0.34);
+}
+
+.payment-method.selected .payment-radio {
+  border-color: #2E7A5E;
+  background: rgba(46, 122, 94, 0.12);
+}
+
+.payment-radio span {
+  background: #2E7A5E;
+  box-shadow: 0 0 0 5px rgba(46, 122, 94, 0.16);
+}
+
+.payment-total-card strong {
+  color: #1F5A46;
+}
+
+.pay-now-button {
+  color: #fffaf1;
+  background: linear-gradient(135deg, #2E7A5E, #1F5A46);
+}

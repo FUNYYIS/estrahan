@@ -1,0 +1,261 @@
+
+.app-shell {
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 8px 8px 0;
+  height: calc(100vh - 16px);
+  padding: 28px 18px;
+  border-radius: 28px 0 0 28px;
+  background: linear-gradient(180deg, #1F5A46, #164535);
+  box-shadow: 0 20px 42px rgba(31, 90, 70, 0.22);
+}
+
+.brand {
+  min-height: 170px;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0 0 1.25rem;
+  color: #fffaf1;
+}
+
+.brand img {
+  width: 100px;
+  height: 100px;
+}
+
+.brand strong {
+  font-size: 1.55rem;
+}
+
+.brand small {
+  color: rgba(255, 250, 241, 0.82);
+  font-size: 0.95rem;
+}
+
+.nav {
+  gap: 0.72rem;
+  margin-top: 0.8rem;
+}
+
+.nav a {
+  min-height: 58px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  color: rgba(255, 250, 241, 0.9);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.nav a svg {
+  margin-inline-start: auto;
+  color: #d8d3b4;
+}
+
+.nav a.active {
+  color: #164535;
+  background: #F5F3EE;
+  box-shadow: none;
+}
+
+.sidebar-logout {
+  width: 100%;
+  min-height: 58px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 0 1rem;
+  border: 1px solid rgba(245, 243, 238, 0.18);
+  border-radius: 12px;
+  color: #fffaf1;
+  background: rgba(245, 243, 238, 0.08);
+  font-weight: 800;
+}
+
+.sidebar-logout svg {
+  color: #d8d3b4;
+}
+
+.main {
+  padding: 24px 32px 22px 34px;
+}
+
+.topbar {
+  direction: ltr;
+  position: relative;
+  min-height: 76px;
+  padding: 0 0 10px;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.top-profile {
+  direction: rtl;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.notify-bell {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  color: #164535;
+  background: transparent;
+}
+
+.notify-bell svg {
+  width: 30px;
+  height: 30px;
+}
+
+.notify-bell span {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #1F5A46;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.profile-avatar {
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #eee6d6;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-copy {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.profile-copy strong {
+  color: #1C2B24;
+  font-size: 1.15rem;
+}
+
+.profile-copy small {
+  color: #4f5c55;
+}
+
+.top-actions {
+  display: none;
+}
+
+.view {
+  padding-top: 0;
+}
+
+.auth-layout {
+  direction: ltr;
+  min-height: min(850px, calc(100vh - 52px));
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 430px);
+  align-items: stretch;
+  gap: 18px;
+}
+
+.auth-brand {
+  direction: rtl;
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  min-height: 640px;
+  overflow: hidden;
+  padding: 42px 32px 0;
+  border: 1px solid #E4E1D8;
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.74);
+  box-shadow: 0 16px 34px rgba(31, 50, 42, 0.08);
+  text-align: center;
+}
+
+.auth-logo {
+  width: 94px;
+  height: 94px;
+  margin-bottom: 20px;
+}
+
+.auth-form-logo {
+  width: 86px;
+  height: 86px;
+  display: block;
+  margin: 0 auto 0.8rem;
+}
+
+.auth-brand span {
+  color: #164535;
+  font-weight: 800;
+}
+
+.auth-brand h2 {
+  margin: 0.12rem 0 0.3rem;
+  color: #1F5A46;
+  font-size: clamp(3.4rem, 7vw, 5.3rem);
+  line-height: 0.98;
+}
+
+.auth-brand p {
+  max-width: 560px;
+  color: #164535;
+  font-size: 1.16rem;
+  font-weight: 800;
+}
+
+.auth-hero-image {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 360px;
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+}
+
+.auth-layout .content-body {
+  direction: rtl;
+  align-self: center;
+  padding: 1.4rem;
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.94);
+}
+
+.auth-layout .content-body h2 {
+  color: #164535;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+.auth-layout .btn {
+  width: 100%;
+}
+
+.auth-layout .input-group input {
+  min-height: 52px;
+  background: #fffdf8;
+}

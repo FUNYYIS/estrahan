@@ -11,6 +11,7 @@ function read(file) {
 }
 
 const mainJs = read('assets/js/main.js');
+const mainCss = read('assets/css/main.css');
 const indexHtml = read('index.html');
 const serviceWorker = read('service-worker.js');
 
@@ -43,6 +44,15 @@ if (!appShellMatch) {
 
 const appShellUrls = [...appShellMatch[1].matchAll(/['"]([^'"]+)['"]/g)]
   .map((match) => match[1]);
+
+const cssImports = [...mainCss.matchAll(/@import\s+url\(["']?([^"')]+)["']?\)/g)]
+  .map((match) => path.posix.join('/assets/css', match[1].replace(/^\.\//, '')));
+const missingCssImportsFromShell = cssImports.filter((url) => !appShellUrls.includes(url));
+
+if (missingCssImportsFromShell.length) {
+  fail(`service-worker.js APP_SHELL_URLS is missing CSS imports from assets/css/main.css: ${missingCssImportsFromShell.join(', ')}`);
+}
+
 const missing = appShellUrls
   .map((url) => url === '/' ? '/index.html' : url)
   .filter((url) => {
@@ -54,4 +64,4 @@ if (missing.length) {
   fail(`service-worker.js references missing app-shell files: ${missing.join(', ')}`);
 }
 
-console.log(`PWA version validation ok (v${assetVersion}, ${appShellUrls.length} app-shell URLs).`);
+console.log(`PWA version validation ok (v${assetVersion}, ${appShellUrls.length} app-shell URLs, ${cssImports.length} CSS imports).`);

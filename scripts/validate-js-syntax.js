@@ -1,8 +1,16 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 
+const mainJsParts = fs.existsSync('assets/js/main')
+  ? fs.readdirSync('assets/js/main')
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => `assets/js/main/${file}`)
+    .sort()
+  : [];
+
 const files = [
   'assets/js/main.js',
+  ...mainJsParts,
   'assets/js/page-fixes.js',
   'assets/js/runtime-ux.js',
   'service-worker.js',
@@ -19,7 +27,8 @@ const files = [
   'scripts/validate-firebase-config.js',
   'scripts/validate-js-syntax.js',
   'scripts/validate-json.js',
-  'scripts/validate-pwa-version.js'
+  'scripts/validate-pwa-version.js',
+  'scripts/build-main-js.js'
 ].filter((file) => fs.existsSync(file));
 
 let failed = false;

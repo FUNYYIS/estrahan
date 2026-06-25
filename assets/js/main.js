@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '272';
+const APP_ASSET_VERSION = '274';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -1143,8 +1143,6 @@ function updateNotificationPermissionStatus(extraMessage = '') {
     }
 }
 
-
-
 async function loadAdminStats() {
     const membersCount = document.getElementById('admin-members-count');
     const paidCount = document.getElementById('admin-paid-count');
@@ -2144,7 +2142,6 @@ async function handleLogout() {
 
 // --- Firestore Data Loading & Realtime Updates ---
 
-
 function applyHomeAppSettings() {
     const title = document.getElementById('home-welcome-title');
     const heroDescription = document.querySelector('.home-reference-hero p');
@@ -2234,8 +2231,6 @@ async function loadHomePageData() {
         console.error('Error loading home page data:', error);
     }
 }
-
-
 
 function setupManualMemberForm() {
     const form = document.getElementById('manual-member-form');
@@ -2826,6 +2821,7 @@ function loadProfileData() {
 }
 
 // --- Service Functions ---
+
 async function getPrayerData(latitude, longitude) {
     const now = new Date();
     const date = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
@@ -3636,6 +3632,7 @@ function dedupeNewsArticles(articles) {
 
 
 // --- App Initialization ---
+
 function initApp() {
     console.log('Initializing app...');
     setOnlineState();

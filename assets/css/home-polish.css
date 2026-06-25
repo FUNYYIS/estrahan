@@ -1,0 +1,101 @@
+/* Final home-page polish for the chat preview and image-led football news. */
+
+#home-chat-preview.home-reference-card,
+.estraha-reference-home #home-chat-preview {
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 20px !important;
+}
+
+.estraha-reference-home #home-chat-preview > span {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 78px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 14px 18px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(215, 187, 118, 0.18) !important;
+  border-radius: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+  text-align: start !important;
+  overflow: visible !important;
+}
+
+.estraha-reference-home #home-chat-preview > span:last-child {
+  border-bottom: 0 !important;
+}
+
+.estraha-reference-home #home-chat-preview > span:not(:has(b)) {
+  min-height: 92px !important;
+  place-items: center !important;
+  color: var(--muted) !important;
+}
+
+.estraha-reference-home #home-chat-preview > span > b {
+  min-width: 0 !important;
+  display: -webkit-box !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: var(--ink, #fff) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  line-height: 1.55 !important;
+  white-space: normal !important;
+  text-overflow: ellipsis !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+body[data-theme="dark"] .estraha-reference-home #home-chat-preview > span > b,
+body.theme-custom-bg .estraha-reference-home #home-chat-preview > span > b {
+  color: #fff !important;
+}
+
+/* Ensure the replacement news cards always keep a visible thumbnail column. */
+.compact-news-item.v3-news-item {
+  width: 100% !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+}
+
+.compact-news-item.v3-news-item .compact-news-thumb {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 104px !important;
+  width: 104px !important;
+  height: 72px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.compact-news-item.v3-news-item .compact-news-thumb.is-placeholder {
+  object-fit: contain !important;
+  padding: 10px !important;
+}
+
+@media (max-width: 600px) {
+  .estraha-reference-home #home-chat-preview > span {
+    min-height: 72px !important;
+    padding: 12px 14px !important;
+  }
+
+  .compact-news-item.v3-news-item .compact-news-thumb {
+    flex-basis: 92px !important;
+    width: 92px !important;
+    height: 66px !important;
+  }
+}

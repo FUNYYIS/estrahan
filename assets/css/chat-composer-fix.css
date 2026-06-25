@@ -1,0 +1,53 @@
+/* Keep the chat composer visible above the real bottom-nav height on every screen. */
+body.is-authenticated:has(.compact-chat-page) .main,
+body.is-authenticated:has(.compact-chat-page) #page-content {
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.compact-chat-page {
+  width: 100% !important;
+  height: var(--estraha-chat-available-height, calc(100dvh - 250px)) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.compact-chat-page #chat-box.messages {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+.compact-chat-page #chat-form,
+.clean-chat-page #chat-form {
+  position: relative !important;
+  inset: auto !important;
+  bottom: auto !important;
+  z-index: 2 !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  margin: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.compact-chat-page #chat-input {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 600px) {
+  .compact-chat-page {
+    height: var(--estraha-chat-available-height, calc(100dvh - 210px)) !important;
+  }
+}

@@ -1,0 +1,192 @@
+/* Final layout and light-theme corrections loaded after all legacy styles. */
+
+/* Keep only one bottom safe area. The fixed nav already owns its own height. */
+body.is-authenticated .main {
+  padding-bottom: 0 !important;
+}
+
+body.is-authenticated #page-content {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+}
+
+body.is-authenticated #page-content > :last-child,
+body.is-authenticated #page-content > :last-child > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Chat: visible title, full usable height, and composer directly above the nav. */
+body.is-authenticated:has(.compact-chat-page) .main,
+body.is-authenticated:has(.compact-chat-page) #page-content {
+  padding-bottom: 0 !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) #page-content {
+  padding-top: 0 !important;
+  overflow: hidden !important;
+}
+
+.compact-chat-page {
+  width: 100% !important;
+  height: calc(100dvh - 164px - env(safe-area-inset-bottom)) !important;
+  min-height: 0 !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.chat-page-header {
+  min-height: 54px !important;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 18px !important;
+}
+
+.chat-page-header > div {
+  min-width: 0;
+}
+
+.chat-page-header h2 {
+  margin: 0 !important;
+}
+
+.compact-chat-page #chat-box.messages {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+
+.compact-chat-page #chat-form {
+  position: static !important;
+  inset: auto !important;
+  margin: 0 !important;
+}
+
+/* A real light mode: remove dark-only backgrounds and restore readable surfaces. */
+body:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #f5f3ee;
+  --surface: #fffdf8;
+  --surface-strong: #eeeae1;
+  --ink: #1c2b24;
+  --muted: #6f746d;
+  --line: #e4e1d8;
+  --theme-bg-color: var(--theme-background, #f6f3ea);
+  color: var(--ink) !important;
+  background-color: var(--theme-bg-color) !important;
+}
+
+body:not([data-theme="dark"])::before {
+  background-image: none !important;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(46, 122, 94, 0.11), transparent 26rem),
+    linear-gradient(145deg, rgba(250, 248, 242, 0.98), rgba(239, 235, 225, 0.98)) !important;
+  opacity: 1 !important;
+}
+
+body:not([data-theme="dark"]).theme-custom-bg::before {
+  background-image: var(--theme-bg-image) !important;
+  background-position: center !important;
+  background-size: cover !important;
+}
+
+body:not([data-theme="dark"]) .topbar,
+body:not([data-theme="dark"]) #bottom-nav,
+body:not([data-theme="dark"]) #bottom-nav.nav,
+body:not([data-theme="dark"]) .panel,
+body:not([data-theme="dark"]) .app-page-header,
+body:not([data-theme="dark"]) .home-reference-card,
+body:not([data-theme="dark"]) .payment-summary-card,
+body:not([data-theme="dark"]) .list-item-card,
+body:not([data-theme="dark"]) .service-card,
+body:not([data-theme="dark"]) .stat-card,
+body:not([data-theme="dark"]) .match-card,
+body:not([data-theme="dark"]) .prayer-card,
+body:not([data-theme="dark"]) .qibla-card,
+body:not([data-theme="dark"]) .admin-notifications-page .admin-tabs,
+body:not([data-theme="dark"]) .chat-title-row,
+body:not([data-theme="dark"]) .clean-chat-page .chat-search,
+body:not([data-theme="dark"]) .clean-chat-page #chat-form,
+body:not([data-theme="dark"]) .compact-chat-page #chat-box.messages,
+body:not([data-theme="dark"]) .compact-news-item,
+body:not([data-theme="dark"]) .news-load-error {
+  color: var(--ink) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+  background: rgba(255, 253, 248, 0.94) !important;
+  box-shadow: 0 12px 30px rgba(31, 50, 42, 0.08) !important;
+}
+
+body:not([data-theme="dark"]) .topbar {
+  background: rgba(245, 243, 238, 0.88) !important;
+}
+
+body:not([data-theme="dark"]) #bottom-nav,
+body:not([data-theme="dark"]) #bottom-nav.nav {
+  background: rgba(255, 253, 248, 0.97) !important;
+}
+
+body:not([data-theme="dark"]) #bottom-nav .nav-link {
+  color: #59665f !important;
+}
+
+body:not([data-theme="dark"]) #bottom-nav .nav-link.active {
+  color: #164535 !important;
+  background: rgba(216, 222, 195, 0.9) !important;
+}
+
+body:not([data-theme="dark"]) .chat-title-row h2,
+body:not([data-theme="dark"]) .compact-news-item strong,
+body:not([data-theme="dark"]) .news-load-error,
+body:not([data-theme="dark"]) .app-page-header h2,
+body:not([data-theme="dark"]) .panel h2,
+body:not([data-theme="dark"]) .panel h3,
+body:not([data-theme="dark"]) .list-item-card {
+  color: var(--ink) !important;
+}
+
+body:not([data-theme="dark"]) .compact-news-item small,
+body:not([data-theme="dark"]) .app-page-header span,
+body:not([data-theme="dark"]) .panel small,
+body:not([data-theme="dark"]) .muted {
+  color: var(--muted) !important;
+}
+
+body:not([data-theme="dark"]).is-authenticated input:not([type="checkbox"]):not([type="radio"]),
+body:not([data-theme="dark"]).is-authenticated textarea,
+body:not([data-theme="dark"]).is-authenticated select {
+  color: var(--ink) !important;
+  border-color: rgba(31, 90, 70, 0.16) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+body:not([data-theme="dark"]) .clean-chat-page #chat-input,
+body:not([data-theme="dark"]) .clean-chat-page .chat-search input {
+  color: var(--ink) !important;
+  background: transparent !important;
+}
+
+body:not([data-theme="dark"]) .clean-chat-page #chat-input::placeholder,
+body:not([data-theme="dark"]) .clean-chat-page .chat-search input::placeholder,
+body:not([data-theme="dark"]).is-authenticated input::placeholder,
+body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
+  color: rgba(28, 43, 36, 0.52) !important;
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated #page-content {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.is-authenticated:has(.compact-chat-page) #page-content {
+    padding-bottom: 0 !important;
+  }
+
+  .compact-chat-page {
+    height: calc(100dvh - 154px - env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-page-header {
+    min-height: 50px !important;
+    padding: 7px 10px !important;
+  }
+}

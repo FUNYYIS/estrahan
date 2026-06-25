@@ -9,6 +9,7 @@ const APP_SHELL_URLS = [
   '/assets/css/page-fixes.css',
   '/assets/css/home-layout-fix.css',
   '/assets/css/news-home-fix.css',
+  '/assets/css/layout-theme-fix.css',
   '/assets/css/runtime-ux.css',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',

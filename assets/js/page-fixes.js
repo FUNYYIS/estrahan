@@ -1,3 +1,5 @@
+import './runtime-ux.js';
+
 const NEWS_ENDPOINT = '/.netlify/functions/alarabiya-news-v2';
 const HOME_NEWS_LIMIT = 3;
 const FULL_NEWS_LIMIT = 18;

@@ -376,8 +376,8 @@
 
 <section class="panel" data-admin-tab="notifications" role="tabpanel" aria-labelledby="admin-tab-notifications">
     <div class="panel-head">
-        <h2><i data-lucide="landmark"></i> إعدادات تنبيهات الصلاة</h2>
-        <p class="text-sm">تحديد المدينة ووقت التذكير قبل الصلاة</p>
+        <h2><i data-lucide="landmark"></i> إعدادات تنبيهات الصلاة والمباريات</h2>
+        <p class="text-sm">الصلاة عند وقت الأذان، والمباراة قبلها بعدد الدقائق المحدد</p>
     </div>
 
     <form id="admin-prayer-notification-settings-form" class="section-stack">
@@ -400,8 +400,14 @@
         </div>
 
         <div class="input-group">
-            <label for="admin-prayer-reminder-minutes">الدقائق قبل الصلاة</label>
-            <input id="admin-prayer-reminder-minutes" type="number" min="1" max="60" step="1" placeholder="10">
+            <label for="admin-prayer-reminder-minutes">تنبيه الصلاة</label>
+            <input id="admin-prayer-reminder-minutes" type="number" min="0" max="0" value="0" readonly>
+            <small>يرسل عند دخول وقت الأذان حسب موقع كل جهاز.</small>
+        </div>
+
+        <div class="input-group">
+            <label for="admin-match-reminder-minutes">الدقائق قبل المباراة</label>
+            <input id="admin-match-reminder-minutes" type="number" min="1" max="120" step="1" placeholder="5">
         </div>
 
         <button type="submit" class="btn">حفظ إعدادات الصلاة</button>

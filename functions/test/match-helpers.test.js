@@ -43,6 +43,9 @@ test('parses kickoff dates in Riyadh time and rejects invalid dates', () => {
 
   assert.equal(kickoff.toISOString(), '2026-06-23T16:30:00.000Z');
   assert.equal(getMatchKickoffDate({ dateEvent: 'bad-date', strTime: '19:30:00' }), null);
+
+  const timestampKickoff = getMatchKickoffDate({ strTimestamp: '2026-06-23T19:30:00Z' });
+  assert.equal(timestampKickoff.toISOString(), '2026-06-23T19:30:00.000Z');
 });
 
 test('generates stable match keys from date time and teams', () => {

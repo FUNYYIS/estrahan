@@ -2,8 +2,8 @@
   "name": "estraha-pwa",
   "private": true,
   "scripts": {
-    "check": "node --check assets/js/main.js && node --check assets/js/page-fixes.js && node --check service-worker.js && node --check firebase-messaging-sw.js && node --check netlify/functions/alarabiya-news.js && node --check netlify/functions/alarabiya-news-v2.js && node --check netlify/functions/alarabiya-image.js && npm --prefix functions run check",
+    "check": "node scripts/validate-js-syntax.js && npm --prefix functions run check",
     "test": "npm --prefix functions test",
-    "validate": "npm run check && npm test && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8')); JSON.parse(require('fs').readFileSync('functions/package.json','utf8'));\" && git diff --check"
+    "validate": "npm run check && npm test && node scripts/validate-json.js && node scripts/validate-pwa-version.js && node scripts/validate-firebase-config.js"
   }
 }

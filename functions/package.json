@@ -6,7 +6,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "check": "node --check index.js && node --check match-helpers.js && node --check test/match-helpers.test.js",
+    "check": "node --check index.js && node --check match-helpers.js && node --check rate-limit.js && node --check test/match-helpers.test.js && node --check test/rate-limit.test.js",
     "test": "node --test"
   },
   "dependencies": {

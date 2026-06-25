@@ -1105,6 +1105,7 @@ async function setupAdminNotifications() {
             const isActive = button.dataset.adminTabTarget === targetTab;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-selected', String(isActive));
+            button.setAttribute('tabindex', isActive ? '0' : '-1');
             if (isActive) {
                 button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
             }
@@ -1112,8 +1113,11 @@ async function setupAdminNotifications() {
 
         tabSections.forEach((section) => {
             const isActive = section.dataset.adminTab === targetTab;
-            section.style.display = isActive ? '' : 'none';
-            section.setAttribute('aria-hidden', String(!isActive));
+            const isDeferredReport = section.id === 'admin-notification-report'
+                && section.dataset.reportReady !== 'true';
+            const shouldShow = isActive && !isDeferredReport;
+            section.hidden = !shouldShow;
+            section.setAttribute('aria-hidden', String(!shouldShow));
         });
     };
 
@@ -1123,6 +1127,7 @@ async function setupAdminNotifications() {
             if (!button || !tabList.contains(button)) return;
 
             activateAdminTab(button.dataset.adminTabTarget || 'general');
+            button.focus();
         });
         tabList.addEventListener('keydown', (event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -1133,13 +1138,14 @@ async function setupAdminNotifications() {
 
             event.preventDefault();
             const lastIndex = buttons.length - 1;
+            // RTL visual order places the first tab on the right, so ArrowRight moves to the previous DOM tab.
             const nextIndex = event.key === 'Home'
                 ? 0
                 : event.key === 'End'
                     ? lastIndex
                     : event.key === 'ArrowLeft'
-                        ? Math.min(currentIndex + 1, lastIndex)
-                        : Math.max(currentIndex - 1, 0);
+                        ? (currentIndex + 1) % buttons.length
+                        : (currentIndex - 1 + buttons.length) % buttons.length;
             const nextButton = buttons[nextIndex];
             nextButton.focus();
             activateAdminTab(nextButton.dataset.adminTabTarget || 'general');
@@ -1575,7 +1581,11 @@ async function setupAdminNotifications() {
     };
 
     const renderReport = (result = {}) => {
-        if (report) report.hidden = false;
+        if (report) {
+            report.dataset.reportReady = 'true';
+            report.hidden = false;
+            report.setAttribute('aria-hidden', 'false');
+        }
         if (targetCount) targetCount.textContent = String(result.targetedTokens || 0);
         if (successCount) successCount.textContent = String(result.successCount || 0);
         if (failureCount) failureCount.textContent = String(result.failureCount || 0);

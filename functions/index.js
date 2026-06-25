@@ -15,6 +15,7 @@ const {
   renderMatchNotification,
   toDocId
 } = require('./match-helpers');
+const { createInMemoryRateLimiter } = require('./rate-limit');
 
 admin.initializeApp();
 
@@ -41,7 +42,7 @@ const INVALID_FCM_TOKEN_CODES = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token'
 ]);
-const callableRateLimits = new Map();
+const callableRateLimiter = createInMemoryRateLimiter({ maxEntries: 500 });
 const RATE_LIMITS = {
   adminTestNotification: { limit: 12, windowMs: 60 * 1000 },
   adminBroadcastNotification: { limit: 5, windowMs: 60 * 1000 },
@@ -728,37 +729,15 @@ function assertAdmin(request) {
 }
 
 function assertCallableRateLimit(request, operation, config) {
-  if (!request.auth?.uid) {
-    throw new HttpsError('unauthenticated', 'Authentication is required.');
-  }
+  const result = callableRateLimiter.check({
+    uid: request.auth?.uid,
+    operation,
+    limit: config?.limit,
+    windowMs: config?.windowMs
+  });
 
-  const limit = Math.max(1, Number(config?.limit) || 1);
-  const windowMs = Math.max(1000, Number(config?.windowMs) || 60000);
-  const now = Date.now();
-  const key = `${operation}:${request.auth.uid}`;
-  const current = callableRateLimits.get(key);
-
-  if (!current || current.resetAt <= now) {
-    callableRateLimits.set(key, { count: 1, resetAt: now + windowMs });
-    pruneCallableRateLimits(now);
-    return;
-  }
-
-  if (current.count >= limit) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
-    throw new HttpsError(
-      'resource-exhausted',
-      `Too many requests. Try again in ${retryAfterSeconds} seconds.`
-    );
-  }
-
-  current.count += 1;
-}
-
-function pruneCallableRateLimits(now = Date.now()) {
-  if (callableRateLimits.size < 500) return;
-  for (const [key, value] of callableRateLimits) {
-    if (value.resetAt <= now) callableRateLimits.delete(key);
+  if (!result.ok) {
+    throw new HttpsError(result.code, result.message);
   }
 }
 

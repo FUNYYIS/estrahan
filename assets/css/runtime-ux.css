@@ -35,6 +35,22 @@
   color: #8c3f27;
 }
 
+.news-freshness,
+.last-updated-note {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0 0 0.75rem;
+  color: var(--muted, #6f746d);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.news-freshness[data-cached="true"],
+.last-updated-note[data-cached="true"] {
+  color: #8a6a1f;
+}
+
 .news-loading-state {
   overflow: hidden;
 }

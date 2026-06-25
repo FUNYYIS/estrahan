@@ -1,8 +1,24 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 
+const mainJsParts = fs.existsSync('assets/js/main')
+  ? fs.readdirSync('assets/js/main')
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => `assets/js/main/${file}`)
+    .sort()
+  : [];
+const e2eFiles = fs.existsSync('tests/e2e')
+  ? fs.readdirSync('tests/e2e')
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => `tests/e2e/${file}`)
+    .sort()
+  : [];
+
 const files = [
+  'playwright.config.js',
+  'assets/js/app-config.js',
   'assets/js/main.js',
+  ...mainJsParts,
   'assets/js/page-fixes.js',
   'assets/js/runtime-ux.js',
   'service-worker.js',
@@ -19,7 +35,10 @@ const files = [
   'scripts/validate-firebase-config.js',
   'scripts/validate-js-syntax.js',
   'scripts/validate-json.js',
-  'scripts/validate-pwa-version.js'
+  'scripts/validate-pwa-version.js',
+  'scripts/build-main-js.js',
+  'scripts/generate-app-config.js',
+  ...e2eFiles
 ].filter((file) => fs.existsSync(file));
 
 let failed = false;

@@ -1,0 +1,255 @@
+/* Premium skyline background and soft glass UI */
+:root {
+  --lavender: #CFC3E8;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  background: transparent;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 0;
+  background: url("../../images/riyadh-skyline-bg.jpg") center bottom / cover no-repeat;
+  filter: sepia(0.36) saturate(1.55) hue-rotate(86deg) contrast(1.08);
+}
+
+body::after {
+  z-index: 0;
+  background:
+    linear-gradient(rgba(31, 90, 70, 0.08), rgba(31, 90, 70, 0.08)),
+    rgba(255, 255, 255, 0.58);
+}
+
+.app-shell,
+.custom-alert,
+.modal-backdrop {
+  position: relative;
+  z-index: 1;
+}
+
+.main {
+  background: transparent;
+}
+
+.app-shell,
+.view,
+.page-content-container,
+.section-stack,
+.home-grid,
+.chat-page,
+.payment-screen,
+.service-grid,
+.cards-grid,
+.stats-grid {
+  background: transparent;
+}
+
+body:has(.auth-layout) .auth-brand,
+body:has(.auth-layout) .auth-layout .content-body {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body:has(.auth-layout) .auth-brand {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+body:has(.auth-layout) .auth-layout .content-body {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.dashboard-home {
+  gap: 22px;
+  padding-bottom: 18px;
+}
+
+.dashboard-home .dashboard-shortcuts {
+  display: none;
+}
+
+.dashboard-home .welcome-panorama {
+  min-height: 332px;
+  padding: clamp(1.1rem, 2.4vw, 1.8rem);
+  border: 1px solid var(--glass-border);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dashboard-home .welcome-panorama::after {
+  content: "";
+  position: absolute;
+  inset-inline: 28%;
+  bottom: 28px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--lavender), transparent);
+  opacity: 0.62;
+}
+
+.dashboard-home .riyadh-header-art {
+  display: none;
+}
+
+.dashboard-home .welcome-center {
+  align-self: center;
+  padding-top: 0;
+}
+
+.dashboard-home .welcome-center h2 {
+  margin-block: 0.25rem 0.45rem;
+  color: #1F5A46;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dashboard-home .welcome-center p,
+.dashboard-home .welcome-center span {
+  color: #164535;
+}
+
+.dashboard-home .weather-tile {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 18px 36px rgba(31, 90, 70, 0.2);
+}
+
+.dashboard-home .dashboard-grid {
+  gap: 18px;
+}
+
+.dashboard-home .dashboard-card,
+.dashboard-home .compact-feed .list-item-card,
+.dashboard-home .compact-feed .match-card,
+.dashboard-home .compact-feed .news-card,
+.dashboard-home .quick-grid a,
+.dashboard-home .quick-grid button {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dashboard-home .dashboard-card {
+  min-height: 210px;
+  padding: 1.15rem;
+  border-radius: 20px;
+}
+
+.dashboard-home .dashboard-card:nth-child(1),
+.dashboard-home .dashboard-card:nth-child(2),
+.dashboard-home .dashboard-card:nth-child(3) {
+  min-height: 330px;
+}
+
+.dashboard-home .qattah-summary {
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(150deg, rgba(31, 90, 70, 0.95), rgba(22, 69, 53, 0.97));
+  box-shadow: 0 18px 38px rgba(31, 90, 70, 0.22);
+}
+
+.dashboard-home .dashboard-action {
+  background: rgba(238, 234, 225, 0.78);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-home .dashboard-action:hover,
+.dashboard-home .quick-grid a:hover,
+.dashboard-home .quick-grid button:hover,
+.nav a:hover {
+  box-shadow: 0 0 0 1px rgba(207, 195, 232, 0.45), var(--glass-shadow);
+}
+
+.dashboard-home .qattah-summary .dashboard-action {
+  color: #fffaf1;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.sidebar {
+  box-shadow: 0 22px 46px rgba(31, 90, 70, 0.2);
+}
+
+.nav a {
+  position: relative;
+}
+
+.nav a.active::before {
+  content: "";
+  position: absolute;
+  inset-block: 15px;
+  inset-inline-start: 10px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--lavender);
+}
+
+.notify-bell span {
+  background: var(--lavender);
+  color: #164535;
+}
+
+.panel,
+.card,
+.stat,
+.table-wrap,
+.chat-box,
+.list-item-card,
+.content-body,
+#chat-box,
+.match-card,
+.news-card,
+.modal,
+.alert-content,
+.payment-options,
+.payment-total-card {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 960px) {
+  .dashboard-home .welcome-panorama {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-home {
+    gap: 18px;
+  }
+
+  .dashboard-home .welcome-panorama {
+    min-height: 330px;
+    border-radius: 22px;
+  }
+
+  .dashboard-home .dashboard-grid {
+    gap: 16px;
+  }
+
+  .dashboard-home .dashboard-card {
+    min-height: 190px;
+    border-radius: 18px;
+  }
+}

@@ -1,0 +1,285 @@
+/* =========================================================
+   SHAGRDIYAH FINAL POLISH V2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Splash font + bigger logos
+   ========================================================= */
+
+/* Unified typography everywhere */
+:root {
+  --brand-font: "Tajawal", "Cairo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+.splash,
+.splash *,
+.auth-layout,
+.auth-layout *,
+.brand,
+.brand * {
+  font-family: var(--brand-font) !important;
+}
+
+/* Make all logo images clear and not cropped */
+img[src*="estraha-logo"],
+#app-logo,
+.auth-logo,
+.auth-form-logo,
+.splash-card img,
+.splash img {
+  object-fit: contain !important;
+  object-position: center !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1 !important;
+}
+
+/* Splash background and shell */
+.splash {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255,255,255,.46), transparent 28rem),
+    linear-gradient(180deg, rgba(247,244,238,.72), rgba(238,230,216,.88)),
+    url("../../images/al-istiraha-splash.jpg") center / cover no-repeat,
+    #F5F3EE !important;
+}
+
+/* Bigger splash card */
+.splash-card {
+  width: min(90vw, 400px) !important;
+  min-height: 430px !important;
+  padding: 2.1rem 1.6rem !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: .45rem !important;
+  border-radius: 34px !important;
+  border: 1px solid rgba(255,255,255,.62) !important;
+  background: rgba(255,253,248,.78) !important;
+  box-shadow: 0 26px 62px rgba(31,50,42,.16) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+/* Bigger splash logo */
+.splash-card img,
+.splash img {
+  width: 245px !important;
+  height: 245px !important;
+  min-width: 245px !important;
+  min-height: 245px !important;
+  margin: 0 0 .35rem !important;
+  filter: drop-shadow(0 20px 30px rgba(31,90,70,.18)) !important;
+}
+
+/* Same font style for all splash text */
+.splash strong,
+.splash span {
+  font-family: var(--brand-font) !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  line-height: 1.25 !important;
+  font-style: normal !important;
+  transform: none !important;
+}
+
+.splash strong {
+  color: #164535 !important;
+  font-size: clamp(2rem, 7vw, 3rem) !important;
+  font-weight: 900 !important;
+  margin: .15rem 0 .2rem !important;
+}
+
+.splash span {
+  color: #4f5c55 !important;
+  font-size: clamp(1rem, 3.5vw, 1.15rem) !important;
+  font-weight: 700 !important;
+}
+
+/* Auth pages: one card only, not two huge side-by-side boxes */
+body:not(.is-authenticated) .main {
+  min-height: 100vh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(16px, 4vw, 32px) !important;
+}
+
+body:not(.is-authenticated) .view {
+  width: 100% !important;
+  min-height: auto !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.auth-layout {
+  width: min(100%, 460px) !important;
+  min-height: auto !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  align-items: center !important;
+  justify-items: center !important;
+  direction: rtl !important;
+}
+
+.auth-brand {
+  display: none !important;
+}
+
+.auth-layout .content-body,
+body:has(.auth-layout) .auth-layout .content-body {
+  width: min(100%, 430px) !important;
+  max-width: 430px !important;
+  align-self: center !important;
+  padding: clamp(1.2rem, 4vw, 1.65rem) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  background: rgba(255,253,248,.80) !important;
+  box-shadow: 0 20px 55px rgba(31,50,42,.13) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  direction: rtl !important;
+}
+
+/* Bigger logo in login/register */
+.auth-form-logo {
+  width: 165px !important;
+  height: 165px !important;
+  min-width: 165px !important;
+  min-height: 165px !important;
+  display: block !important;
+  margin: 0 auto .85rem !important;
+  filter: drop-shadow(0 16px 26px rgba(31,90,70,.16)) !important;
+}
+
+.auth-logo {
+  width: 165px !important;
+  height: 165px !important;
+  min-width: 165px !important;
+  min-height: 165px !important;
+  margin-bottom: 18px !important;
+}
+
+.auth-layout .content-body h2 {
+  margin: .1rem 0 1rem !important;
+  color: #164535 !important;
+  text-align: center !important;
+  font-size: clamp(1.65rem, 5vw, 2.05rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.auth-layout .input-group {
+  gap: .45rem !important;
+  margin-bottom: .85rem !important;
+}
+
+.auth-layout .input-group label {
+  color: #4f5c55 !important;
+  font-weight: 800 !important;
+  font-size: .92rem !important;
+}
+
+.auth-layout .input-group input {
+  min-height: 50px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(31,90,70,.13) !important;
+  background: rgba(255,255,255,.74) !important;
+  padding: .75rem .95rem !important;
+}
+
+.auth-layout .input-group input:focus {
+  outline: none !important;
+  border-color: rgba(31,90,70,.42) !important;
+  box-shadow: 0 0 0 4px rgba(31,90,70,.09) !important;
+}
+
+.auth-layout .btn {
+  min-height: 50px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #1F5A46, #164535) !important;
+  box-shadow: 0 12px 24px rgba(31,90,70,.18) !important;
+  font-weight: 900 !important;
+}
+
+.link-text {
+  margin: 1rem 0 0 !important;
+  color: #59665f !important;
+  font-size: .94rem !important;
+}
+
+.link-text a {
+  color: #164535 !important;
+  font-weight: 900 !important;
+}
+
+/* Sidebar logo bigger but balanced */
+.brand {
+  min-height: 150px !important;
+}
+
+.brand img,
+#app-logo {
+  width: 82px !important;
+  height: 82px !important;
+  min-width: 82px !important;
+  min-height: 82px !important;
+}
+
+.brand strong {
+  font-size: 1.34rem !important;
+}
+
+.brand small {
+  font-size: .88rem !important;
+}
+
+/* Profile default logo */
+.profile-avatar img {
+  object-fit: cover !important;
+}
+
+#profile-avatar-preview {
+  object-fit: contain !important;
+  background: rgba(255,253,248,.72) !important;
+}
+
+/* Mobile tuning */
+@media (max-width: 640px) {
+  body:not(.is-authenticated) .main {
+    padding: 14px !important;
+  }
+
+  .auth-layout .content-body,
+  body:has(.auth-layout) .auth-layout .content-body {
+    width: min(100%, 390px) !important;
+    padding: 1.1rem !important;
+    border-radius: 24px !important;
+  }
+
+  .auth-form-logo {
+    width: 142px !important;
+    height: 142px !important;
+    min-width: 142px !important;
+    min-height: 142px !important;
+  }
+
+  .splash-card {
+    width: min(90vw, 360px) !important;
+    min-height: 380px !important;
+    padding: 1.5rem !important;
+  }
+
+  .splash-card img,
+  .splash img {
+    width: 215px !important;
+    height: 215px !important;
+    min-width: 215px !important;
+    min-height: 215px !important;
+  }
+
+  .splash strong {
+    font-size: 2.2rem !important;
+  }
+}

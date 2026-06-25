@@ -12,3 +12,5 @@ __MACOSX/
 node_modules/
 functions/node_modules/
 .firebase/
+test-results/
+playwright-report/

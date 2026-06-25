@@ -1,0 +1,141 @@
+.dashboard-home {
+  gap: 14px;
+}
+
+.welcome-panorama {
+  direction: ltr;
+  min-height: 290px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.weather-tile {
+  direction: rtl;
+  width: 206px;
+  min-height: 206px;
+  align-self: end;
+  margin: 0 0 16px;
+  padding: 1rem;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #1F5A46, #164535);
+}
+
+.weather-tile strong {
+  font-size: 1.8rem;
+}
+
+.weather-row b {
+  font-size: 1.55rem;
+}
+
+.welcome-center {
+  direction: rtl;
+  grid-column: 2;
+  padding-top: 30px;
+}
+
+.welcome-center span {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #164535;
+}
+
+.welcome-center h2 {
+  font-size: 4.7rem;
+  color: #1F5A46;
+}
+
+.welcome-center p {
+  color: #164535;
+  font-size: 1.18rem;
+}
+
+.riyadh-header-art {
+  left: 205px;
+  right: 0;
+  bottom: 0;
+  width: calc(100% - 205px);
+  height: 255px;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.dashboard-shortcuts {
+  direction: ltr;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-shortcuts a {
+  direction: rtl;
+  min-height: 88px;
+  border: 1px solid #E4E1D8;
+  border-radius: 12px;
+  color: #164535;
+  background: rgba(255, 253, 248, 0.86);
+  box-shadow: 0 10px 24px rgba(31, 50, 42, 0.08);
+}
+
+.dashboard-shortcuts svg {
+  width: 31px;
+  height: 31px;
+}
+
+.dashboard-grid {
+  direction: ltr;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-card {
+  direction: rtl;
+  min-height: 188px;
+  border: 1px solid #E4E1D8;
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 50, 42, 0.08);
+  padding: 1rem;
+}
+
+.dashboard-card:nth-child(1),
+.dashboard-card:nth-child(2),
+.dashboard-card:nth-child(3) {
+  grid-column: span 4;
+  min-height: 306px;
+}
+
+.dashboard-card:nth-child(n+4) {
+  grid-column: span 3;
+}
+
+.qattah-summary {
+  background: linear-gradient(160deg, #1F5A46, #164535);
+  box-shadow: 0 14px 30px rgba(31, 90, 70, 0.22);
+}
+
+.qattah-meter {
+  width: 150px;
+}
+
+.dashboard-action {
+  min-height: 44px;
+  border-radius: 10px;
+  background: #EEEAE1;
+}
+
+.qattah-summary .dashboard-action {
+  background: rgba(255, 253, 248, 0.12);
+}
+
+.compact-feed .list-item-card,
+.compact-feed .match-card,
+.compact-feed .news-card {
+  border-color: #E4E1D8;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.panel,
+.card,
+.stat,
+.table-wrap,

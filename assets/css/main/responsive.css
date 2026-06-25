@@ -1,0 +1,91 @@
+@media (max-width: 960px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 40;
+    width: min(86vw, 310px);
+    transform: translateX(105%);
+    transition: transform 0.25s ease;
+  }
+  .auth-layout { grid-template-columns: 1fr; }
+  .auth-brand { display: none; }
+  .sidebar.open { transform: translateX(0); }
+  .mobile-only { display: inline-grid; }
+  #menuBtn { display: none; }
+  body.is-authenticated #menuBtn { display: inline-grid; }
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .majlis-art { min-height: 260px; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .welcome-panorama {
+    grid-template-columns: 1fr;
+    min-height: 420px;
+  }
+  .weather-tile {
+    align-self: start;
+    justify-self: start;
+  }
+  .riyadh-header-art {
+    inset-inline: 1rem;
+    width: calc(100% - 2rem);
+    height: 170px;
+  }
+  .dashboard-shortcuts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .main { padding-inline: 0.75rem; }
+  .topbar { align-items: flex-start; }
+  .status-pill { display: none; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .welcome-panorama {
+    min-height: 360px;
+    padding: 1rem;
+  }
+  .welcome-center h2 {
+    font-size: 3.2rem;
+  }
+  .dashboard-shortcuts,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .prayer-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .toolbar .field, .toolbar button, .chat-form .field { width: 100%; }
+  .chat-form { grid-template-columns: 1fr; }
+  .hero h2 { font-size: 2.6rem; }
+  #chat-form { grid-template-columns: 1fr; }
+}
+
+/* Reference dashboard skin */
+body {
+  background: #F5F3EE;
+  background-image: none;
+  color: #1C2B24;
+}
+
+body:not(.is-authenticated) .app-shell {
+  grid-template-columns: 1fr;
+}
+
+body:not(.is-authenticated) .sidebar,
+body:not(.is-authenticated) .topbar {
+  display: none;
+}
+
+body:not(.is-authenticated) .main {
+  min-height: 100vh;
+  padding: 26px 32px;
+}
+
+body:not(.is-authenticated) .view {
+  min-height: calc(100vh - 52px);
+  display: grid;
+  align-items: center;
+}

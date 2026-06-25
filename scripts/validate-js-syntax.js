@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const files = [
   'assets/js/main.js',
   'assets/js/page-fixes.js',
+  'assets/js/runtime-ux.js',
   'service-worker.js',
   'firebase-messaging-sw.js',
   'netlify/functions/alarabiya-news.js',
@@ -14,6 +15,7 @@ const files = [
   'functions/rate-limit.js',
   'functions/test/match-helpers.test.js',
   'functions/test/rate-limit.test.js',
+  'functions/test/news-function.test.js',
   'scripts/validate-firebase-config.js',
   'scripts/validate-js-syntax.js',
   'scripts/validate-json.js',

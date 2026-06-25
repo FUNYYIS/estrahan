@@ -2,14 +2,17 @@ const CACHE_NAME = 'estraha-cache-v270';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.json',
   '/assets/css/main.css',
   '/assets/css/chat-fix.css',
   '/assets/css/page-fixes.css',
   '/assets/css/home-layout-fix.css',
   '/assets/css/news-home-fix.css',
+  '/assets/css/runtime-ux.css',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
+  '/assets/js/runtime-ux.js',
   '/assets/images/estraha-logo.svg',
   '/assets/images/news-placeholder.svg',
   '/assets/icons/icon-192.png',
@@ -78,12 +81,12 @@ self.addEventListener('fetch', (event) => {
   if (requestUrl.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, true));
     return;
   }
 
   if (isFreshCodeAsset(requestUrl)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, false));
     return;
   }
 
@@ -92,7 +95,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-async function networkFirst(request) {
+async function networkFirst(request, navigationRequest = false) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const response = await fetch(request, { cache: 'no-store' });
@@ -103,7 +106,8 @@ async function networkFirst(request) {
   } catch {
     return (await cache.match(request))
       || (await cache.match(new URL(request.url).pathname))
-      || (await cache.match('/index.html'))
+      || (navigationRequest ? await cache.match('/index.html') : null)
+      || (navigationRequest ? await cache.match('/offline.html') : null)
       || Response.error();
   }
 }

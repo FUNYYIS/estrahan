@@ -1,6 +1,10 @@
 // استيراد الوظائف اللازمة من حزم Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
+    initializeAppCheck,
+    ReCaptchaEnterpriseProvider
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js";
+import {
     getAuth,
     RecaptchaVerifier,
     signInWithPhoneNumber,
@@ -52,12 +56,13 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '274';
+const APP_ASSET_VERSION = '275';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
 // تهيئة Firebase
 const app = initializeApp(firebaseConfig);
+const appCheck = configureAppCheck(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app, 'us-central1');
@@ -113,6 +118,35 @@ const DEFAULT_APP_SETTINGS = {
 };
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
+
+function configureAppCheck(firebaseApp) {
+    const runtimeConfig = window.ESTRAHA_APP_CONFIG || {};
+    const siteKey = String(runtimeConfig.appCheckSiteKey || '').trim();
+
+    if (!siteKey) {
+        console.info('Firebase App Check is ready but disabled until FIREBASE_APPCHECK_SITE_KEY is configured.');
+        return null;
+    }
+
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    const debugToken = isLocalHost
+        ? String(runtimeConfig.appCheckDebugToken || localStorage.getItem('estraha-app-check-debug-token') || '').trim()
+        : '';
+
+    if (isLocalHost && debugToken) {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken === 'true' ? true : debugToken;
+    }
+
+    try {
+        return initializeAppCheck(firebaseApp, {
+            provider: new ReCaptchaEnterpriseProvider(siteKey),
+            isTokenAutoRefreshEnabled: true
+        });
+    } catch (error) {
+        console.warn('Firebase App Check initialization skipped:', error);
+        return null;
+    }
+}
 
 
 

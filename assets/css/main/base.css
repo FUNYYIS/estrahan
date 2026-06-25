@@ -26,7 +26,7 @@ body {
   background:
     radial-gradient(circle at 14% 12%, rgba(23, 79, 62, 0.12), transparent 28rem),
     linear-gradient(135deg, rgba(250, 246, 238, 0.98), rgba(239, 231, 216, 0.98)),
-    url("../images/al-istiraha-pattern.svg");
+    url("../../images/al-istiraha-pattern.svg");
   background-color: var(--bg);
   background-size: auto, auto, 230px;
 }
@@ -59,7 +59,7 @@ textarea:focus-visible,
   overflow: hidden;
   background:
     linear-gradient(rgba(22, 69, 53, 0.08), rgba(22, 69, 53, 0.08)),
-    url('../images/al-istiraha-splash.jpg') center / cover no-repeat,
+    url('../../images/al-istiraha-splash.jpg') center / cover no-repeat,
     #F5F3EE;
   transition: opacity 0.44s ease, visibility 0.44s ease;
   animation: splash-shell-out 0.6s ease 3.5s forwards;

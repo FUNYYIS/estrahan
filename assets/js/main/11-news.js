@@ -12,6 +12,7 @@ async function loadNews(container, limit = 10) {
             return;
         }
 
+        window.EstrahaFreshness?.record('news');
         container.innerHTML = '';
         articles.slice(0, limit).forEach(article => {
             try {
@@ -21,7 +22,7 @@ async function loadNews(container, limit = 10) {
                 const source = article.source?.name || 'مصدر';
                 const image = safeExternalUrl(article.urlToImage, '');
                 const imageMarkup = image
-                    ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`
+                    ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
                     : '';
 
                 const newsCard = `

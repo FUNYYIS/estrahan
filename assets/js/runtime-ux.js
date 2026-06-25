@@ -20,11 +20,83 @@ const ICON_LABELS = {
 let lastFocusedElement = null;
 let offlineBanner = null;
 
+const FRESHNESS_STORAGE_PREFIX = 'estraha:last-updated:';
+
+function getRiyadhDateParts(date) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return formatter.format(date);
+}
+
+function formatSaudiLastUpdated(timestamp) {
+  const date = new Date(Number(timestamp || 0));
+  if (Number.isNaN(date.getTime())) return 'غير متوفر بعد';
+
+  const now = new Date();
+  const todayKey = getRiyadhDateParts(now);
+  const dateKey = getRiyadhDateParts(date);
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayKey = getRiyadhDateParts(yesterday);
+  const time = new Intl.DateTimeFormat('ar-SA', {
+    timeZone: 'Asia/Riyadh',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date);
+
+  if (dateKey === todayKey) return `اليوم ${time}`;
+  if (dateKey === yesterdayKey) return `أمس ${time}`;
+
+  const day = new Intl.DateTimeFormat('ar-SA', {
+    timeZone: 'Asia/Riyadh',
+    day: 'numeric',
+    month: 'short'
+  }).format(date);
+  return `${day} ${time}`;
+}
+
+function readLastUpdated(key) {
+  try {
+    return Number(localStorage.getItem(`${FRESHNESS_STORAGE_PREFIX}${key}`) || 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeLastUpdated(key, timestamp = Date.now()) {
+  try {
+    localStorage.setItem(`${FRESHNESS_STORAGE_PREFIX}${key}`, String(timestamp));
+  } catch (_) {}
+  return timestamp;
+}
+
+function renderLastUpdated(element, key, { cached = false, timestamp } = {}) {
+  if (!element) return;
+  const savedAt = Number(timestamp || readLastUpdated(key) || 0);
+  element.dataset.lastUpdatedKey = key;
+  element.dataset.cached = cached ? 'true' : 'false';
+  element.textContent = savedAt
+    ? `${cached ? 'بيانات محفوظة - ' : ''}آخر تحديث: ${formatSaudiLastUpdated(savedAt)}`
+    : 'آخر تحديث: غير متوفر بعد';
+}
+
+window.EstrahaFreshness = {
+  format: formatSaudiLastUpdated,
+  read: readLastUpdated,
+  record: writeLastUpdated,
+  render: renderLastUpdated
+};
+
 function ensureRuntimeStyles() {
   if (document.querySelector('link[data-runtime-ux]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'assets/css/runtime-ux.css?v=270';
+  link.href = 'assets/css/runtime-ux.css?v=275';
   link.dataset.runtimeUx = 'true';
   document.head.appendChild(link);
 }

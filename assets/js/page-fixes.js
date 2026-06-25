@@ -81,12 +81,16 @@ function readNewsCache(limit) {
 function writeNewsCache(limit, articles) {
   if (!Array.isArray(articles) || !articles.length) return;
 
+  const savedAt = Date.now();
   try {
     localStorage.setItem(newsCacheKey(limit), JSON.stringify({
-      savedAt: Date.now(),
+      savedAt,
       articles
     }));
   } catch (_) {}
+
+  window.EstrahaFreshness?.record('news', savedAt);
+  return savedAt;
 }
 
 async function fetchJsonWithTimeout(url, timeoutMs) {
@@ -149,7 +153,19 @@ function bindNewsImageFallbacks(container) {
   });
 }
 
-function renderNewsItems(container, articles, compact, { cached = false } = {}) {
+function ensureNewsFreshnessElement(container) {
+  let element = container.querySelector('.news-freshness');
+  if (!element) {
+    element = document.createElement('p');
+    element.className = 'news-freshness';
+    element.setAttribute('role', 'status');
+    element.setAttribute('aria-live', 'polite');
+    container.prepend(element);
+  }
+  return element;
+}
+
+function renderNewsItems(container, articles, compact, { cached = false, savedAt = 0 } = {}) {
   const visible = selectVisibleNews(articles, compact);
 
   if (!visible.length) {
@@ -182,6 +198,9 @@ function renderNewsItems(container, articles, compact, { cached = false } = {}) 
     `;
   }).join('');
 
+  const lastUpdated = savedAt || window.EstrahaFreshness?.read('news') || 0;
+  const freshness = ensureNewsFreshnessElement(container);
+  window.EstrahaFreshness?.render(freshness, 'news', { cached, timestamp: lastUpdated });
   bindNewsImageFallbacks(container);
 }
 
@@ -228,7 +247,7 @@ async function performNewsLoad(container, compact, force) {
   let hasRendered = false;
 
   if (cached && !force) {
-    renderNewsItems(container, cached.articles, compact, { cached: true });
+    renderNewsItems(container, cached.articles, compact, { cached: true, savedAt: cached.savedAt });
     hasRendered = true;
     if (cached.fresh) return;
   } else {
@@ -238,7 +257,8 @@ async function performNewsLoad(container, compact, force) {
   if (!hasRendered) {
     try {
       const fastArticles = await fetchArabiyaNews(limit, { fast: true });
-      renderNewsItems(container, fastArticles, compact);
+      const savedAt = writeNewsCache(limit, fastArticles);
+      renderNewsItems(container, fastArticles, compact, { savedAt });
       hasRendered = true;
     } catch (error) {
       console.warn('Fast Al Arabiya news request failed:', error);
@@ -247,8 +267,8 @@ async function performNewsLoad(container, compact, force) {
 
   try {
     const enrichedArticles = await fetchArabiyaNews(limit);
-    renderNewsItems(container, enrichedArticles, compact);
-    writeNewsCache(limit, enrichedArticles);
+    const savedAt = writeNewsCache(limit, enrichedArticles);
+    renderNewsItems(container, enrichedArticles, compact, { savedAt });
   } catch (error) {
     console.error('Enriched Al Arabiya news failed:', error);
     if (!hasRendered) renderNewsError(container, compact);

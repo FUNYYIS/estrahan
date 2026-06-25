@@ -7,8 +7,16 @@ const mainJsParts = fs.existsSync('assets/js/main')
     .map((file) => `assets/js/main/${file}`)
     .sort()
   : [];
+const e2eFiles = fs.existsSync('tests/e2e')
+  ? fs.readdirSync('tests/e2e')
+    .filter((file) => file.endsWith('.js'))
+    .map((file) => `tests/e2e/${file}`)
+    .sort()
+  : [];
 
 const files = [
+  'playwright.config.js',
+  'assets/js/app-config.js',
   'assets/js/main.js',
   ...mainJsParts,
   'assets/js/page-fixes.js',
@@ -28,7 +36,9 @@ const files = [
   'scripts/validate-js-syntax.js',
   'scripts/validate-json.js',
   'scripts/validate-pwa-version.js',
-  'scripts/build-main-js.js'
+  'scripts/build-main-js.js',
+  'scripts/generate-app-config.js',
+  ...e2eFiles
 ].filter((file) => fs.existsSync(file));
 
 let failed = false;

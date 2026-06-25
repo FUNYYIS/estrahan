@@ -45,24 +45,33 @@ function readNewsCache(limit) {
     const cached = JSON.parse(localStorage.getItem(`${NEWS_CACHE_KEY}:${limit}`) || 'null');
     if (!cached?.savedAt || !Array.isArray(cached.articles)) return null;
     if (Date.now() - cached.savedAt > NEWS_CACHE_MAX_AGE) return null;
-    return cached.articles;
+    return cached;
   } catch {
     return null;
   }
 }
 
 function writeNewsCache(limit, articles) {
+  const savedAt = Date.now();
   try {
     localStorage.setItem(`${NEWS_CACHE_KEY}:${limit}`, JSON.stringify({
-      savedAt: Date.now(),
+      savedAt,
       articles
     }));
   } catch (_) {}
+  window.EstrahaFreshness?.record('news', savedAt);
+  return savedAt;
 }
 
 async function fetchNews(limit) {
   const cached = readNewsCache(limit);
-  if (cached?.length) return cached;
+  if (cached?.articles?.length) {
+    return {
+      articles: cached.articles,
+      cached: true,
+      savedAt: cached.savedAt
+    };
+  }
 
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 14000);
@@ -77,8 +86,12 @@ async function fetchNews(limit) {
     if (!data?.ok || !Array.isArray(data.articles) || !data.articles.length) {
       throw new Error('No football news returned');
     }
-    writeNewsCache(limit, data.articles);
-    return data.articles;
+    const savedAt = writeNewsCache(limit, data.articles);
+    return {
+      articles: data.articles,
+      cached: false,
+      savedAt
+    };
   } finally {
     window.clearTimeout(timeout);
   }
@@ -95,7 +108,19 @@ function bindImageFallbacks(container) {
   });
 }
 
-function renderNews(container, articles, compact) {
+function ensureNewsFreshnessElement(container) {
+  let element = container.querySelector('.news-freshness');
+  if (!element) {
+    element = document.createElement('p');
+    element.className = 'news-freshness';
+    element.setAttribute('role', 'status');
+    element.setAttribute('aria-live', 'polite');
+    container.prepend(element);
+  }
+  return element;
+}
+
+function renderNews(container, articles, compact, { cached = false, savedAt = 0 } = {}) {
   const limit = compact ? HOME_NEWS_LIMIT : FULL_NEWS_LIMIT;
   const visible = articles.slice(0, limit);
   if (!visible.length) throw new Error('No visible football news');
@@ -122,6 +147,8 @@ function renderNews(container, articles, compact) {
     `;
   }).join('');
 
+  const freshness = ensureNewsFreshnessElement(container);
+  window.EstrahaFreshness?.render(freshness, 'news', { cached, timestamp: savedAt });
   bindImageFallbacks(container);
 }
 
@@ -131,7 +158,10 @@ async function loadNewsV3(container, compact) {
 
   const limit = compact ? HOME_NEWS_LIMIT : FULL_NEWS_LIMIT;
   const request = fetchNews(limit)
-    .then((articles) => renderNews(container, articles, compact))
+    .then((result) => renderNews(container, result.articles, compact, {
+      cached: result.cached,
+      savedAt: result.savedAt
+    }))
     .catch((error) => {
       console.warn('Replacement football news failed:', error);
       if (!container.children.length) {

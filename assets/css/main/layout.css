@@ -185,7 +185,7 @@ body[data-theme="dark"] .theme-moon-btn {
   border: 1px solid rgba(46, 230, 154, 0.22);
   background:
     linear-gradient(180deg, rgba(46, 230, 154, 0.05), rgba(2, 8, 13, 0.34)),
-    url("../images/al-istiraha-majlis.svg") center/cover no-repeat;
+    url("../../images/al-istiraha-majlis.svg") center/cover no-repeat;
   box-shadow: var(--shadow);
 }
 

@@ -40,7 +40,7 @@ img[src*="estraha-logo"],
   background:
     radial-gradient(circle at 50% 12%, rgba(255,255,255,.46), transparent 28rem),
     linear-gradient(180deg, rgba(247,244,238,.72), rgba(238,230,216,.88)),
-    url("../images/al-istiraha-splash.jpg") center / cover no-repeat,
+    url("../../images/al-istiraha-splash.jpg") center / cover no-repeat,
     #F5F3EE !important;
 }
 

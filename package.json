@@ -2,6 +2,7 @@
   "name": "estraha-pwa",
   "private": true,
   "scripts": {
+    "build": "node scripts/generate-app-config.js && npm run build:js",
     "build:js": "node scripts/build-main-js.js",
     "check": "node scripts/build-main-js.js --check && node scripts/validate-js-syntax.js && npm --prefix functions run check",
     "test": "npm --prefix functions test",

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v274';
+const CACHE_NAME = 'estraha-cache-v275';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const APP_SHELL_URLS = [
   '/assets/css/chat-composer-fix.css',
   '/assets/css/home-polish.css',
   '/assets/css/runtime-ux.css',
+  '/assets/css/offline.css',
   '/assets/css/main/auth-chat-forms.css',
   '/assets/css/main/auth-final.css',
   '/assets/css/main/base.css',
@@ -31,11 +32,13 @@ const APP_SHELL_URLS = [
   '/assets/css/main/typography-splash-auth.css',
   '/assets/css/main/utilities-theme.css',
   '/assets/css/main/visual-theme.css',
+  '/assets/js/app-config.js',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
   '/assets/js/chat-layout-fix.js',
   '/assets/js/home-polish.js',
   '/assets/js/runtime-ux.js',
+  '/assets/js/offline.js',
   '/assets/images/estraha-logo.svg',
   '/assets/images/news-placeholder.svg',
   '/assets/icons/icon-192.png',

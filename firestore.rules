@@ -77,7 +77,14 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.token is string
         && request.resource.data.token.size() > 20
-        && request.resource.data.keys().hasOnly(['token', 'uid', 'topics', 'userAgent', 'updatedAt']);
+        && request.resource.data.keys().hasOnly([
+          'token',
+          'uid',
+          'topics',
+          'userAgent',
+          'updatedAt',
+          'prayerLocation'
+        ]);
       allow delete: if isAdmin()
         || (signedIn() && resource.data.uid == request.auth.uid);
     }

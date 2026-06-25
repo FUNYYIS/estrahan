@@ -32,6 +32,13 @@ npx serve .
 
 لا تنقل Firebase Web API key أو VAPID key إلى متغيرات frontend. هذه القيم عامة بطبيعتها في تطبيقات الويب. لا تضف أي Firebase Admin credentials إلى المستودع.
 
+## حماية Cloud Functions
+
+- الدوال المجدولة مثل تذكير المباريات والصلاة والقطة لا تستخدم rate limit لأنها تعمل داخلياً حسب الجدولة.
+- الدوال القابلة للاستدعاء من الواجهة تتطلب Firebase Authentication، والدوال الإدارية تبقى محمية بـ `assertAdmin`.
+- يوجد rate limit خفيف داخل ذاكرة كل Function instance للعمليات الحساسة مثل التسجيل، الاختبارات الإدارية، البث العام، وإدارة الأعضاء. هذا يخفف الضغط والنقرات المتكررة، لكنه ليس بديلاً عن App Check أو مراقبة Firebase/Cloud Logging.
+- لم يتم تفعيل `enforceAppCheck` حالياً حتى لا تنكسر نسخة الواجهة الحالية. فعّل App Check لاحقاً تدريجياً من Firebase Console بعد إضافة تهيئة frontend واختبار PWA المثبتة والمتصفحات المدعومة.
+
 ## الأسرار المطلوبة
 
 رمز الدعوة لا يجب أن يكون في JavaScript أو Firestore المقروء من العميل. اضبطه كـ Firebase Secret:
@@ -78,6 +85,8 @@ Netlify ينشر ملفات الواجهة الثابتة ويستخدم `netlif
 
 لا تستخدم cache طويل immutable لملفات JS/CSS غير content-hashed.
 
+الإصدار الحالي المتزامن بين الواجهة والـ Service Worker هو `270`.
+
 ## المجموعات الرئيسية
 
 - `users`: ملفات الأعضاء وحالة السداد والتعطيل.
@@ -101,11 +110,21 @@ Netlify ينشر ملفات الواجهة الثابتة ويستخدم `netlif
 ## الاختبارات السريعة
 
 ```bash
+node --check assets/js/page-fixes.js
 node --check assets/js/main.js
 node --check functions/index.js
+node --check functions/match-helpers.js
+node --check functions/test/match-helpers.test.js
 node --check service-worker.js
 node --check firebase-messaging-sw.js
+cd functions && npm test
 git diff --check
+```
+
+يمكن تشغيل الحزمة المختصرة من جذر المشروع:
+
+```bash
+npm run validate
 ```
 
 اختبر يدوياً:

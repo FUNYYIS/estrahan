@@ -41,6 +41,14 @@ const INVALID_FCM_TOKEN_CODES = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token'
 ]);
+const callableRateLimits = new Map();
+const RATE_LIMITS = {
+  adminTestNotification: { limit: 12, windowMs: 60 * 1000 },
+  adminBroadcastNotification: { limit: 5, windowMs: 60 * 1000 },
+  adminDebugNotification: { limit: 10, windowMs: 60 * 1000 },
+  memberManagement: { limit: 20, windowMs: 60 * 1000 },
+  completeRegistration: { limit: 5, windowMs: 10 * 60 * 1000 }
+};
 
 exports.checkUpcomingMatches = onSchedule(
   {
@@ -262,6 +270,7 @@ exports.sendAdminTestNotification = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'sendAdminTestNotification', RATE_LIMITS.adminTestNotification);
 
     const type = String(request.data?.type || 'general');
     if (!ADMIN_TEST_NOTIFICATION_TYPES.has(type)) {
@@ -297,6 +306,7 @@ exports.sendAdminBroadcastNotification = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'sendAdminBroadcastNotification', RATE_LIMITS.adminBroadcastNotification);
 
     const title = cleanNotificationText(request.data?.title);
     const body = cleanNotificationText(request.data?.message);
@@ -346,6 +356,7 @@ exports.debugPrayerNotification = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'debugPrayerNotification', RATE_LIMITS.adminDebugNotification);
 
     const mode = request.data?.mode === 'force' ? 'force' : 'dryRun';
     const settings = await getAppSettings();
@@ -437,6 +448,7 @@ exports.debugPaymentReminder = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'debugPaymentReminder', RATE_LIMITS.adminDebugNotification);
 
     const mode = request.data?.mode === 'force' ? 'force' : 'dryRun';
     const settings = await getAppSettings();
@@ -495,6 +507,7 @@ exports.completeRegistration = onCall(
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication is required.');
     }
+    assertCallableRateLimit(request, 'completeRegistration', RATE_LIMITS.completeRegistration);
 
     const uid = request.auth.uid;
     const phone = String(request.auth.token.phone_number || '').trim();
@@ -558,6 +571,7 @@ exports.addManualMember = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'addManualMember', RATE_LIMITS.memberManagement);
 
     const name = normalizeMemberName(request.data?.name);
     const phone = String(request.data?.phone || '').trim();
@@ -588,6 +602,7 @@ exports.updateMemberPaymentStatus = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'updateMemberPaymentStatus', RATE_LIMITS.memberManagement);
 
     const memberId = normalizeMemberId(request.data?.memberId);
     const paymentStatus = String(request.data?.paymentStatus || '').trim();
@@ -610,6 +625,7 @@ exports.updateMemberName = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'updateMemberName', RATE_LIMITS.memberManagement);
 
     const memberId = normalizeMemberId(request.data?.memberId);
     const name = normalizeMemberName(request.data?.name);
@@ -632,6 +648,7 @@ exports.setMemberDisabled = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'setMemberDisabled', RATE_LIMITS.memberManagement);
 
     const memberId = normalizeMemberId(request.data?.memberId);
     const disabled = request.data?.disabled === true;
@@ -654,6 +671,7 @@ exports.resetMemberAvatar = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'resetMemberAvatar', RATE_LIMITS.memberManagement);
 
     const memberId = normalizeMemberId(request.data?.memberId);
     if (!memberId) {
@@ -675,6 +693,7 @@ exports.deleteMember = onCall(
   },
   async (request) => {
     assertAdmin(request);
+    assertCallableRateLimit(request, 'deleteMember', RATE_LIMITS.memberManagement);
 
     const memberId = normalizeMemberId(request.data?.memberId);
     if (!memberId) {
@@ -705,6 +724,41 @@ exports.deleteMember = onCall(
 function assertAdmin(request) {
   if (!request.auth || request.auth.uid !== ADMIN_UID) {
     throw new HttpsError('permission-denied', 'Admin only.');
+  }
+}
+
+function assertCallableRateLimit(request, operation, config) {
+  if (!request.auth?.uid) {
+    throw new HttpsError('unauthenticated', 'Authentication is required.');
+  }
+
+  const limit = Math.max(1, Number(config?.limit) || 1);
+  const windowMs = Math.max(1000, Number(config?.windowMs) || 60000);
+  const now = Date.now();
+  const key = `${operation}:${request.auth.uid}`;
+  const current = callableRateLimits.get(key);
+
+  if (!current || current.resetAt <= now) {
+    callableRateLimits.set(key, { count: 1, resetAt: now + windowMs });
+    pruneCallableRateLimits(now);
+    return;
+  }
+
+  if (current.count >= limit) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+    throw new HttpsError(
+      'resource-exhausted',
+      `Too many requests. Try again in ${retryAfterSeconds} seconds.`
+    );
+  }
+
+  current.count += 1;
+}
+
+function pruneCallableRateLimits(now = Date.now()) {
+  if (callableRateLimits.size < 500) return;
+  for (const [key, value] of callableRateLimits) {
+    if (value.resetAt <= now) callableRateLimits.delete(key);
   }
 }
 

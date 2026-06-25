@@ -35,6 +35,17 @@ button, input, select, textarea { font: inherit; }
 
 button { cursor: pointer; }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 3px solid rgba(46, 122, 94, 0.72);
+  outline-offset: 3px;
+}
+
 .splash {
   position: fixed;
   inset: 0;

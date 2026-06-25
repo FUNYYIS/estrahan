@@ -6,6 +6,7 @@
   },
   "main": "index.js",
   "scripts": {
+    "check": "node --check index.js && node --check match-helpers.js && node --check test/match-helpers.test.js",
     "test": "node --test"
   },
   "dependencies": {

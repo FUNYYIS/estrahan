@@ -16,6 +16,11 @@ const {
   toDocId
 } = require('./match-helpers');
 const { createInMemoryRateLimiter } = require('./rate-limit');
+const {
+  buildDataOnlyMessage,
+  groupPrayerTokenRecords,
+  isPrayerTimeDue
+} = require('./notification-helpers');
 
 admin.initializeApp();
 
@@ -43,6 +48,7 @@ const INVALID_FCM_TOKEN_CODES = new Set([
   'messaging/invalid-registration-token'
 ]);
 const callableRateLimiter = createInMemoryRateLimiter({ maxEntries: 500 });
+const prayerScheduleMemoryCache = new Map();
 const RATE_LIMITS = {
   adminTestNotification: { limit: 12, windowMs: 60 * 1000 },
   adminBroadcastNotification: { limit: 5, windowMs: 60 * 1000 },
@@ -53,19 +59,16 @@ const RATE_LIMITS = {
 
 exports.checkUpcomingMatches = onSchedule(
   {
-    schedule: 'every 10 minutes',
+    schedule: 'every 1 minutes',
     timeZone: 'Asia/Riyadh',
     region: 'us-central1'
   },
   async () => {
     try {
+      const settings = await getAppSettings();
+      const reminderMinutes = clampNumber(settings.matchReminderMinutes, 1, 120, 5);
       const upcomingMatches = await getUpcomingMatches();
       if (!upcomingMatches.length) return;
-
-      const notificationWindows = [
-        { minutes: 60, min: 55, max: 65 },
-        { minutes: 15, min: 10, max: 20 }
-      ];
 
       for (const match of upcomingMatches) {
         try {
@@ -75,75 +78,63 @@ exports.checkUpcomingMatches = onSchedule(
           if (!kickoff) continue;
 
           const remainingMinutes = Math.round((kickoff.getTime() - Date.now()) / 60000);
-          const windowConfig = notificationWindows.find((item) => (
-            remainingMinutes >= item.min && remainingMinutes <= item.max
-          ));
-
-          if (!windowConfig) continue;
+          if (remainingMinutes < reminderMinutes - 1 || remainingMinutes > reminderMinutes + 1) continue;
 
           const teams = getMatchNotificationTeams(match);
-          if (!teams) {
-            logger.info('Skipped match notification because team names are missing.', {
-              operation: 'checkUpcomingMatches',
-              matchIdentifier: getMatchKey(match)
-            });
-            continue;
-          }
+          if (!teams) continue;
 
           const matchKey = getMatchKey(match);
-          const stateKey = `${matchKey}-${windowConfig.minutes}`;
+          const stateKey = `${matchKey}-${reminderMinutes}`;
           const stateRef = db.collection('matchNotificationState').doc(toDocId(stateKey));
-          const stateDoc = await stateRef.get();
-          if (stateDoc.exists) continue;
-
           const tokenRecords = await getTokenRecordsByTopic('matches');
+          if (!tokenRecords.length) continue;
 
-          if (!tokenRecords.length) {
-            logger.info('No FCM tokens subscribed to match notifications.', {
-              operation: 'checkUpcomingMatches',
-              matchIdentifier: matchKey
+          const claimed = await claimNotificationState(stateRef, {
+            kind: 'match',
+            matchKey,
+            reminderMinutes
+          });
+          if (!claimed) continue;
+
+          const kickoffTime = formatRiyadhTime(kickoff);
+          const title = `⚽ ${teams.homeTeam} ضد ${teams.awayTeam}`;
+          const body = `باقي ${reminderMinutes} دقائق على المباراة · ${kickoffTime} بتوقيت السعودية`;
+
+          try {
+            const result = await sendNotificationToTokenRecords(tokenRecords, {
+              notification: { title, body },
+              data: {
+                type: 'match',
+                title,
+                body,
+                notificationWindow: String(reminderMinutes),
+                matchKey,
+                homeTeam: teams.homeTeam,
+                awayTeam: teams.awayTeam,
+                kickoffTime,
+                link: '/index.html#matches',
+                dedupeKey: stateRef.id,
+                tag: `match-${stateRef.id}`
+              }
             });
-            continue;
-          }
 
-          const title = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[0], teams);
-          const body = renderMatchNotification(MATCH_NOTIFICATION_TEMPLATES[1], teams);
-
-          const result = await sendNotificationToTokenRecords(tokenRecords, {
-            notification: {
-              title,
-              body
-            },
-            data: {
-              type: 'match',
-              notificationWindow: String(windowConfig.minutes),
+            await stateRef.set({
+              status: 'sent',
               matchKey,
+              notificationWindow: reminderMinutes,
+              remainingMinutes,
               homeTeam: teams.homeTeam,
               awayTeam: teams.awayTeam,
-              link: '/index.html#matches'
-            },
-            webpush: {
-              notification: {
-                icon: '/assets/icons/icon-192.png',
-                badge: '/assets/icons/icon-192.png',
-                tag: `match-${toDocId(stateKey)}`,
-                renotify: false
-              }
-            }
-          });
-
-          await stateRef.set({
-            matchKey,
-            notificationWindow: windowConfig.minutes,
-            remainingMinutes,
-            homeTeam: teams.homeTeam,
-            awayTeam: teams.awayTeam,
-            kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
-            targetedTokens: result.targetedTokens,
-            successCount: result.successCount,
-            failureCount: result.failureCount,
-            sentAt: admin.firestore.FieldValue.serverTimestamp()
-          });
+              kickoffAt: admin.firestore.Timestamp.fromDate(kickoff),
+              targetedTokens: result.targetedTokens,
+              successCount: result.successCount,
+              failureCount: result.failureCount,
+              sentAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch (error) {
+            await stateRef.delete().catch(() => {});
+            throw error;
+          }
         } catch (error) {
           logMatchScheduleError(error, {
             operation: 'checkUpcomingMatches.processMatch',
@@ -152,16 +143,14 @@ exports.checkUpcomingMatches = onSchedule(
         }
       }
     } catch (error) {
-      logMatchScheduleError(error, {
-        operation: 'checkUpcomingMatches'
-      });
+      logMatchScheduleError(error, { operation: 'checkUpcomingMatches' });
     }
   }
 );
 
 exports.checkPrayerNotifications = onSchedule(
   {
-    schedule: 'every 5 minutes',
+    schedule: 'every 1 minutes',
     timeZone: 'Asia/Riyadh',
     region: 'us-central1'
   },
@@ -170,44 +159,67 @@ exports.checkPrayerNotifications = onSchedule(
       const settings = await getAppSettings();
       if (settings.prayerNotificationsEnabled !== true) return;
 
-      const city = cleanSettingText(settings.prayerCity, 'Jeddah');
-      const country = cleanSettingText(settings.prayerCountry, 'Saudi Arabia');
-      const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
-      const dateKey = getLocalDateKey();
-      const timings = await fetchPrayerTimings(city, country);
-      const windowStart = Math.max(0, minutesBefore - 3);
-      const windowEnd = minutesBefore + 3;
+      const tokenRecords = await getTokenRecordsByTopic('prayer');
+      if (!tokenRecords.length) return;
 
-      for (const [prayerKey, prayerName] of Object.entries(PRAYER_NAMES)) {
-        const prayerTime = timings[prayerKey];
-        const prayerDate = parseRiyadhDateTime(dateKey, prayerTime);
-        if (!prayerDate) continue;
+      const fallback = {
+        city: cleanSettingText(settings.prayerCity, 'Jeddah'),
+        country: cleanSettingText(settings.prayerCountry, 'Saudi Arabia'),
+        timeZone: 'Asia/Riyadh'
+      };
 
-        const remainingMinutes = Math.round((prayerDate.getTime() - Date.now()) / 60000);
-        if (remainingMinutes < windowStart || remainingMinutes > windowEnd) continue;
+      const groups = groupPrayerTokenRecords(tokenRecords, fallback);
 
-        const stateKey = `${dateKey}-${prayerKey}-${minutesBefore}`;
-        const stateRef = db.collection('prayerNotificationState').doc(toDocId(stateKey));
-        if ((await stateRef.get()).exists) continue;
+      for (const group of groups) {
+        try {
+          const schedule = await getCachedPrayerSchedule(group);
 
-        const tokenRecords = await getTokenRecordsByTopic('prayer');
-        if (!tokenRecords.length) {
-          logger.info('No FCM tokens subscribed to prayer notifications.');
-          continue;
+          const timeZone = schedule.timeZone || group.location.timeZone || 'Asia/Riyadh';
+          const dateKey = getDateKeyForTimeZone(new Date(), timeZone);
+
+          for (const [prayerKey, prayerName] of Object.entries(PRAYER_NAMES)) {
+            const prayerTime = schedule.timings[prayerKey];
+            const prayerDate = parseZonedDateTime(dateKey, prayerTime, timeZone);
+            if (!isPrayerTimeDue(prayerDate)) continue;
+
+            const stateKey = `${dateKey}-${prayerKey}-${group.key}`;
+            const stateRef = db.collection('prayerNotificationState').doc(toDocId(stateKey));
+            const claimed = await claimNotificationState(stateRef, {
+              kind: 'prayer',
+              prayerKey,
+              locationKey: group.key
+            });
+            if (!claimed) continue;
+
+            const message = buildPrayerReminderMessage(prayerName, 0, group.location.mode === 'coordinates' ? 'موقعك' : group.location.city);
+            message.data.dedupeKey = stateRef.id;
+            message.data.tag = `prayer-${stateRef.id}`;
+
+            try {
+              const result = await sendNotificationToTokenRecords(group.records, message);
+              await stateRef.set({
+                status: 'sent',
+                prayerName,
+                prayerTime,
+                timeZone,
+                locationKey: group.key,
+                reminderMinutes: 0,
+                successCount: result.successCount,
+                failureCount: result.failureCount,
+                targetedTokens: result.targetedTokens,
+                sentAt: admin.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+            } catch (error) {
+              await stateRef.delete().catch(() => {});
+              throw error;
+            }
+          }
+        } catch (error) {
+          logger.error('Prayer notification group failed.', {
+            locationKey: group.key,
+            message: error?.message || String(error)
+          });
         }
-
-        const message = buildPrayerReminderMessage(prayerName, minutesBefore);
-        const result = await sendNotificationToTokenRecords(tokenRecords, message);
-
-        await stateRef.set({
-          prayerName,
-          prayerTime,
-          reminderMinutes: minutesBefore,
-          successCount: result.successCount,
-          failureCount: result.failureCount,
-          targetedTokens: result.targetedTokens,
-          sentAt: admin.firestore.FieldValue.serverTimestamp()
-        });
       }
     } catch (error) {
       logger.error('Prayer notification schedule failed.', error);
@@ -217,7 +229,7 @@ exports.checkPrayerNotifications = onSchedule(
 
 exports.checkPaymentReminders = onSchedule(
   {
-    schedule: 'every 10 minutes',
+    schedule: 'every 5 minutes',
     timeZone: 'Asia/Riyadh',
     region: 'us-central1'
   },
@@ -231,34 +243,39 @@ exports.checkPaymentReminders = onSchedule(
       const reminderHour = clampNumber(settings.paymentReminderHour, 0, 23, 9);
       const reminderMinute = clampNumber(settings.paymentReminderMinute, 0, 59, 0);
       if (now.day !== reminderDay || now.hour !== reminderHour) return;
-      if (Math.abs(now.minute - reminderMinute) > 5) return;
+      if (Math.abs(now.minute - reminderMinute) > 2) return;
 
       const audience = settings.paymentReminderMode === 'lateOnly' ? 'lateOnly' : 'all';
       const stateKey = `${now.year}-${now.month}-${now.day}-${audience}`;
       const stateRef = db.collection('paymentReminderState').doc(toDocId(stateKey));
-      if ((await stateRef.get()).exists) return;
-
       const tokenRecords = audience === 'lateOnly'
         ? await getLatePaymentTokenRecords()
         : await getTokenRecordsByTopic('payments');
+      if (!tokenRecords.length) return;
 
-      if (!tokenRecords.length) {
-        logger.info('No FCM tokens subscribed to payment reminders.', { audience });
-        return;
-      }
+      const claimed = await claimNotificationState(stateRef, { kind: 'payment', audience });
+      if (!claimed) return;
 
       const message = buildPaymentReminderMessage(settings);
-      const result = await sendNotificationToTokenRecords(tokenRecords, message);
+      message.data.dedupeKey = stateRef.id;
+      message.data.tag = `payment-${stateRef.id}`;
 
-      await stateRef.set({
-        reminderMonth: `${now.year}-${now.month}`,
-        audience,
-        targetedUsers: Array.from(new Set(tokenRecords.map((record) => record.uid).filter(Boolean))).length,
-        targetedTokens: result.targetedTokens,
-        successCount: result.successCount,
-        failureCount: result.failureCount,
-        sentAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      try {
+        const result = await sendNotificationToTokenRecords(tokenRecords, message);
+        await stateRef.set({
+          status: 'sent',
+          reminderMonth: `${now.year}-${now.month}`,
+          audience,
+          targetedUsers: Array.from(new Set(tokenRecords.map((record) => record.uid).filter(Boolean))).length,
+          targetedTokens: result.targetedTokens,
+          successCount: result.successCount,
+          failureCount: result.failureCount,
+          sentAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        await stateRef.delete().catch(() => {});
+        throw error;
+      }
     } catch (error) {
       logger.error('Payment reminder schedule failed.', error);
     }
@@ -363,7 +380,7 @@ exports.debugPrayerNotification = onCall(
     const settings = await getAppSettings();
     const city = cleanSettingText(settings.prayerCity, 'Jeddah');
     const country = cleanSettingText(settings.prayerCountry, 'Saudi Arabia');
-    const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
+    const minutesBefore = 0;
     const dateKey = getLocalDateKey();
     const timings = await fetchPrayerTimings(city, country);
 
@@ -799,7 +816,7 @@ async function buildAdminTestMessage(type) {
   if (type === 'prayer') {
     const settings = await getAppSettings();
     const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
-    return buildPrayerReminderMessage('العصر', minutesBefore);
+    return buildPrayerReminderMessage('العصر', 0, 'موقعك');
   }
 
   return {
@@ -875,6 +892,7 @@ async function sendNotificationToTokenRecords(tokenRecords, message) {
     };
   }
 
+  const normalizedMessage = buildDataOnlyMessage(message);
   let successCount = 0;
   let failureCount = 0;
   let deletedInvalidTokens = 0;
@@ -883,7 +901,7 @@ async function sendNotificationToTokenRecords(tokenRecords, message) {
   for (const tokenChunk of chunks) {
     const tokens = tokenChunk.map((record) => record.token);
     const response = await admin.messaging().sendEachForMulticast({
-      ...message,
+      ...normalizedMessage,
       tokens
     });
     successCount += response.successCount;
@@ -951,14 +969,14 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(Math.max(Math.round(number), min), max);
 }
 
-function buildPrayerReminderMessage(prayerName, minutesBefore) {
-  const title = `قرب موعد صلاة ${prayerName}`;
-  const body = `باقي ${minutesBefore} دقائق على صلاة ${prayerName}`;
+function buildPrayerReminderMessage(prayerName, minutesBefore = 0, locationLabel = 'موقعك') {
+  const exact = Number(minutesBefore) <= 0;
+  const title = exact ? `🕌 حان الآن موعد صلاة ${prayerName}` : `قرب موعد صلاة ${prayerName}`;
+  const body = exact
+    ? `حسب توقيت ${locationLabel}`
+    : `باقي ${minutesBefore} دقائق على صلاة ${prayerName}`;
   return {
-    notification: {
-      title,
-      body
-    },
+    notification: { title, body },
     data: {
       type: 'prayer',
       title,
@@ -988,13 +1006,28 @@ function buildPaymentReminderMessage(settings = {}) {
   };
 }
 
-async function fetchPrayerTimings(city, country) {
+async function fetchPrayerScheduleByCity(city, country) {
   const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=4`;
   const data = await fetchJson(url);
-  if (!data?.data?.timings) {
-    throw new Error('Invalid prayer timing response.');
-  }
-  return data.data.timings;
+  if (!data?.data?.timings) throw new Error('Invalid prayer timing response.');
+  return {
+    timings: data.data.timings,
+    timeZone: data.data.meta?.timezone || 'Asia/Riyadh'
+  };
+}
+
+async function fetchPrayerScheduleByCoordinates(latitude, longitude) {
+  const url = `https://api.aladhan.com/v1/timings?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&method=4`;
+  const data = await fetchJson(url);
+  if (!data?.data?.timings) throw new Error('Invalid prayer timing response.');
+  return {
+    timings: data.data.timings,
+    timeZone: data.data.meta?.timezone || 'Asia/Riyadh'
+  };
+}
+
+async function fetchPrayerTimings(city, country) {
+  return (await fetchPrayerScheduleByCity(city, country)).timings;
 }
 
 function parseRiyadhDateTime(dateKey, timeValue = '') {
@@ -1025,6 +1058,134 @@ function getRiyadhParts(date = new Date()) {
     hour: Number(parts.hour),
     minute: Number(parts.minute)
   };
+}
+
+async function getCachedPrayerSchedule(group) {
+  const preferredTimeZone = group.location.timeZone || 'Asia/Riyadh';
+  const dateKey = getDateKeyForTimeZone(new Date(), preferredTimeZone);
+  const cacheKey = dateKey + '|' + group.key;
+
+  if (prayerScheduleMemoryCache.has(cacheKey)) {
+    return prayerScheduleMemoryCache.get(cacheKey);
+  }
+
+  const cacheRef = db.collection('prayerTimingCache').doc(toDocId(cacheKey));
+  const cachedSnapshot = await cacheRef.get();
+  const cachedData = cachedSnapshot.data();
+
+  if (cachedSnapshot.exists && cachedData && cachedData.dateKey === dateKey && cachedData.timings) {
+    const cachedSchedule = {
+      timings: cachedData.timings,
+      timeZone: cachedData.timeZone || preferredTimeZone
+    };
+    prayerScheduleMemoryCache.set(cacheKey, cachedSchedule);
+    return cachedSchedule;
+  }
+
+  const schedule = group.location.mode === 'coordinates'
+    ? await fetchPrayerScheduleByCoordinates(group.location.latitude, group.location.longitude)
+    : await fetchPrayerScheduleByCity(group.location.city, group.location.country);
+
+  prayerScheduleMemoryCache.clear();
+  prayerScheduleMemoryCache.set(cacheKey, schedule);
+  await cacheRef.set({
+    dateKey,
+    locationKey: group.key,
+    timings: schedule.timings,
+    timeZone: schedule.timeZone || preferredTimeZone,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: false });
+
+  return schedule;
+}
+
+async function claimNotificationState(stateRef, payload = {}) {
+  const staleBefore = Date.now() - 5 * 60 * 1000;
+
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(stateRef);
+    if (snapshot.exists) {
+      const existing = snapshot.data() || {};
+      const claimedAt = existing.claimedAt && typeof existing.claimedAt.toMillis === 'function'
+        ? existing.claimedAt.toMillis()
+        : 0;
+      const isStaleSendingClaim = existing.status === 'sending' && claimedAt > 0 && claimedAt < staleBefore;
+      if (!isStaleSendingClaim) return false;
+    }
+
+    transaction.set(stateRef, {
+      ...payload,
+      status: 'sending',
+      claimedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: false });
+    return true;
+  });
+}
+
+function formatRiyadhTime(date) {
+  return new Intl.DateTimeFormat('ar-SA', {
+    timeZone: 'Asia/Riyadh',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date);
+}
+
+function getDateKeyForTimeZone(date = new Date(), timeZone = 'Asia/Riyadh') {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  } catch {
+    return getLocalDateKey(date);
+  }
+}
+
+function getTimeZoneOffsetMinutes(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date).reduce((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return Math.round((asUtc - date.getTime()) / 60000);
+}
+
+function parseZonedDateTime(dateKey, timeValue = '', timeZone = 'Asia/Riyadh') {
+  const time = String(timeValue || '').match(/\d{1,2}:\d{2}/)?.[0];
+  if (!time || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
+  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  try {
+    const firstOffset = getTimeZoneOffsetMinutes(guess, timeZone);
+    const firstCandidate = new Date(guess.getTime() - firstOffset * 60000);
+    const secondOffset = getTimeZoneOffsetMinutes(firstCandidate, timeZone);
+    return new Date(guess.getTime() - secondOffset * 60000);
+  } catch {
+    return new Date(`${dateKey}T${time}:00+03:00`);
+  }
 }
 
 function logMatchScheduleError(error, context = {}, level = 'error') {

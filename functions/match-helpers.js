@@ -181,6 +181,15 @@ function isNotifiableMatch(event = {}) {
 }
 
 function getMatchKickoffDate(event = {}) {
+  const timestampValue = String(event.strTimestamp || '').trim();
+  if (timestampValue) {
+    const normalizedTimestamp = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestampValue)
+      ? timestampValue
+      : `${timestampValue}Z`;
+    const timestampDate = new Date(normalizedTimestamp);
+    if (!Number.isNaN(timestampDate.getTime())) return timestampDate;
+  }
+
   const dateValue = getEventDateKey(event);
   const rawTime = event.strTimeLocal || event.strTime || '00:00:00';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return null;

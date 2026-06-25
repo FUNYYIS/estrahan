@@ -52,7 +52,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '270';
+const APP_ASSET_VERSION = '271';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -74,6 +74,7 @@ const DEFAULT_APP_SETTINGS = {
     showMatches: true,
     showNews: true,
     showChat: true,
+    matchReminderMinutes: 5,
 
     chatEnabled: true,
     mutedUserIds: [],
@@ -108,7 +109,7 @@ const DEFAULT_APP_SETTINGS = {
     prayerNotificationsEnabled: false,
     prayerCity: 'Jeddah',
     prayerCountry: 'Saudi Arabia',
-    prayerReminderMinutes: 10
+    prayerReminderMinutes: 0
 };
 
 let appSettings = { ...DEFAULT_APP_SETTINGS };
@@ -464,16 +465,22 @@ async function initFirebaseMessaging() {
         firebaseMessaging = getMessaging(app);
 
         if (!foregroundMessageUnsubscribe) {
-            foregroundMessageUnsubscribe = onMessage(firebaseMessaging, (payload) => {
+            foregroundMessageUnsubscribe = onMessage(firebaseMessaging, async (payload) => {
                 console.log('Received foreground FCM message:', payload);
-                const title = payload.notification?.title || payload.data?.title;
-                const body = payload.notification?.body || payload.data?.body;
+                const data = payload.data || {};
+                const title = data.title || payload.notification?.title || 'تطبيق الاستراحة';
+                const body = data.body || payload.notification?.body || '';
                 if (Notification.permission === 'granted' && title) {
-                    new Notification(title, {
+                    await registration.showNotification(title, {
                         body,
-                        icon: 'assets/icons/icon-192.png',
-                        badge: 'assets/icons/icon-192.png',
-                        data: payload.data || {}
+                        icon: '/assets/icons/icon-512.png',
+                        badge: '/assets/icons/icon-192.png',
+                        dir: 'rtl',
+                        lang: 'ar',
+                        tag: data.tag || data.dedupeKey || `estraha-foreground-${data.type || 'general'}`,
+                        renotify: false,
+                        timestamp: Date.now(),
+                        data
                     });
                 }
             });
@@ -492,6 +499,73 @@ function getConfiguredVapidKey() {
         return '';
     }
     return key;
+}
+
+function readPrayerLocationPreference() {
+    try {
+        const raw = localStorage.getItem('al-istiraha-prayer-location');
+        if (!raw) return null;
+        const value = JSON.parse(raw);
+        const latitude = Number(value?.latitude);
+        const longitude = Number(value?.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+        return {
+            latitude,
+            longitude,
+            timeZone: value.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Riyadh',
+            savedAt: value.savedAt || new Date().toISOString()
+        };
+    } catch {
+        return null;
+    }
+}
+
+function requestCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('جهازك ما يدعم تحديد الموقع.'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 10 * 60 * 1000
+        });
+    });
+}
+
+async function savePrayerLocationFromDevice(button, statusElement) {
+    const defaultText = button?.textContent || 'استخدام موقعي';
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'جاري تحديد الموقع...';
+    }
+    if (statusElement) statusElement.textContent = 'نحدد موقعك لحساب الأذان بدقة...';
+
+    try {
+        const position = await requestCurrentPosition();
+        const preference = {
+            latitude: Number(position.coords.latitude.toFixed(5)),
+            longitude: Number(position.coords.longitude.toFixed(5)),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Riyadh',
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem('al-istiraha-prayer-location', JSON.stringify(preference));
+        if (Notification.permission === 'granted') await syncFcmTokenWithPreferences();
+        if (statusElement) statusElement.textContent = 'تم ربط تنبيه الصلاة بموقع هذا الجهاز.';
+        showAlert('تم ضبط تنبيه الصلاة حسب موقعك الحالي.');
+    } catch (error) {
+        const message = error?.code === 1
+            ? 'تم رفض إذن الموقع. فعّله من إعدادات المتصفح.'
+            : error?.message || 'تعذر تحديد الموقع.';
+        if (statusElement) statusElement.textContent = message;
+        showAlert(message);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = defaultText;
+        }
+    }
 }
 
 async function syncFcmTokenWithPreferences() {
@@ -529,7 +603,8 @@ async function syncFcmTokenWithPreferences() {
 
 async function saveFcmToken(token) {
     const tokenId = btoa(token).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-    await setDoc(doc(db, 'fcmTokens', tokenId), {
+    const prayerLocation = readPrayerLocationPreference();
+    const payload = {
         token,
         uid: currentUser.uid,
         topics: {
@@ -540,7 +615,10 @@ async function saveFcmToken(token) {
         },
         userAgent: navigator.userAgent,
         updatedAt: serverTimestamp()
-    }, { merge: true });
+    };
+    if (prayerLocation) payload.prayerLocation = prayerLocation;
+
+    await setDoc(doc(db, 'fcmTokens', tokenId), payload, { merge: true });
     return { tokenId };
 }
 
@@ -880,6 +958,18 @@ function setupNotificationToggles() {
 
     const registerDeviceButton = document.getElementById('register-notification-device');
     const resyncButton = document.getElementById('resync-notifications');
+    const prayerLocationButton = document.getElementById('save-prayer-location');
+    const prayerLocationStatus = document.getElementById('prayer-location-status');
+    const savedPrayerLocation = readPrayerLocationPreference();
+    if (prayerLocationStatus) {
+        prayerLocationStatus.textContent = savedPrayerLocation
+            ? 'تنبيه الصلاة مربوط بموقع هذا الجهاز.'
+            : 'استخدم موقعك لضبط الأذان حسب منطقتك.';
+    }
+    if (prayerLocationButton && prayerLocationButton.dataset.bound !== 'true') {
+        prayerLocationButton.dataset.bound = 'true';
+        prayerLocationButton.addEventListener('click', () => savePrayerLocationFromDevice(prayerLocationButton, prayerLocationStatus));
+    }
 
     if (registerDeviceButton && registerDeviceButton.dataset.bound !== 'true') {
         registerDeviceButton.dataset.bound = 'true';
@@ -1190,6 +1280,7 @@ async function setupAdminNotifications() {
     const prayerCityInput = document.getElementById('admin-prayer-city');
     const prayerCountryInput = document.getElementById('admin-prayer-country');
     const prayerReminderMinutesInput = document.getElementById('admin-prayer-reminder-minutes');
+    const matchReminderMinutesInput = document.getElementById('admin-match-reminder-minutes');
     const prayerNotificationSettingsStatus = document.getElementById('admin-prayer-notification-settings-status');
 
     const homeSectionsForm = document.getElementById('admin-home-sections-form');
@@ -1352,7 +1443,8 @@ async function setupAdminNotifications() {
     if (prayerNotificationsEnabledInput) prayerNotificationsEnabledInput.checked = appSettings.prayerNotificationsEnabled !== false;
     if (prayerCityInput) prayerCityInput.value = appSettings.prayerCity || DEFAULT_APP_SETTINGS.prayerCity;
     if (prayerCountryInput) prayerCountryInput.value = appSettings.prayerCountry || DEFAULT_APP_SETTINGS.prayerCountry;
-    if (prayerReminderMinutesInput) prayerReminderMinutesInput.value = appSettings.prayerReminderMinutes ?? DEFAULT_APP_SETTINGS.prayerReminderMinutes;
+    if (prayerReminderMinutesInput) prayerReminderMinutesInput.value = 0;
+    if (matchReminderMinutesInput) matchReminderMinutesInput.value = appSettings.matchReminderMinutes ?? DEFAULT_APP_SETTINGS.matchReminderMinutes;
 
 
     bindAdminListenerOnce(homeSectionsForm, 'adminHomeSectionsBound', 'submit', async (event) => {
@@ -1524,7 +1616,8 @@ async function setupAdminNotifications() {
             prayerNotificationsEnabled: prayerNotificationsEnabledInput?.checked === true,
             prayerCity: prayerCityInput?.value.trim() || DEFAULT_APP_SETTINGS.prayerCity,
             prayerCountry: prayerCountryInput?.value.trim() || DEFAULT_APP_SETTINGS.prayerCountry,
-            prayerReminderMinutes: Number(prayerReminderMinutesInput?.value || DEFAULT_APP_SETTINGS.prayerReminderMinutes)
+            prayerReminderMinutes: 0,
+            matchReminderMinutes: Number(matchReminderMinutesInput?.value || DEFAULT_APP_SETTINGS.matchReminderMinutes)
         };
 
         if (prayerNotificationSettingsStatus) prayerNotificationSettingsStatus.textContent = 'جاري الحفظ...';
@@ -3259,10 +3352,12 @@ async function getSaudiLeagueSeason(apiKey, leagueId) {
 }
 
 function getLocalDateKey(date = new Date()) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Riyadh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(date);
 }
 
 function getEventDateKey(event) {
@@ -3300,6 +3395,46 @@ function cleanMatchTeamName(value) {
     return teamName;
 }
 
+function getSportsDbKickoffDate(event = {}) {
+    const timestampValue = String(event.strTimestamp || '').trim();
+    if (timestampValue) {
+        const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestampValue)
+            ? timestampValue
+            : `${timestampValue}Z`;
+        const date = new Date(normalized);
+        if (!Number.isNaN(date.getTime())) return date;
+    }
+
+    const dateKey = getEventDateKey(event);
+    const time = String(event.strTimeLocal || event.strTime || '00:00:00').match(/\d{1,2}:\d{2}(?::\d{2})?/)?.[0];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !time) return null;
+    const normalizedTime = time.length === 5 ? `${time}:00` : time;
+    const date = new Date(`${dateKey}T${normalizedTime}+03:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatSaudiMatchTime(event = {}) {
+    const kickoff = getSportsDbKickoffDate(event);
+    if (!kickoff) return '--:--';
+    return new Intl.DateTimeFormat('ar-SA', {
+        timeZone: 'Asia/Riyadh',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    }).format(kickoff);
+}
+
+function formatSaudiMatchDate(event = {}) {
+    const kickoff = getSportsDbKickoffDate(event);
+    if (!kickoff) return getEventDateKey(event);
+    return new Intl.DateTimeFormat('ar-SA', {
+        timeZone: 'Asia/Riyadh',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short'
+    }).format(kickoff);
+}
+
 function renderSportsDbMatchCard(event) {
     const status = event.strStatus || (event.intHomeScore !== null && event.intAwayScore !== null ? 'FT' : 'NS');
     const isFinished = status === 'FT' || (event.intHomeScore !== null && event.intAwayScore !== null);
@@ -3308,7 +3443,7 @@ function renderSportsDbMatchCard(event) {
     const statusLabel = isLive ? 'مباشر' : isFinished ? 'انتهت' : 'قادمة';
     const score = isFinished
         ? `${event.intHomeScore ?? 0} - ${event.intAwayScore ?? 0}`
-        : (event.strTimeLocal || event.strTime || '--:--').slice(0, 5);
+        : formatSaudiMatchTime(event);
     const homeLogo = safeExternalUrl(event.strHomeTeamBadge, '');
     const awayLogo = safeExternalUrl(event.strAwayTeamBadge, '');
     const homeMark = renderTeamMark(homeLogo, event.strHomeTeam);
@@ -3323,7 +3458,7 @@ function renderSportsDbMatchCard(event) {
                 <span>${awayMark} ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
             </div>
             <div class="match-score">${escapeHtml(score)}</div>
-            <p class="muted">${escapeHtml(getEventDateKey(event))}</p>
+            <p class="muted">${escapeHtml(formatSaudiMatchDate(event))} · بتوقيت السعودية</p>
         </article>
     `;
 }

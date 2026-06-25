@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v270';
+const CACHE_NAME = 'estraha-cache-v271';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -18,6 +18,7 @@ const APP_SHELL_URLS = [
   '/assets/images/news-placeholder.svg',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
+  '/assets/icons/apple-touch-icon.png',
   '/assets/images/riyadh-skyline-bg.jpg',
   '/assets/images/shagrdiyah-desert-bg.png',
   '/pages/login.html',
@@ -143,15 +144,27 @@ function isCacheableResponse(response) {
 }
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || payload.data?.title || 'تطبيق الاستراحة';
-  const options = {
-    body: payload.notification?.body || payload.data?.body || '',
-    icon: '/assets/icons/icon-192.png',
-    badge: '/assets/icons/icon-192.png',
-    data: payload.data || {}
-  };
+  const data = payload.data || {};
+  const title = data.title || payload.notification?.title || 'تطبيق الاستراحة';
+  const body = data.body || payload.notification?.body || '';
+  const tag = data.tag || data.dedupeKey || `estraha-${data.type || 'general'}`;
 
-  self.registration.showNotification(title, options);
+  return self.registration.showNotification(title, {
+    body,
+    icon: '/assets/icons/icon-512.png',
+    badge: '/assets/icons/icon-192.png',
+    tag,
+    renotify: false,
+    requireInteraction: false,
+    dir: 'rtl',
+    lang: 'ar',
+    timestamp: Date.now(),
+    vibrate: [180, 80, 180],
+    data: {
+      ...data,
+      link: data.link || '/index.html#home'
+    }
+  });
 });
 
 self.addEventListener('notificationclick', (event) => {

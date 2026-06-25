@@ -20,14 +20,21 @@ const ICON_LABELS = {
 let lastFocusedElement = null;
 let offlineBanner = null;
 
+function ensureRuntimeStyles() {
+  if (document.querySelector('link[data-runtime-ux]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'assets/css/runtime-ux.css?v=270';
+  link.dataset.runtimeUx = 'true';
+  document.head.appendChild(link);
+}
+
 function labelIconOnlyControls(root = document) {
   root.querySelectorAll('button:not([aria-label]), a:not([aria-label])').forEach((element) => {
     const visibleText = element.textContent.replace(/\s+/g, ' ').trim();
     if (visibleText) return;
-
     const icon = element.querySelector('[data-lucide]');
     if (!icon) return;
-
     const iconName = icon.getAttribute('data-lucide') || '';
     element.setAttribute('aria-label', ICON_LABELS[iconName] || 'زر');
   });
@@ -51,7 +58,6 @@ function markDynamicStatusRegions(root = document) {
 
 function ensureOfflineBanner() {
   if (offlineBanner?.isConnected) return offlineBanner;
-
   offlineBanner = document.createElement('div');
   offlineBanner.id = 'offline-banner';
   offlineBanner.className = 'offline-banner';
@@ -68,7 +74,6 @@ function updateConnectivityState() {
   const online = navigator.onLine;
   banner.hidden = online;
   document.documentElement.classList.toggle('is-offline', !online);
-
   const onlineState = document.getElementById('onlineState');
   if (onlineState) {
     onlineState.textContent = online ? 'متصل' : 'غير متصل';
@@ -88,7 +93,6 @@ function improveCustomAlert() {
   const message = document.getElementById('alert-message');
   const closeButton = document.getElementById('alert-close-btn');
   if (!alert || !message || !closeButton || alert.dataset.a11yBound === 'true') return;
-
   alert.dataset.a11yBound = 'true';
   alert.setAttribute('role', 'dialog');
   alert.setAttribute('aria-modal', 'true');
@@ -97,7 +101,6 @@ function improveCustomAlert() {
   const syncFocus = () => {
     const visible = isElementVisible(alert);
     alert.setAttribute('aria-hidden', visible ? 'false' : 'true');
-
     if (visible) {
       lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       window.requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
@@ -111,14 +114,12 @@ function improveCustomAlert() {
     attributes: true,
     attributeFilter: ['class', 'style', 'hidden']
   });
-
   alert.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && isElementVisible(alert)) {
       event.preventDefault();
       closeButton.click();
     }
   });
-
   syncFocus();
 }
 
@@ -130,16 +131,15 @@ function applyRuntimeEnhancements(root = document) {
 }
 
 function startRuntimeEnhancements() {
+  ensureRuntimeStyles();
   applyRuntimeEnhancements(document);
   updateConnectivityState();
-
   const pageContent = document.getElementById('page-content');
   if (pageContent) {
     new MutationObserver(() => {
       window.requestAnimationFrame(() => applyRuntimeEnhancements(pageContent));
     }).observe(pageContent, { childList: true, subtree: true });
   }
-
   window.addEventListener('online', updateConnectivityState);
   window.addEventListener('offline', updateConnectivityState);
 }

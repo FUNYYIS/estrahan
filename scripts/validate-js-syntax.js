@@ -4,10 +4,12 @@ const fs = require('node:fs');
 const files = [
   'assets/js/main.js',
   'assets/js/page-fixes.js',
+  'assets/js/runtime-ux.js',
   'service-worker.js',
   'firebase-messaging-sw.js',
   'netlify/functions/alarabiya-news.js',
   'netlify/functions/alarabiya-news-v2.js',
+  'netlify/functions/alarabiya-news-v2.test.js',
   'netlify/functions/alarabiya-image.js',
   'functions/index.js',
   'functions/match-helpers.js',

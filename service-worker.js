@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v271';
+const CACHE_NAME = 'estraha-cache-v272';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -10,15 +10,20 @@ const APP_SHELL_URLS = [
   '/assets/css/home-layout-fix.css',
   '/assets/css/news-home-fix.css',
   '/assets/css/layout-theme-fix.css',
+  '/assets/css/chat-composer-fix.css',
   '/assets/css/runtime-ux.css',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
+  '/assets/js/chat-layout-fix.js',
   '/assets/js/runtime-ux.js',
   '/assets/images/estraha-logo.svg',
   '/assets/images/news-placeholder.svg',
   '/assets/icons/icon-192.png',
+  '/assets/icons/icon-192-original-zoom.png',
   '/assets/icons/icon-512.png',
+  '/assets/icons/icon-512-original-zoom.png',
   '/assets/icons/apple-touch-icon.png',
+  '/assets/icons/apple-touch-icon-original-zoom.png',
   '/assets/images/riyadh-skyline-bg.jpg',
   '/assets/images/shagrdiyah-desert-bg.png',
   '/pages/login.html',
@@ -151,8 +156,8 @@ messaging.onBackgroundMessage((payload) => {
 
   return self.registration.showNotification(title, {
     body,
-    icon: '/assets/icons/icon-512.png',
-    badge: '/assets/icons/icon-192.png',
+    icon: '/assets/icons/icon-512-original-zoom.png',
+    badge: '/assets/icons/icon-192-original-zoom.png',
     tag,
     renotify: false,
     requireInteraction: false,

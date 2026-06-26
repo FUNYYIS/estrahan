@@ -20,7 +20,11 @@ service cloud.firestore {
     }
 
     function isActiveMember() {
-      return isRegistered() && userDoc(request.auth.uid).data.disabled != true;
+      return isRegistered()
+        && (
+          !userDoc(request.auth.uid).data.keys().hasAny(['disabled'])
+          || userDoc(request.auth.uid).data.disabled != true
+        );
     }
 
     function onlyChanged(allowedFields) {
@@ -53,7 +57,7 @@ service cloud.firestore {
 
     match /chat/{messageId} {
       allow read: if isActiveMember() || isAdmin();
-      allow create: if isActiveMember()
+      allow create: if (isActiveMember() || isAdmin())
         && hasOnlyKeys(['text', 'userId', 'userName', 'avatarUrl', 'createdAt'])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.text is string

@@ -5,10 +5,11 @@
   width: 100% !important;
   max-width: none !important;
   height: auto !important;
-  min-height: 0 !important;
+  min-height: 236px !important;
   max-height: none !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
+  align-content: start !important;
   gap: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -77,6 +78,7 @@ body.theme-custom-bg .estraha-reference-home #home-chat-preview > span > b {
   flex: 0 0 104px !important;
   width: 104px !important;
   height: 72px !important;
+  aspect-ratio: 13 / 9;
   object-fit: cover !important;
   object-position: center !important;
   background: rgba(255, 255, 255, 0.08) !important;
@@ -87,7 +89,77 @@ body.theme-custom-bg .estraha-reference-home #home-chat-preview > span > b {
   padding: 10px !important;
 }
 
+/* Reserve the space that dynamic home data will occupy to prevent layout jumps. */
+#page-content {
+  min-height: calc(100vh - 110px);
+}
+
+.top-profile,
+.profile-avatar {
+  flex-shrink: 0;
+}
+
+.profile-copy {
+  min-width: 140px;
+  min-height: 42px;
+  grid-template-rows: minmax(1.4rem, auto) minmax(1.1rem, auto);
+}
+
+.profile-copy strong,
+.profile-copy small {
+  display: block;
+  min-height: 1.1rem;
+}
+
+.home-reference-hero {
+  min-height: 245px;
+}
+
+.home-hero-logo {
+  width: 145px !important;
+  height: 145px !important;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+#home-prayer-times {
+  min-height: 104px;
+}
+
+#home-matches-list {
+  min-height: 128px;
+}
+
+#home-arabiya-news-list {
+  min-height: 232px;
+}
+
+/* Keep the splash attractive without loading or painting a large photo. */
+.splash {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.72), transparent 30rem),
+    linear-gradient(160deg, #f7f4ee 0%, #ebe4d8 58%, #dfe8df 100%) !important;
+}
+
+.splash-card {
+  min-height: 360px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.splash-card img,
+.splash img {
+  width: 210px !important;
+  height: 210px !important;
+  min-width: 210px !important;
+  min-height: 210px !important;
+}
+
 @media (max-width: 600px) {
+  .estraha-reference-home #home-chat-preview {
+    min-height: 216px !important;
+  }
+
   .estraha-reference-home #home-chat-preview > span {
     min-height: 72px !important;
     padding: 12px 14px !important;
@@ -97,5 +169,29 @@ body.theme-custom-bg .estraha-reference-home #home-chat-preview > span > b {
     flex-basis: 92px !important;
     width: 92px !important;
     height: 66px !important;
+  }
+
+  .profile-copy {
+    min-width: 108px;
+  }
+
+  .home-reference-hero {
+    min-height: 220px;
+  }
+
+  #home-arabiya-news-list {
+    min-height: 214px;
+  }
+
+  .splash-card {
+    min-height: 330px !important;
+  }
+
+  .splash-card img,
+  .splash img {
+    width: 180px !important;
+    height: 180px !important;
+    min-width: 180px !important;
+    min-height: 180px !important;
   }
 }

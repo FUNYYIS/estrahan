@@ -73,13 +73,46 @@ const recaptchaManager = {
 };
 
 // --- وظائف مساعدة ---
+let alertReturnFocus = null;
+
+function closeAlert() {
+    if (!customAlert) return;
+
+    const returnTarget = alertReturnFocus;
+    alertReturnFocus = null;
+
+    if (returnTarget instanceof HTMLElement && returnTarget.isConnected) {
+        returnTarget.focus({ preventScroll: true });
+    } else {
+        alertCloseBtn?.blur();
+    }
+
+    customAlert.style.display = 'none';
+    customAlert.setAttribute('aria-hidden', 'true');
+    customAlert.setAttribute('inert', '');
+}
+
 function showAlert(message) {
     if (!customAlert || !alertMessage) return;
+
+    alertReturnFocus = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     alertMessage.textContent = message;
+    customAlert.removeAttribute('inert');
+    customAlert.setAttribute('aria-hidden', 'false');
     customAlert.style.display = 'flex';
+    window.requestAnimationFrame(() => alertCloseBtn?.focus({ preventScroll: true }));
 }
-alertCloseBtn?.addEventListener('click', () => {
-    if (customAlert) customAlert.style.display = 'none';
+
+alertCloseBtn?.addEventListener('click', closeAlert);
+customAlert?.addEventListener('click', (event) => {
+    if (event.target === customAlert) closeAlert();
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && customAlert?.getAttribute('aria-hidden') === 'false') {
+        closeAlert();
+    }
 });
 
 function copyToClipboard(text) {
@@ -130,7 +163,7 @@ function syncShellUserState() {
     if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.style.display = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) ? '' : 'none';
     });
@@ -143,6 +176,16 @@ function updateNotificationBadge(count = 0) {
     notificationCount.textContent = safeCount > 99 ? '99+' : String(safeCount);
     notificationCount.classList.toggle('hidden', safeCount <= 0);
     notificationCount.setAttribute('aria-hidden', safeCount <= 0 ? 'true' : 'false');
+}
+
+function waitForBrowserIdle(timeout = 1200) {
+    return new Promise((resolve) => {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => resolve(), { timeout });
+            return;
+        }
+        window.setTimeout(resolve, 250);
+    });
 }
 
 async function initFirebaseMessaging() {
@@ -160,6 +203,7 @@ async function initFirebaseMessaging() {
             return null;
         }
 
+        await waitForBrowserIdle();
         const registration = await navigator.serviceWorker.register('/service-worker.js');
         firebaseMessaging = getMessaging(app);
 

@@ -1,10 +1,9 @@
-const CACHE_NAME = 'estraha-cache-v275';
+const CACHE_NAME = 'estraha-cache-v276';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
   '/offline.html',
   '/manifest.json',
-  '/assets/css/main.css',
   '/assets/css/chat-fix.css',
   '/assets/css/page-fixes.css',
   '/assets/css/home-layout-fix.css',
@@ -39,7 +38,6 @@ const APP_SHELL_URLS = [
   '/assets/js/home-polish.js',
   '/assets/js/runtime-ux.js',
   '/assets/js/offline.js',
-  '/assets/images/estraha-logo.svg',
   '/assets/images/news-placeholder.svg',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-192-original-zoom.png',
@@ -47,8 +45,6 @@ const APP_SHELL_URLS = [
   '/assets/icons/icon-512-original-zoom.png',
   '/assets/icons/apple-touch-icon.png',
   '/assets/icons/apple-touch-icon-original-zoom.png',
-  '/assets/images/riyadh-skyline-bg.jpg',
-  '/assets/images/shagrdiyah-desert-bg.png',
   '/pages/login.html',
   '/pages/register.html',
   '/pages/home.html',

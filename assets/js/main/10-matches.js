@@ -29,7 +29,7 @@ async function loadMatches(container, limit = 10, compact = false) {
 
         const saudiEvents = (saudiData.events || [])
             .filter((event) => event.idLeague === SAUDI_LEAGUE_ID)
-            .sort((a, b) => `${a.dateEventLocal || a.dateEvent} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${b.dateEventLocal || b.dateEvent} ${b.strTimeLocal || b.strTime || ''}`));
+            .sort(compareSportsDbEvents);
         const todayMatches = (todayData.events || [])
             .filter((event) => [SAUDI_LEAGUE_ID, WORLD_CUP_LEAGUE_ID].includes(event.idLeague))
             .slice(0, limit);
@@ -179,7 +179,9 @@ function getWorldCupMatchKey(event) {
 }
 
 function compareSportsDbEvents(a, b) {
-    return `${getEventDateKey(a)} ${a.strTimeLocal || a.strTime || ''}`.localeCompare(`${getEventDateKey(b)} ${b.strTimeLocal || b.strTime || ''}`);
+    const firstKickoff = getSportsDbKickoffDate(a)?.getTime() || 0;
+    const secondKickoff = getSportsDbKickoffDate(b)?.getTime() || 0;
+    return firstKickoff - secondKickoff;
 }
 
 function safeFlagUrl(code) {
@@ -204,8 +206,10 @@ function getLocalDateKey(date = new Date()) {
     }).format(date);
 }
 
-function getEventDateKey(event) {
-    return event.dateEventLocal || event.dateEvent || '';
+function getEventDateKey(event = {}) {
+    const kickoff = getSportsDbKickoffDate(event);
+    if (kickoff) return getLocalDateKey(kickoff);
+    return event.dateEvent || event.dateEventLocal || '';
 }
 
 function queueNextMatchNotification(matches = []) {
@@ -249,12 +253,23 @@ function getSportsDbKickoffDate(event = {}) {
         if (!Number.isNaN(date.getTime())) return date;
     }
 
-    const dateKey = getEventDateKey(event);
-    const time = String(event.strTimeLocal || event.strTime || '00:00:00').match(/\d{1,2}:\d{2}(?::\d{2})?/)?.[0];
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !time) return null;
-    const normalizedTime = time.length === 5 ? `${time}:00` : time;
-    const date = new Date(`${dateKey}T${normalizedTime}+03:00`);
-    return Number.isNaN(date.getTime()) ? null : date;
+    const isGithubWorldCupFallback = String(event.idEvent || '').startsWith('github-wc2026-');
+    const utcDateValue = String(event.dateEvent || '').trim();
+    const utcTimeMatch = String(event.strTime || '').match(/\d{1,2}:\d{2}(?::\d{2})?/);
+
+    if (!isGithubWorldCupFallback && /^\d{4}-\d{2}-\d{2}$/.test(utcDateValue) && utcTimeMatch) {
+        const utcTime = utcTimeMatch[0].length === 5 ? `${utcTimeMatch[0]}:00` : utcTimeMatch[0];
+        const utcKickoff = new Date(`${utcDateValue}T${utcTime}Z`);
+        if (!Number.isNaN(utcKickoff.getTime())) return utcKickoff;
+    }
+
+    const localDateValue = String(event.dateEventLocal || event.dateEvent || '').trim();
+    const localTimeMatch = String(event.strTimeLocal || event.strTime || '').match(/\d{1,2}:\d{2}(?::\d{2})?/);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(localDateValue) || !localTimeMatch) return null;
+
+    const localTime = localTimeMatch[0].length === 5 ? `${localTimeMatch[0]}:00` : localTimeMatch[0];
+    const localKickoff = new Date(`${localDateValue}T${localTime}+03:00`);
+    return Number.isNaN(localKickoff.getTime()) ? null : localKickoff;
 }
 
 function formatSaudiMatchTime(event = {}) {

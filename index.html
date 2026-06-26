@@ -9,34 +9,55 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap">
 
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="assets/icons/icon-192-original-zoom.png?v=275" type="image/png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-original-zoom.png?v=275">
+    <link rel="icon" href="assets/icons/icon-192-original-zoom.png?v=276" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-original-zoom.png?v=276">
 
-    <link rel="preload" href="assets/images/estraha-logo.svg" as="image" fetchpriority="high">
-    <link rel="preload" href="assets/images/riyadh-skyline-bg.jpg" as="image" fetchpriority="high">
+    <link rel="preload" href="assets/icons/icon-512-original-zoom.png?v=276" as="image" type="image/png" fetchpriority="high">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="الاستراحة">
     <meta name="theme-color" content="#07130f">
 
-    <link rel="stylesheet" href="assets/css/main.css?v=275">
-    <link rel="stylesheet" href="assets/css/chat-fix.css?v=275">
-    <link rel="stylesheet" href="assets/css/page-fixes.css?v=275">
-    <link rel="stylesheet" href="assets/css/home-layout-fix.css?v=275">
-    <link rel="stylesheet" href="assets/css/news-home-fix.css?v=275">
-    <link rel="stylesheet" href="assets/css/layout-theme-fix.css?v=275">
-    <link rel="stylesheet" href="assets/css/chat-composer-fix.css?v=275">
-    <link rel="stylesheet" href="assets/css/home-polish.css?v=275">
+    <!-- Load the split CSS files directly so the browser discovers them in parallel. -->
+    <link rel="stylesheet" href="assets/css/main/base.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/layout.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/payments.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/components.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/home.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/auth-chat-forms.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/utilities-theme.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/responsive.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/layout-polish.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/home-polish.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/payments-polish.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/responsive-polish.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/visual-theme.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/navigation-polish.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/auth-final.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/components-final.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/typography-splash-auth.css?v=276">
+    <link rel="stylesheet" href="assets/css/main/home-v2.css?v=276">
+
+    <link rel="stylesheet" href="assets/css/chat-fix.css?v=276">
+    <link rel="stylesheet" href="assets/css/page-fixes.css?v=276">
+    <link rel="stylesheet" href="assets/css/home-layout-fix.css?v=276">
+    <link rel="stylesheet" href="assets/css/news-home-fix.css?v=276">
+    <link rel="stylesheet" href="assets/css/layout-theme-fix.css?v=276">
+    <link rel="stylesheet" href="assets/css/chat-composer-fix.css?v=276">
+    <link rel="stylesheet" href="assets/css/home-polish.css?v=276">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
 </head>
 
 <body>
     <div id="splash" class="splash" aria-hidden="true">
         <div class="splash-card">
-            <img class="splash-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" loading="eager" decoding="async" fetchpriority="high">
+            <img class="splash-logo" src="assets/icons/icon-512-original-zoom.png?v=276" alt="تطبيق الاستراحة" width="245" height="245" loading="eager" decoding="async" fetchpriority="high">
             <strong>تطبيق الاستراحة</strong>
             <span>إدارة خدمات الاستراحة والقطة والمباريات</span>
         </div>
@@ -45,7 +66,7 @@
     <div id="main-content" class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="#home" aria-label="تطبيق الاستراحة">
-                <img id="app-logo" src="assets/images/estraha-logo.svg?v=227" alt="تطبيق الاستراحة" class="logo" loading="eager" decoding="async" fetchpriority="high">
+                <img id="app-logo" src="assets/icons/icon-192-original-zoom.png?v=276" alt="تطبيق الاستراحة" class="logo" width="82" height="82" loading="eager" decoding="async">
                 <span>
                     <strong>تطبيق الاستراحة</strong>
                     <small>إدارة الاستراحة</small>
@@ -77,7 +98,7 @@
 
                 <div class="top-profile" id="top-profile" role="button" tabindex="0" aria-label="بياناتك">
                     <div class="profile-avatar">
-                        <img id="shell-avatar" src="assets/images/estraha-logo.svg?v=227" alt="" loading="lazy" decoding="async">
+                        <img id="shell-avatar" src="assets/icons/icon-192-original-zoom.png?v=276" alt="" width="58" height="58" loading="eager" decoding="async">
                     </div>
 
                     <div class="profile-copy">
@@ -94,7 +115,7 @@
                 </div>
 
                 <div class="top-actions">
-                    <img class="topbar-logo" src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" loading="lazy" decoding="async">
+                    <img class="topbar-logo" src="assets/icons/icon-192-original-zoom.png?v=276" alt="تطبيق الاستراحة" width="48" height="48" loading="eager" decoding="async">
                     <div class="topbar-title-copy">
                         <p id="todayLabel" class="eyebrow"></p>
                         <h1 id="pageTitle">تطبيق الاستراحة</h1>
@@ -107,19 +128,19 @@
         </main>
     </div>
 
-    <div id="custom-alert" class="custom-alert">
+    <div id="custom-alert" class="custom-alert" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="alert-message" inert>
         <div class="alert-content">
             <p id="alert-message"></p>
             <div class="alert-buttons">
-                <button id="alert-close-btn">حسنًا</button>
+                <button id="alert-close-btn" type="button">حسنًا</button>
             </div>
         </div>
     </div>
 
-    <script src="assets/js/app-config.js?v=275" defer></script>
-    <script type="module" src="assets/js/main.js?v=275"></script>
-    <script type="module" src="assets/js/page-fixes.js?v=275"></script>
-    <script type="module" src="assets/js/chat-layout-fix.js?v=275"></script>
-    <script type="module" src="assets/js/home-polish.js?v=275"></script>
+    <script src="assets/js/app-config.js?v=276" defer></script>
+    <script type="module" src="assets/js/main.js?v=276"></script>
+    <script type="module" src="assets/js/page-fixes.js?v=276"></script>
+    <script type="module" src="assets/js/chat-layout-fix.js?v=276"></script>
+    <script type="module" src="assets/js/home-polish.js?v=276"></script>
 </body>
 </html>

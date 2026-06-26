@@ -28,9 +28,11 @@ function initApp() {
                     currentUser = { uid: user.uid, ...userData };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
-                    initFirebaseMessaging()
-                        .then(() => syncFcmTokenWithPreferences())
-                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        initFirebaseMessaging()
+                            .then(() => syncFcmTokenWithPreferences())
+                            .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    }
                     if (appLogo) appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');

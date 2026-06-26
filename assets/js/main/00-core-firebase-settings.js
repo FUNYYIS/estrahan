@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '275';
+const APP_ASSET_VERSION = '276';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -94,7 +94,7 @@ const DEFAULT_APP_SETTINGS = {
     splashEnabled: true,
     splashType: 'logo',
     splashTitle: 'تطبيق الاستراحة',
-    splashDuration: 6,
+    splashDuration: 0.45,
     splashImageUrl: '',
     splashVideoUrl: '',
 
@@ -156,10 +156,11 @@ function applySplashSettings() {
     if (!splash || !splashCard) return;
 
     if (appSettings.splashEnabled === false) {
-        splash.style.display = 'none';
+        splash.hidden = true;
         return;
     }
 
+    splash.hidden = false;
     const type = appSettings.splashType || 'logo';
     const title = appSettings.splashTitle || appSettings.siteName || 'تطبيق الاستراحة';
     const imageUrl = safeExternalUrl(appSettings.splashImageUrl || appSettings.themeLogoUrl || '', '');
@@ -167,18 +168,18 @@ function applySplashSettings() {
 
     if (type === 'video' && videoUrl) {
         splashCard.innerHTML = `
-            <video class="splash-media" src="${escapeHtml(videoUrl)}" autoplay muted playsinline preload="auto"></video>
+            <video class="splash-media" src="${escapeHtml(videoUrl)}" autoplay muted playsinline preload="metadata"></video>
             <strong>${escapeHtml(title)}</strong>
         `;
     } else if (type === 'image' && imageUrl) {
         splashCard.innerHTML = `
-            <img class="splash-logo splash-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <img class="splash-logo splash-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/images/estraha-logo.svg';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=276';
         splashCard.innerHTML = `
-            <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     }

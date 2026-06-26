@@ -67,16 +67,15 @@ function initApp() {
     const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
 
     const hideSplash = () => {
-        if (!splash || splash.hidden) return;
+        if (!splash || splash.classList.contains('done')) return;
         splash.classList.add('done');
         window.setTimeout(() => {
-            splash.hidden = true;
             console.log('✓ Splash screen hidden, main content shown');
         }, 220);
     };
 
     if (hasSeenSplash) {
-        if (splash) splash.hidden = true;
+        splash?.classList.add('done');
         console.log('✓ Splash skipped');
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');

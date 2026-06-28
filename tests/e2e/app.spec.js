@@ -11,7 +11,7 @@ async function openApp(page, hash = '#home', params = 'e2eAuth=1') {
   await expect(page.locator('#page-content')).toBeVisible();
 }
 
-test('opens login and register screens without real auth calls', async ({ page }) => {
+test('opens login and reaches registration only after mocked OTP verification', async ({ page }) => {
   const monitor = await installAppMocks(page);
 
   await openApp(page, '#login', '');
@@ -20,6 +20,15 @@ test('opens login and register screens without real auth calls', async ({ page }
   await expect(page.getByText('سجل معنا يا الذيب')).toHaveCount(0);
 
   await openApp(page, '#register', '');
+  await expect(page).toHaveURL(/#login$/);
+  await expect(page.locator('#register-invite-code')).toHaveCount(0);
+
+  await openApp(page, '#login', 'e2eNewUser=1');
+  await page.getByPlaceholder('05XXXXXXXX').fill('0500000000');
+  await page.getByRole('button', { name: 'أرسل رمز الدخول' }).click();
+  await expect(page.locator('#verification-code')).toBeVisible();
+  await page.locator('#verification-code').fill('123456');
+  await page.getByRole('button', { name: 'تحقق واقلط' }).click();
   await expect(page.locator('#register-invite-code')).toBeVisible();
   await expect(page.getByRole('button', { name: 'سجل وادخل' })).toBeVisible();
 

@@ -20,10 +20,10 @@ function applyHomeAppSettings() {
   <span>📢 ${escapeHtml(appSettings.homeAnnouncement)}</span>
 </div>
 `;
-            announcement.style.display = '';
+            announcement.classList.remove('hidden');
         }
     } else if (announcement) {
-        announcement.style.display = 'none';
+        announcement.classList.add('hidden');
     }
 }
 
@@ -42,21 +42,20 @@ function applyHomeSectionVisibility() {
 
     const newsSections = document.querySelectorAll('[data-home-section="news"]');
 
-    if (prayerCard) prayerCard.style.display = appSettings.showPrayer === false ? 'none' : '';
-    if (weatherCard) weatherCard.style.display = appSettings.showWeather === false ? 'none' : '';
+    if (prayerCard) prayerCard.classList.toggle('hidden', appSettings.showPrayer === false);
+    if (weatherCard) weatherCard.classList.toggle('hidden', appSettings.showWeather === false);
     if (widgetsSection) {
-        widgetsSection.style.display =
-            appSettings.showPrayer === false && appSettings.showWeather === false ? 'none' : '';
+        widgetsSection.classList.toggle('hidden', appSettings.showPrayer === false && appSettings.showWeather === false);
     }
 
-    if (matchesHead) matchesHead.style.display = appSettings.showMatches === false ? 'none' : '';
-    if (matchesList) matchesList.style.display = appSettings.showMatches === false ? 'none' : '';
+    if (matchesHead) matchesHead.classList.toggle('hidden', appSettings.showMatches === false);
+    if (matchesList) matchesList.classList.toggle('hidden', appSettings.showMatches === false);
 
-    if (chatHead) chatHead.style.display = appSettings.showChat === false ? 'none' : '';
-    if (chatList) chatList.style.display = appSettings.showChat === false ? 'none' : '';
+    if (chatHead) chatHead.classList.toggle('hidden', appSettings.showChat === false);
+    if (chatList) chatList.classList.toggle('hidden', appSettings.showChat === false);
 
     newsSections.forEach((section) => {
-        section.style.display = appSettings.showNews === false ? 'none' : '';
+        section.classList.toggle('hidden', appSettings.showNews === false);
     });
 }
 

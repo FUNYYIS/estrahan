@@ -1,11 +1,16 @@
-const ADMIN_UID = 'tquFv8nhU3ZPGgqumfCo3Hx67k02';
+const ADMIN_UID = 'g0qsFSAGg1dKy10Nnen8Djk6NB53';
 
 const firebaseModules = {
   'firebase-app.js': `
+    const apps = [];
     export function initializeApp(config) {
       globalThis.__estrahaFirebaseConfig = config;
-      return { config, name: '[DEFAULT]' };
+      const app = { config, name: '[DEFAULT]' };
+      apps[0] = app;
+      return app;
     }
+    export function getApps() { return apps; }
+    export function getApp() { return apps[0] || initializeApp(globalThis.__estrahaFirebaseConfig || {}); }
   `,
   'firebase-app-check.js': `
     export class ReCaptchaEnterpriseProvider {
@@ -18,13 +23,23 @@ const firebaseModules = {
   `,
   'firebase-auth.js': `
     const adminUid = '${ADMIN_UID}';
+    let signedInUser = null;
     function currentUser() {
+      if (signedInUser) return signedInUser;
       const params = new URLSearchParams(location.search);
       if (params.get('e2eAdmin') === '1') return { uid: adminUid, phoneNumber: '+966500000000' };
       if (params.get('e2eAuth') === '1') return { uid: 'e2e-user', phoneNumber: '+966511111111' };
       return null;
     }
-    export function getAuth() { return { currentUser: currentUser(), languageCode: 'ar' }; }
+    function pendingNewUser() {
+      const params = new URLSearchParams(location.search);
+      return params.get('e2eNewUser') === '1' ? { uid: 'e2e-new-user', phoneNumber: '+966522222222' } : null;
+    }
+    export function getAuth() {
+      const auth = { currentUser: currentUser(), languageCode: 'ar' };
+      globalThis.__estrahaMockAuth = auth;
+      return auth;
+    }
     export class RecaptchaVerifier {
       constructor() {}
       render() { return Promise.resolve(1); }
@@ -33,13 +48,22 @@ const firebaseModules = {
     export function signInWithPhoneNumber() {
       return Promise.resolve({ verificationId: 'e2e-verification', confirm: () => Promise.resolve({ user: currentUser() || { uid: 'e2e-user' } }) });
     }
-    export function signOut() { return Promise.resolve(); }
+    export function signOut() {
+      signedInUser = null;
+      if (globalThis.__estrahaMockAuth) globalThis.__estrahaMockAuth.currentUser = null;
+      return Promise.resolve();
+    }
     export function onAuthStateChanged(auth, callback) {
       setTimeout(() => callback(currentUser()), 0);
       return () => {};
     }
     export const PhoneAuthProvider = { credential: () => ({ providerId: 'phone' }) };
-    export function signInWithCredential() { return Promise.resolve({ user: currentUser() || { uid: 'e2e-user' } }); }
+    export function signInWithCredential(auth) {
+      signedInUser = pendingNewUser() || currentUser() || { uid: 'e2e-user', phoneNumber: '+966511111111' };
+      if (auth) auth.currentUser = signedInUser;
+      if (globalThis.__estrahaMockAuth) globalThis.__estrahaMockAuth.currentUser = signedInUser;
+      return Promise.resolve({ user: signedInUser });
+    }
   `,
   'firebase-firestore.js': `
     const adminUid = '${ADMIN_UID}';
@@ -78,6 +102,10 @@ const firebaseModules = {
       }
       if (ref.path && ref.path.startsWith('users/')) {
         const uid = ref.path.split('/')[1];
+        const params = new URLSearchParams(location.search);
+        if (params.get('e2eNewUser') === '1' && uid === 'e2e-new-user') {
+          return Promise.resolve(docSnap(uid, {}, false));
+        }
         return Promise.resolve(docSnap(uid, {
           uid,
           name: uid === adminUid ? 'مشرف الاختبار' : 'عضو الاختبار',
@@ -154,13 +182,32 @@ const newsPayload = {
   ]
 };
 
+function futureDate(daysFromNow = 7) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return { year, month, day };
+}
+
+function futureDateKey(daysFromNow = 7) {
+  const { year, month, day } = futureDate(daysFromNow);
+  return `${year}-${month}-${day}`;
+}
+
+function futureWorldCupDate(daysFromNow = 7, time = '18:30') {
+  const { year, month, day } = futureDate(daysFromNow);
+  return `${month}/${day}/${year} ${time}`;
+}
+
 const matchPayload = {
   events: [
     {
       idEvent: 'match-1',
       strHomeTeam: 'الهلال',
       strAwayTeam: 'النصر',
-      dateEvent: '2026-06-27',
+      dateEvent: futureDateKey(),
       strTime: '18:30:00',
       strStatus: 'Not Started',
       strHomeTeamBadge: '',
@@ -248,7 +295,7 @@ async function installAppMocks(page) {
         id: 1,
         home_team_id: 1,
         away_team_id: 2,
-        local_date: '06/27/2026 18:30',
+        local_date: futureWorldCupDate(),
         finished: 'FALSE',
         time_elapsed: 'notstarted',
         group: 'A',

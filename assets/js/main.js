@@ -495,13 +495,14 @@ function setOnlineState() {
 }
 
 function syncShellUserState() {
-    if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
-    if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
+    if (bottomNav) bottomNav.classList.toggle('hidden', !currentUser);
+    if (logoutButton) logoutButton.classList.toggle('hidden', !currentUser);
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
+    const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
     if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
-        element.style.display = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) ? '' : 'none';
+        element.classList.toggle('hidden', !isAdmin);
     });
     updateNotificationBadge(0);
 }
@@ -844,6 +845,11 @@ async function renderPage(hash) {
             updateActiveNav(currentHash);
             sidebar?.classList.remove('open');
         } catch (error) {
+            const isTransientFetchError = error instanceof TypeError && /Failed to fetch/i.test(error.message || '');
+            if (isTransientFetchError) {
+                console.warn('Page fetch was interrupted while navigating:', error.message);
+                return;
+            }
             console.error('Error fetching page:', error);
             pageContent.innerHTML = '<p class="text-center">عفواً، الصفحة غير موجودة.</p>';
         }
@@ -864,8 +870,8 @@ function attachEventListeners(hash) {
 
         const phoneForm = document.getElementById('phone-form');
         const codeForm = document.getElementById('code-form');
-        if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
-        if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
+        if (phoneForm) phoneForm.addEventListener('submit', handleSendCode);
+        if (codeForm) codeForm.addEventListener('submit', handleVerifyCode);
 
         // Setup recaptcha with validation
         const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');
@@ -958,7 +964,7 @@ function setupProfileEditor() {
 
     if (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) {
         if (nameInput) nameInput.removeAttribute('readonly');
-        if (saveNameBtn) saveNameBtn.style.display = 'inline-flex';
+        if (saveNameBtn) saveNameBtn.classList.remove('hidden');
     }
 
     saveNameBtn?.addEventListener('click', async () => {
@@ -1930,10 +1936,8 @@ function setFormLoading(form, isLoading, loadingText) {
     submitButton.textContent = isLoading ? loadingText : submitButton.dataset.defaultText;
 }
 
-function setAuthStatus(isRegister, phase, message) {
-    const id = isRegister
-        ? phase === 'code' ? 'register-code-status' : 'register-status'
-        : phase === 'code' ? 'login-code-status' : 'login-status';
+function setAuthStatus(phase, message) {
+    const id = phase === 'code' ? 'login-code-status' : 'login-status';
     const element = document.getElementById(id);
     if (element) element.textContent = message || '';
 }
@@ -1944,6 +1948,8 @@ async function handleCompleteRegistration(e) {
 
     const user = auth.currentUser;
     if (!user) {
+        const status = document.getElementById('register-status');
+        if (status) status.textContent = 'ابدأ من صفحة الدخول برقم جوالك، وبعد التحقق كمل التسجيل هنا.';
         showAlert('تحقق من رقم جوالك أولاً من صفحة الدخول.');
         await navigateToHash('#login');
         return;
@@ -1983,6 +1989,7 @@ async function handleCompleteRegistration(e) {
         };
 
         document.body.classList.add('is-authenticated');
+        sessionStorage.removeItem('firebaseVerificationId');
         syncShellUserState();
         showAlert('تم تسجيلك بنجاح، حيّاك الله.');
         await navigateToHash('#home');
@@ -2026,12 +2033,10 @@ function getRegistrationErrorMessage(error) {
 }
 
 
-async function handleSendCode(e, isRegister = false) {
+async function handleSendCode(e) {
     e.preventDefault();
-    console.log(`handleSendCode called (isRegister=${isRegister})`);
 
-    const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
-    const phoneInput = document.getElementById(phoneInputId);
+    const phoneInput = document.getElementById('phone-number');
 
     if (!phoneInput) {
         showAlert('خانة الجوال مو موجودة، حدّث الصفحة.');
@@ -2063,7 +2068,7 @@ async function handleSendCode(e, isRegister = false) {
 
     console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
-    setAuthStatus(isRegister, 'phone', 'نجهز التحقق ونرسل لك الرمز...');
+    setAuthStatus('phone', 'نجهز التحقق ونرسل لك الرمز...');
 
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -2071,15 +2076,11 @@ async function handleSendCode(e, isRegister = false) {
 
         // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
-        setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
-        if (isRegister) {
-            await navigateToHash('#register');
-        } else {
-            const phoneForm = document.getElementById('phone-form');
-            const codeForm = document.getElementById('code-form');
-            if (phoneForm) phoneForm.style.display = 'none';
-            if (codeForm) codeForm.style.display = 'block';
-        }
+        setAuthStatus('code', 'وصل الرمز. دخّله هنا وكمل.');
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        if (phoneForm) phoneForm.classList.add('hidden');
+        if (codeForm) codeForm.classList.remove('hidden');
         setFormLoading(e.currentTarget, false);
     } catch (error) {
         console.error("✗ SMS Error:", error);
@@ -2101,10 +2102,10 @@ async function handleSendCode(e, isRegister = false) {
         }
 
         showAlert(errorMsg);
-        setAuthStatus(isRegister, 'phone', '');
+        setAuthStatus('phone', '');
 
         // Reset recaptcha and try to recreate it
-        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
+        const containerId = 'recaptcha-container';
         recaptchaManager.destroy(containerId);
 
         // Wait a moment then recreate
@@ -2118,12 +2119,10 @@ async function handleSendCode(e, isRegister = false) {
     }
 }
 
-async function handleVerifyCode(e, isRegister = false) {
+async function handleVerifyCode(e) {
     e.preventDefault();
-    console.log(`handleVerifyCode called (isRegister=${isRegister})`);
 
-    const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
-    const codeInput = document.getElementById(codeInputId);
+    const codeInput = document.getElementById('verification-code');
 
     if (!codeInput) {
         showAlert('خانة الرمز مو موجودة، حدّث الصفحة.');
@@ -2143,23 +2142,16 @@ async function handleVerifyCode(e, isRegister = false) {
     if (!verificationId) {
         showAlert('انتهت مهلة الرمز. اطلب رمز جديد.');
         // Reset forms
-        if (isRegister) {
-            const registerForm = document.getElementById('register-form');
-            const registerCodeForm = document.getElementById('register-code-form');
-            if (registerForm) registerForm.style.display = 'block';
-            if (registerCodeForm) registerCodeForm.style.display = 'none';
-        } else {
-            const phoneForm = document.getElementById('phone-form');
-            const codeForm = document.getElementById('code-form');
-            if (phoneForm) phoneForm.style.display = 'block';
-            if (codeForm) codeForm.style.display = 'none';
-        }
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        if (phoneForm) phoneForm.classList.remove('hidden');
+        if (codeForm) codeForm.classList.add('hidden');
         return;
     }
 
     console.log('Verifying code...');
     setFormLoading(e.currentTarget, true, 'جاري التحقق...');
-    setAuthStatus(isRegister, 'code', 'نتأكد من الرمز...');
+    setAuthStatus('code', 'نتأكد من الرمز...');
 
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
@@ -2167,28 +2159,18 @@ async function handleVerifyCode(e, isRegister = false) {
         const user = result.user;
         console.log('✓ Phone verification successful');
 
-        if (isRegister) {
-            sessionStorage.removeItem('firebaseVerificationId');
-
-            showAlert('تم التحقق من رقمك. كمل الاسم ورمز الدعوة.');
+        const userDocRef = doc(db, "users", user.uid);
+        const existingUserDoc = await getDoc(userDocRef);
+        if (!existingUserDoc.exists()) {
+            showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
             await navigateToHash('#register');
             return;
-        }
-
-        if (!isRegister) {
-            const userDocRef = doc(db, "users", user.uid);
-            const existingUserDoc = await getDoc(userDocRef);
-            if (!existingUserDoc.exists()) {
-                showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
-                await navigateToHash('#register');
-                return;
-            }
         }
 
         // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
 
-        setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
+        setAuthStatus('code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
@@ -2207,7 +2189,7 @@ async function handleVerifyCode(e, isRegister = false) {
         }
 
         showAlert(errorMsg);
-        setAuthStatus(isRegister, 'code', '');
+        setAuthStatus('code', '');
         setFormLoading(e.currentTarget, false);
     }
 }
@@ -2243,10 +2225,10 @@ function applyHomeAppSettings() {
   <span>📢 ${escapeHtml(appSettings.homeAnnouncement)}</span>
 </div>
 `;
-            announcement.style.display = '';
+            announcement.classList.remove('hidden');
         }
     } else if (announcement) {
-        announcement.style.display = 'none';
+        announcement.classList.add('hidden');
     }
 }
 
@@ -2265,21 +2247,20 @@ function applyHomeSectionVisibility() {
 
     const newsSections = document.querySelectorAll('[data-home-section="news"]');
 
-    if (prayerCard) prayerCard.style.display = appSettings.showPrayer === false ? 'none' : '';
-    if (weatherCard) weatherCard.style.display = appSettings.showWeather === false ? 'none' : '';
+    if (prayerCard) prayerCard.classList.toggle('hidden', appSettings.showPrayer === false);
+    if (weatherCard) weatherCard.classList.toggle('hidden', appSettings.showWeather === false);
     if (widgetsSection) {
-        widgetsSection.style.display =
-            appSettings.showPrayer === false && appSettings.showWeather === false ? 'none' : '';
+        widgetsSection.classList.toggle('hidden', appSettings.showPrayer === false && appSettings.showWeather === false);
     }
 
-    if (matchesHead) matchesHead.style.display = appSettings.showMatches === false ? 'none' : '';
-    if (matchesList) matchesList.style.display = appSettings.showMatches === false ? 'none' : '';
+    if (matchesHead) matchesHead.classList.toggle('hidden', appSettings.showMatches === false);
+    if (matchesList) matchesList.classList.toggle('hidden', appSettings.showMatches === false);
 
-    if (chatHead) chatHead.style.display = appSettings.showChat === false ? 'none' : '';
-    if (chatList) chatList.style.display = appSettings.showChat === false ? 'none' : '';
+    if (chatHead) chatHead.classList.toggle('hidden', appSettings.showChat === false);
+    if (chatList) chatList.classList.toggle('hidden', appSettings.showChat === false);
 
     newsSections.forEach((section) => {
-        section.style.display = appSettings.showNews === false ? 'none' : '';
+        section.classList.toggle('hidden', appSettings.showNews === false);
     });
 }
 
@@ -2379,18 +2360,18 @@ function loadMembers() {
                 div.className = 'list-item-card';
 
                 const statusIcon = member.paymentStatus === 'paid'
-                    ? `<span class="font-bold" style="color: #5cb85c;">✅ مدفوع</span>`
-                    : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
+                    ? `<span class="font-bold payment-status-paid">✅ مدفوع</span>`
+                    : `<span class="font-bold payment-status-late">❌ متأخر</span>`;
 
                 let adminControls = '';
                 if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
                     adminControls = `
-                        <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
-                        <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
-                        <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تعديل الاسم</button>
-                        <button data-id="${memberId}" data-disabled="${member.disabled === true ? 'true' : 'false'}" class="disable-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">${member.disabled === true ? 'تفعيل' : 'تعطيل'}</button>
-                        <button data-id="${memberId}" class="reset-avatar-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تصفير الصورة</button>
-                        <button data-id="${memberId}" class="delete-member-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">حذف</button>
+                        <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn btn-compact ms-2">دفع</button>
+                        <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger btn-compact">لم يدفع</button>
+                        <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn btn-compact">تعديل الاسم</button>
+                        <button data-id="${memberId}" data-disabled="${member.disabled === true ? 'true' : 'false'}" class="disable-member-btn btn btn-compact">${member.disabled === true ? 'تفعيل' : 'تعطيل'}</button>
+                        <button data-id="${memberId}" class="reset-avatar-btn btn btn-compact">تصفير الصورة</button>
+                        <button data-id="${memberId}" class="delete-member-btn btn btn-danger btn-compact">حذف</button>
                     `;
                 }
 
@@ -2580,7 +2561,7 @@ async function applyPaymentSettingsView() {
     if (stcMethod) stcMethod.classList.toggle('is-disabled', !enabled || !appSettings.stcPayNumber);
     if (stcValue) stcValue.textContent = enabled && appSettings.stcPayNumber ? appSettings.stcPayNumber : 'غير متاح حالياً';
     if (copyStcBtn) {
-        copyStcBtn.style.display = enabled && appSettings.stcPayNumber ? 'inline-flex' : 'none';
+        copyStcBtn.classList.toggle('hidden', !(enabled && appSettings.stcPayNumber));
         copyStcBtn.onclick = () => copyToClipboard(appSettings.stcPayNumber || '');
     }
 
@@ -2588,10 +2569,10 @@ async function applyPaymentSettingsView() {
     if (appleValue) appleValue.textContent = enabled && appSettings.applePayText ? appSettings.applePayText : 'غير متاح حالياً';
     if (appleStatus) appleStatus.textContent = enabled && appSettings.applePayText ? 'متاح' : 'قريباً';
 
-    if (beneficiaryCard) beneficiaryCard.style.display = enabled && appSettings.beneficiaryName ? '' : 'none';
+    if (beneficiaryCard) beneficiaryCard.classList.toggle('hidden', !(enabled && appSettings.beneficiaryName));
     if (beneficiaryName) beneficiaryName.textContent = appSettings.beneficiaryName || '--';
 
-    if (qrCard) qrCard.style.display = enabled && appSettings.paymentQrUrl ? '' : 'none';
+    if (qrCard) qrCard.classList.toggle('hidden', !(enabled && appSettings.paymentQrUrl));
     if (qrImage && appSettings.paymentQrUrl) qrImage.src = safeExternalUrl(appSettings.paymentQrUrl, '');
 }
 
@@ -2715,9 +2696,9 @@ function renderChatMessages(chatBox) {
         const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
         const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
         const adminChatControls = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)
-            ? `<button type="button" class="pin-chat-message-btn btn" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">تثبيت</button>
-               <button type="button" class="mute-chat-user-btn btn" data-user-id="${escapeHtml(msg.userId || '')}" style="width:auto; padding:4px 8px; font-size:11px;">كتم</button>
-               <button type="button" class="delete-chat-message-btn btn btn-danger" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">حذف</button>`
+            ? `<button type="button" class="pin-chat-message-btn btn btn-mini" data-id="${escapeHtml(msg.id)}">تثبيت</button>
+               <button type="button" class="mute-chat-user-btn btn btn-mini" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
+               <button type="button" class="delete-chat-message-btn btn btn-danger btn-mini" data-id="${escapeHtml(msg.id)}">حذف</button>`
             : '';
 
         div.innerHTML = `
@@ -3113,7 +3094,7 @@ async function loadHomeMatches() {
 }
 
 async function loadHomeNews() {
-    const container = document.getElementById('home-news-list');
+    const container = document.getElementById('home-arabiya-news-list');
     if (!container) return;
     await loadNews(container, 3);
 }
@@ -3566,163 +3547,19 @@ function getTeamInitial(teamName = '') {
 }
 
 async function loadNews(container, limit = 10) {
-    if (!container) container = document.getElementById('news-list');
+    if (!container) container = document.getElementById('arabiya-news-list') || document.getElementById('news-list');
     if (!container) return;
 
-    container.innerHTML = `<p class="text-center">جاري تحميل الأخبار...</p>`;
-
-    try {
-        const articles = await fetchFootballNews(limit);
-
-        if (!articles.length) {
-            container.innerHTML = `<p class="text-center">ما فيه أخبار كروية متاحة حالياً.</p>`;
-            return;
-        }
-
-        window.EstrahaFreshness?.record('news');
-        container.innerHTML = '';
-        articles.slice(0, limit).forEach(article => {
-            try {
-                const title = article.title || 'بدون عنوان';
-                const description = article.description || 'خبر رياضي عربي من مصادر موثوقة، بدون صور مكسورة أو بطاقات فاضية.';
-                const url = safeExternalUrl(article.url, '#');
-                const source = article.source?.name || 'مصدر';
-                const image = safeExternalUrl(article.urlToImage, '');
-                const imageMarkup = image
-                    ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
-                    : '';
-
-                const newsCard = `
-                    <article class="news-card card">
-                        ${imageMarkup}
-                        <h3>${escapeHtml(title.substring(0, 110))}</h3>
-                        <p>${escapeHtml(description.substring(0, 160))}</p>
-                        <span class="text-xs opacity-70">${escapeHtml(source)}</span>
-                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="primary">قراءة المزيد</a>
-                    </article>
-                `;
-                container.innerHTML += newsCard;
-            } catch (itemError) {
-                console.error('Error processing article:', itemError);
-            }
-        });
-
-    } catch (error) {
-        console.error("Error fetching news:", error);
-        container.innerHTML = `<p class="text-center">ما قدرنا نجيب أخبار الكورة حالياً. بنحاول لاحقاً.</p>`;
-    }
-}
-
-async function fetchFootballNews(limit = 10) {
-    const sources = [
-        { name: 'الجزيرة رياضة', url: 'https://www.aljazeera.net/aljazeerarss/sports.xml' },
-        { name: 'العربية رياضة', url: 'https://www.alarabiya.net/.mrss/ar/sport.xml' }
-    ];
-    const requests = sources.map((source) => fetchRssNewsSource(source));
-    const settled = await Promise.allSettled(requests);
-    const articles = settled
-        .flatMap((result) => result.status === 'fulfilled' ? result.value : [])
-        .filter((article) => article.title && article.url && containsArabic(article.title));
-
-    return dedupeNewsArticles(articles)
-        .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
-        .slice(0, limit);
-}
-
-async function fetchRssNewsSource(source) {
-    const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.url)}`;
-    try {
-        const data = await fetchJsonWithTimeout(rssJsonUrl, 8000);
-        if (data.status !== 'ok' || !Array.isArray(data.items)) {
-            throw new Error(`${source.name} rss2json returned invalid data`);
-        }
-        return data.items.map((item) => ({
-            title: sanitizePlainText(item.title),
-            description: sanitizePlainText(item.description || item.content || ''),
-            url: item.link || '',
-            urlToImage: getValidImageUrl(item.thumbnail || item.enclosure?.link || extractFirstImageFromHtml(item.description || item.content || '')),
-            publishedAt: item.pubDate,
-            source: { name: source.name }
-        }));
-    } catch (primaryError) {
-        console.warn(`${source.name} rss2json unavailable, trying RSS fallback:`, primaryError);
+    const compact = container.id === 'home-arabiya-news-list' || Number(limit) <= 3;
+    if (window.EstrahaNews?.load) {
+        await window.EstrahaNews.load(container, { compact, limit });
+        return;
     }
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.url)}`;
-    const response = await fetchWithTimeout(proxyUrl, 8000);
-    if (!response.ok) {
-        throw new Error(`${source.name} returned ${response.status}`);
-    }
-
-    const xmlText = await response.text();
-    const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-    if (doc.querySelector('parsererror')) {
-        throw new Error(`${source.name} returned invalid RSS`);
-    }
-
-    return Array.from(doc.querySelectorAll('item')).map((item) => ({
-        title: sanitizePlainText(readRssText(item, 'title')),
-        description: sanitizePlainText(readRssText(item, 'description')),
-        url: readRssText(item, 'link'),
-        urlToImage: extractRssImage(item),
-        publishedAt: readRssText(item, 'pubDate'),
-        source: { name: source.name }
-    }));
-}
-
-async function fetchWithTimeout(url, timeoutMs = 8000) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-        return await fetch(url, { signal: controller.signal });
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-function containsArabic(value = '') {
-    return /[\u0600-\u06FF]/.test(String(value));
-}
-
-function sanitizePlainText(value = '') {
-    const template = document.createElement('template');
-    template.innerHTML = String(value);
-    return (template.content.textContent || '').trim();
-}
-
-function extractFirstImageFromHtml(value = '') {
-    const template = document.createElement('template');
-    template.innerHTML = String(value);
-    return template.content.querySelector('img')?.getAttribute('src') || '';
-}
-
-function getValidImageUrl(value = '') {
-    const url = safeExternalUrl(value, '');
-    if (!url) return '';
-    if (/\.(mp4|m3u8|mov|webm)(\?|#|$)/i.test(url)) return '';
-    return url;
-}
-
-function readRssText(item, tagName) {
-    return item.querySelector(tagName)?.textContent?.trim() || '';
-}
-
-function extractRssImage(item) {
-    const mediaContent = item.getElementsByTagName('media:content')[0] || item.getElementsByTagName('media:thumbnail')[0];
-    const enclosure = item.querySelector('enclosure[type^="image"]');
-    const mediaUrl = mediaContent?.getAttribute('url') || enclosure?.getAttribute('url') || '';
-    return getValidImageUrl(mediaUrl);
-}
-
-function dedupeNewsArticles(articles) {
-    const seen = new Set();
-    return articles.filter((article) => {
-        const key = safeExternalUrl(article.url, '').toLowerCase();
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
+    container.innerHTML = '<p class="text-center">جاري تحميل أخبار العربية...</p>';
+    window.setTimeout(() => {
+        window.EstrahaNews?.load?.(container, { compact, limit });
+    }, 0);
 }
 
 

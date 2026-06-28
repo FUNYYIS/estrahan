@@ -110,6 +110,11 @@ async function renderPage(hash) {
             updateActiveNav(currentHash);
             sidebar?.classList.remove('open');
         } catch (error) {
+            const isTransientFetchError = error instanceof TypeError && /Failed to fetch/i.test(error.message || '');
+            if (isTransientFetchError) {
+                console.warn('Page fetch was interrupted while navigating:', error.message);
+                return;
+            }
             console.error('Error fetching page:', error);
             pageContent.innerHTML = '<p class="text-center">عفواً، الصفحة غير موجودة.</p>';
         }
@@ -130,8 +135,8 @@ function attachEventListeners(hash) {
 
         const phoneForm = document.getElementById('phone-form');
         const codeForm = document.getElementById('code-form');
-        if (phoneForm) phoneForm.addEventListener('submit', (e) => handleSendCode(e, false));
-        if (codeForm) codeForm.addEventListener('submit', (e) => handleVerifyCode(e, false));
+        if (phoneForm) phoneForm.addEventListener('submit', handleSendCode);
+        if (codeForm) codeForm.addEventListener('submit', handleVerifyCode);
 
         // Setup recaptcha with validation
         const recaptchaSetupSuccess = setupRecaptcha('recaptcha-container');

@@ -50,6 +50,31 @@
 .w-10 { width: 2.5rem; }
 .h-10 { height: 2.5rem; }
 .w-1\/3 { width: 33.333%; }
+.btn-fit { width: auto; }
+.btn-compact {
+  width: auto;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.btn-mini {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.clickable-card { cursor: pointer; }
+.payment-card-extra { margin-top: 12px; }
+.payment-qr-card { justify-content: center; }
+.payment-qr-image {
+  max-width: 180px;
+  border-radius: 18px;
+}
+.payment-status-paid { color: #5cb85c; }
+.payment-status-late { color: #d9534f; }
+.ms-2 { margin-inline-start: 10px; }
+
+#home-qattah-meter {
+  --value: 0%;
+}
 
 body[data-theme="dark"] {
   --bg: #F5F3EE;

@@ -26,7 +26,7 @@ function setupProfileEditor() {
 
     if (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) {
         if (nameInput) nameInput.removeAttribute('readonly');
-        if (saveNameBtn) saveNameBtn.style.display = 'inline-flex';
+        if (saveNameBtn) saveNameBtn.classList.remove('hidden');
     }
 
     saveNameBtn?.addEventListener('click', async () => {

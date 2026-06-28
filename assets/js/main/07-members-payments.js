@@ -66,18 +66,18 @@ function loadMembers() {
                 div.className = 'list-item-card';
 
                 const statusIcon = member.paymentStatus === 'paid'
-                    ? `<span class="font-bold" style="color: #5cb85c;">✅ مدفوع</span>`
-                    : `<span class="font-bold" style="color: #d9534f;">❌ متأخر</span>`;
+                    ? `<span class="font-bold payment-status-paid">✅ مدفوع</span>`
+                    : `<span class="font-bold payment-status-late">❌ متأخر</span>`;
 
                 let adminControls = '';
                 if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
                     adminControls = `
-                        <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px; margin-inline-start: 10px;">دفع</button>
-                        <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">لم يدفع</button>
-                        <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تعديل الاسم</button>
-                        <button data-id="${memberId}" data-disabled="${member.disabled === true ? 'true' : 'false'}" class="disable-member-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">${member.disabled === true ? 'تفعيل' : 'تعطيل'}</button>
-                        <button data-id="${memberId}" class="reset-avatar-btn btn" style="width:auto; padding: 5px 8px; font-size: 12px;">تصفير الصورة</button>
-                        <button data-id="${memberId}" class="delete-member-btn btn btn-danger" style="width:auto; padding: 5px 8px; font-size: 12px;">حذف</button>
+                        <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn btn-compact ms-2">دفع</button>
+                        <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger btn-compact">لم يدفع</button>
+                        <button data-id="${memberId}" data-name="${escapeHtml(member.name || '')}" class="edit-member-btn btn btn-compact">تعديل الاسم</button>
+                        <button data-id="${memberId}" data-disabled="${member.disabled === true ? 'true' : 'false'}" class="disable-member-btn btn btn-compact">${member.disabled === true ? 'تفعيل' : 'تعطيل'}</button>
+                        <button data-id="${memberId}" class="reset-avatar-btn btn btn-compact">تصفير الصورة</button>
+                        <button data-id="${memberId}" class="delete-member-btn btn btn-danger btn-compact">حذف</button>
                     `;
                 }
 
@@ -267,7 +267,7 @@ async function applyPaymentSettingsView() {
     if (stcMethod) stcMethod.classList.toggle('is-disabled', !enabled || !appSettings.stcPayNumber);
     if (stcValue) stcValue.textContent = enabled && appSettings.stcPayNumber ? appSettings.stcPayNumber : 'غير متاح حالياً';
     if (copyStcBtn) {
-        copyStcBtn.style.display = enabled && appSettings.stcPayNumber ? 'inline-flex' : 'none';
+        copyStcBtn.classList.toggle('hidden', !(enabled && appSettings.stcPayNumber));
         copyStcBtn.onclick = () => copyToClipboard(appSettings.stcPayNumber || '');
     }
 
@@ -275,10 +275,10 @@ async function applyPaymentSettingsView() {
     if (appleValue) appleValue.textContent = enabled && appSettings.applePayText ? appSettings.applePayText : 'غير متاح حالياً';
     if (appleStatus) appleStatus.textContent = enabled && appSettings.applePayText ? 'متاح' : 'قريباً';
 
-    if (beneficiaryCard) beneficiaryCard.style.display = enabled && appSettings.beneficiaryName ? '' : 'none';
+    if (beneficiaryCard) beneficiaryCard.classList.toggle('hidden', !(enabled && appSettings.beneficiaryName));
     if (beneficiaryName) beneficiaryName.textContent = appSettings.beneficiaryName || '--';
 
-    if (qrCard) qrCard.style.display = enabled && appSettings.paymentQrUrl ? '' : 'none';
+    if (qrCard) qrCard.classList.toggle('hidden', !(enabled && appSettings.paymentQrUrl));
     if (qrImage && appSettings.paymentQrUrl) qrImage.src = safeExternalUrl(appSettings.paymentQrUrl, '');
 }
 

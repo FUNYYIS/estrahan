@@ -73,7 +73,7 @@
                 </span>
             </a>
 
-            <nav id="bottom-nav" class="nav" aria-label="التنقل الرئيسي" style="display: none;">
+            <nav id="bottom-nav" class="nav hidden" aria-label="التنقل الرئيسي">
                 <a href="#home" class="nav-link"><i data-lucide="home"></i><span>الرئيسية</span></a>
                 <a href="#chat" class="nav-link"><i data-lucide="messages-square"></i><span>الدردشة</span></a>
                 <a href="#matches" class="nav-link"><i data-lucide="trophy"></i><span>المباريات</span></a>
@@ -84,7 +84,7 @@
                 <a href="#settings" class="nav-link"><i data-lucide="grid-2x2"></i><span>المزيد</span></a>
             </nav>
 
-            <button id="logout-button" class="sidebar-logout" type="button">
+            <button id="logout-button" class="sidebar-logout hidden" type="button">
                 <i data-lucide="log-out"></i>
                 <span>تسجيل خروج</span>
             </button>
@@ -138,6 +138,7 @@
     </div>
 
     <script src="assets/js/app-config.js?v=276" defer></script>
+    <script type="module" src="assets/js/news-provider.js?v=276"></script>
     <script type="module" src="assets/js/main.js?v=276"></script>
     <script type="module" src="assets/js/page-fixes.js?v=276"></script>
     <script type="module" src="assets/js/chat-layout-fix.js?v=276"></script>

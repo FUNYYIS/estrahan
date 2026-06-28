@@ -86,4 +86,3 @@ if (chatIconObserverTarget) {
         subtree: true
     });
 }
-

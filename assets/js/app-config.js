@@ -21,7 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const script = document.createElement('script');
   script.type = 'module';
-  script.src = 'assets/js/register-auth.js?v=277';
+  script.src = 'assets/js/register-auth.js?v=276';
   script.dataset.registerAuthModule = 'true';
   document.body.appendChild(script);
 });

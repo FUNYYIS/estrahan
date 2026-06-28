@@ -54,35 +54,3 @@ if (document.readyState === 'loading') {
 } else {
   scheduleChatLayoutMeasurement();
 }
-
-function ensureChatSendIcon() {
-    const button = document.querySelector(
-        '#sendMessageBtn, #send-message-btn, #chat-send-btn, #sendMessageButton, #chat-form button[type="submit"], .chat-form button[type="submit"], .chat-composer button[type="submit"], .chat-input-form button[type="submit"]'
-    );
-
-    if (!button || button.dataset.sendIconReady === '1') return;
-
-    const hasIcon = button.querySelector('svg, i[data-lucide]');
-    if (!hasIcon) {
-        button.innerHTML = '<i data-lucide="send-horizontal" aria-hidden="true"></i>';
-        button.setAttribute('aria-label', 'إرسال');
-        button.setAttribute('title', 'إرسال');
-    }
-
-    button.dataset.sendIconReady = '1';
-
-    if (window.lucide?.createIcons) {
-        window.lucide.createIcons();
-    }
-}
-
-document.addEventListener('DOMContentLoaded', ensureChatSendIcon);
-window.addEventListener('hashchange', () => setTimeout(ensureChatSendIcon, 150));
-
-const chatIconObserverTarget = document.getElementById('page-content');
-if (chatIconObserverTarget) {
-    new MutationObserver(() => ensureChatSendIcon()).observe(chatIconObserverTarget, {
-        childList: true,
-        subtree: true
-    });
-}

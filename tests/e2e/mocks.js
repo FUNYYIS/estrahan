@@ -1,4 +1,4 @@
-const ADMIN_UID = 'tquFv8nhU3ZPGgqumfCo3Hx67k02';
+const ADMIN_UID = 'g0qsFSAGg1dKy10Nnen8Djk6NB53';
 
 const firebaseModules = {
   'firebase-app.js': `

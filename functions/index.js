@@ -25,7 +25,7 @@ const {
 admin.initializeApp();
 
 const db = admin.firestore();
-const ADMIN_UID = 'tquFv8nhU3ZPGgqumfCo3Hx67k02';
+const ADMIN_UID = 'g0qsFSAGg1dKy10Nnen8Djk6NB53';
 const REGISTRATION_INVITE_CODE = defineSecret('ESTRAHA_INVITE_CODE');
 const THE_SPORTS_DB_KEY = '3';
 const SAUDI_LEAGUE_ID = '4668';

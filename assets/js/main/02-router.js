@@ -110,6 +110,11 @@ async function renderPage(hash) {
             updateActiveNav(currentHash);
             sidebar?.classList.remove('open');
         } catch (error) {
+            const isTransientFetchError = error instanceof TypeError && /Failed to fetch/i.test(error.message || '');
+            if (isTransientFetchError) {
+                console.warn('Page fetch was interrupted while navigating:', error.message);
+                return;
+            }
             console.error('Error fetching page:', error);
             pageContent.innerHTML = '<p class="text-center">عفواً، الصفحة غير موجودة.</p>';
         }

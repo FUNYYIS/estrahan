@@ -305,7 +305,6 @@ async function handleVerifyCode(e) {
         const userDocRef = doc(db, "users", user.uid);
         const existingUserDoc = await getDoc(userDocRef);
         if (!existingUserDoc.exists()) {
-            sessionStorage.removeItem('firebaseVerificationId');
             showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
             await navigateToHash('#register');
             return;

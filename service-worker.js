@@ -35,6 +35,7 @@ const APP_SHELL_URLS = [
   '/assets/js/news-provider.js',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
+  '/assets/js/register-auth.js',
   '/assets/js/chat-layout-fix.js',
   '/assets/js/home-polish.js',
   '/assets/js/runtime-ux.js',

@@ -163,12 +163,8 @@ function syncShellUserState() {
     if (logoutButton) logoutButton.classList.toggle('hidden', !currentUser);
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
-<<<<<<< HEAD
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
-=======
     if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
->>>>>>> origin/main
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });

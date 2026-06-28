@@ -208,3 +208,27 @@ body[data-theme="dark"] .theme-moon-btn {
 .stat { padding: 1rem; }
 .stat span, .muted { color: var(--muted); }
 .stat strong { display: block; margin-top: 0.35rem; font-size: 1.65rem; }
+
+.app-footer {
+    width: 100%;
+    margin-top: auto;
+    padding: 18px 12px calc(92px + env(safe-area-inset-bottom));
+    text-align: center;
+    color: rgba(255, 255, 255, 0.50);
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+}
+
+.app-footer span {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    direction: ltr;
+}
+
+@media (min-width: 900px) {
+    .app-footer {
+        padding-bottom: 22px;
+    }
+}
+

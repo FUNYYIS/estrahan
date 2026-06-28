@@ -81,9 +81,9 @@ function renderChatMessages(chatBox) {
         const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
         const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
         const adminChatControls = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)
-            ? `<button type="button" class="pin-chat-message-btn btn" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">تثبيت</button>
-               <button type="button" class="mute-chat-user-btn btn" data-user-id="${escapeHtml(msg.userId || '')}" style="width:auto; padding:4px 8px; font-size:11px;">كتم</button>
-               <button type="button" class="delete-chat-message-btn btn btn-danger" data-id="${escapeHtml(msg.id)}" style="width:auto; padding:4px 8px; font-size:11px;">حذف</button>`
+            ? `<button type="button" class="pin-chat-message-btn btn btn-mini" data-id="${escapeHtml(msg.id)}">تثبيت</button>
+               <button type="button" class="mute-chat-user-btn btn btn-mini" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
+               <button type="button" class="delete-chat-message-btn btn btn-danger btn-mini" data-id="${escapeHtml(msg.id)}">حذف</button>`
             : '';
 
         div.innerHTML = `

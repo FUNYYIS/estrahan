@@ -126,13 +126,14 @@ function setOnlineState() {
 }
 
 function syncShellUserState() {
-    if (bottomNav) bottomNav.style.display = currentUser ? 'grid' : 'none';
-    if (logoutButton) logoutButton.style.display = currentUser ? 'flex' : 'none';
+    if (bottomNav) bottomNav.classList.toggle('hidden', !currentUser);
+    if (logoutButton) logoutButton.classList.toggle('hidden', !currentUser);
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
+    const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
-        element.style.display = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID) ? '' : 'none';
+        element.classList.toggle('hidden', !isAdmin);
     });
     updateNotificationBadge(0);
 }

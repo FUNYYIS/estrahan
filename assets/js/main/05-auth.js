@@ -79,10 +79,8 @@ function setFormLoading(form, isLoading, loadingText) {
     submitButton.textContent = isLoading ? loadingText : submitButton.dataset.defaultText;
 }
 
-function setAuthStatus(isRegister, phase, message) {
-    const id = isRegister
-        ? phase === 'code' ? 'register-code-status' : 'register-status'
-        : phase === 'code' ? 'login-code-status' : 'login-status';
+function setAuthStatus(phase, message) {
+    const id = phase === 'code' ? 'login-code-status' : 'login-status';
     const element = document.getElementById(id);
     if (element) element.textContent = message || '';
 }
@@ -93,6 +91,8 @@ async function handleCompleteRegistration(e) {
 
     const user = auth.currentUser;
     if (!user) {
+        const status = document.getElementById('register-status');
+        if (status) status.textContent = 'ابدأ من صفحة الدخول برقم جوالك، وبعد التحقق كمل التسجيل هنا.';
         showAlert('تحقق من رقم جوالك أولاً من صفحة الدخول.');
         await navigateToHash('#login');
         return;
@@ -132,6 +132,7 @@ async function handleCompleteRegistration(e) {
         };
 
         document.body.classList.add('is-authenticated');
+        sessionStorage.removeItem('firebaseVerificationId');
         syncShellUserState();
         showAlert('تم تسجيلك بنجاح، حيّاك الله.');
         await navigateToHash('#home');
@@ -175,12 +176,10 @@ function getRegistrationErrorMessage(error) {
 }
 
 
-async function handleSendCode(e, isRegister = false) {
+async function handleSendCode(e) {
     e.preventDefault();
-    console.log(`handleSendCode called (isRegister=${isRegister})`);
 
-    const phoneInputId = isRegister ? 'register-phone-number' : 'phone-number';
-    const phoneInput = document.getElementById(phoneInputId);
+    const phoneInput = document.getElementById('phone-number');
 
     if (!phoneInput) {
         showAlert('خانة الجوال مو موجودة، حدّث الصفحة.');
@@ -212,7 +211,7 @@ async function handleSendCode(e, isRegister = false) {
 
     console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
-    setAuthStatus(isRegister, 'phone', 'نجهز التحقق ونرسل لك الرمز...');
+    setAuthStatus('phone', 'نجهز التحقق ونرسل لك الرمز...');
 
     try {
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -220,15 +219,11 @@ async function handleSendCode(e, isRegister = false) {
 
         // Store verification ID in sessionStorage
         sessionStorage.setItem('firebaseVerificationId', confirmationResult.verificationId);
-        setAuthStatus(isRegister, 'code', 'وصل الرمز. دخّله هنا وكمل.');
-        if (isRegister) {
-            await navigateToHash('#register');
-        } else {
-            const phoneForm = document.getElementById('phone-form');
-            const codeForm = document.getElementById('code-form');
-            if (phoneForm) phoneForm.style.display = 'none';
-            if (codeForm) codeForm.style.display = 'block';
-        }
+        setAuthStatus('code', 'وصل الرمز. دخّله هنا وكمل.');
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        if (phoneForm) phoneForm.classList.add('hidden');
+        if (codeForm) codeForm.classList.remove('hidden');
         setFormLoading(e.currentTarget, false);
     } catch (error) {
         console.error("✗ SMS Error:", error);
@@ -250,10 +245,10 @@ async function handleSendCode(e, isRegister = false) {
         }
 
         showAlert(errorMsg);
-        setAuthStatus(isRegister, 'phone', '');
+        setAuthStatus('phone', '');
 
         // Reset recaptcha and try to recreate it
-        const containerId = isRegister ? 'recaptcha-container-register' : 'recaptcha-container';
+        const containerId = 'recaptcha-container';
         recaptchaManager.destroy(containerId);
 
         // Wait a moment then recreate
@@ -267,12 +262,10 @@ async function handleSendCode(e, isRegister = false) {
     }
 }
 
-async function handleVerifyCode(e, isRegister = false) {
+async function handleVerifyCode(e) {
     e.preventDefault();
-    console.log(`handleVerifyCode called (isRegister=${isRegister})`);
 
-    const codeInputId = isRegister ? 'register-verification-code' : 'verification-code';
-    const codeInput = document.getElementById(codeInputId);
+    const codeInput = document.getElementById('verification-code');
 
     if (!codeInput) {
         showAlert('خانة الرمز مو موجودة، حدّث الصفحة.');
@@ -292,23 +285,16 @@ async function handleVerifyCode(e, isRegister = false) {
     if (!verificationId) {
         showAlert('انتهت مهلة الرمز. اطلب رمز جديد.');
         // Reset forms
-        if (isRegister) {
-            const registerForm = document.getElementById('register-form');
-            const registerCodeForm = document.getElementById('register-code-form');
-            if (registerForm) registerForm.style.display = 'block';
-            if (registerCodeForm) registerCodeForm.style.display = 'none';
-        } else {
-            const phoneForm = document.getElementById('phone-form');
-            const codeForm = document.getElementById('code-form');
-            if (phoneForm) phoneForm.style.display = 'block';
-            if (codeForm) codeForm.style.display = 'none';
-        }
+        const phoneForm = document.getElementById('phone-form');
+        const codeForm = document.getElementById('code-form');
+        if (phoneForm) phoneForm.classList.remove('hidden');
+        if (codeForm) codeForm.classList.add('hidden');
         return;
     }
 
     console.log('Verifying code...');
     setFormLoading(e.currentTarget, true, 'جاري التحقق...');
-    setAuthStatus(isRegister, 'code', 'نتأكد من الرمز...');
+    setAuthStatus('code', 'نتأكد من الرمز...');
 
     try {
         const credential = PhoneAuthProvider.credential(verificationId, code);
@@ -316,28 +302,19 @@ async function handleVerifyCode(e, isRegister = false) {
         const user = result.user;
         console.log('✓ Phone verification successful');
 
-        if (isRegister) {
+        const userDocRef = doc(db, "users", user.uid);
+        const existingUserDoc = await getDoc(userDocRef);
+        if (!existingUserDoc.exists()) {
             sessionStorage.removeItem('firebaseVerificationId');
-
-            showAlert('تم التحقق من رقمك. كمل الاسم ورمز الدعوة.');
+            showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
             await navigateToHash('#register');
             return;
-        }
-
-        if (!isRegister) {
-            const userDocRef = doc(db, "users", user.uid);
-            const existingUserDoc = await getDoc(userDocRef);
-            if (!existingUserDoc.exists()) {
-                showAlert('رقمك غير مسجل. كمل التسجيل باسمك ورمز الدعوة.');
-                await navigateToHash('#register');
-                return;
-            }
         }
 
         // Clear temporary data after success
         sessionStorage.removeItem('firebaseVerificationId');
 
-        setAuthStatus(isRegister, 'code', 'تم التحقق. تفضل اقلط...');
+        setAuthStatus('code', 'تم التحقق. تفضل اقلط...');
         console.log('✓ Authentication successful, redirecting...');
         // onAuthStateChanged will handle navigation
     } catch (error) {
@@ -356,7 +333,7 @@ async function handleVerifyCode(e, isRegister = false) {
         }
 
         showAlert(errorMsg);
-        setAuthStatus(isRegister, 'code', '');
+        setAuthStatus('code', '');
         setFormLoading(e.currentTarget, false);
     }
 }

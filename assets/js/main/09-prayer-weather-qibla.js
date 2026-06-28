@@ -210,7 +210,7 @@ async function loadHomeMatches() {
 }
 
 async function loadHomeNews() {
-    const container = document.getElementById('home-news-list');
+    const container = document.getElementById('home-arabiya-news-list');
     if (!container) return;
     await loadNews(container, 3);
 }

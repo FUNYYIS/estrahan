@@ -96,7 +96,7 @@ function ensureRuntimeStyles() {
   if (document.querySelector('link[data-runtime-ux]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'assets/css/runtime-ux.css?v=275';
+  link.href = 'assets/css/runtime-ux.css?v=276';
   link.dataset.runtimeUx = 'true';
   document.head.appendChild(link);
 }

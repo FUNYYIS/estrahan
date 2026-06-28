@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v275';
+const CACHE_NAME = 'estraha-cache-v276';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
@@ -33,6 +33,7 @@ const APP_SHELL_URLS = [
   '/assets/css/main/utilities-theme.css',
   '/assets/css/main/visual-theme.css',
   '/assets/js/app-config.js',
+  '/assets/js/news-provider.js',
   '/assets/js/main.js',
   '/assets/js/page-fixes.js',
   '/assets/js/chat-layout-fix.js',
@@ -82,11 +83,7 @@ const messaging = firebase.messaging();
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => Promise.all(
-        APP_SHELL_URLS.map((url) => cache.add(url).catch((error) => {
-          console.warn(`Failed to cache ${url}:`, error);
-        }))
-      ))
+      .then((cache) => cache.addAll(APP_SHELL_URLS))
       .then(() => self.skipWaiting())
   );
 });
@@ -136,8 +133,8 @@ async function networkFirst(request, navigationRequest = false) {
   } catch {
     return (await cache.match(request))
       || (await cache.match(new URL(request.url).pathname))
-      || (navigationRequest ? await cache.match('/index.html') : null)
       || (navigationRequest ? await cache.match('/offline.html') : null)
+      || (navigationRequest ? await cache.match('/index.html') : null)
       || Response.error();
   }
 }

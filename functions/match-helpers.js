@@ -190,13 +190,21 @@ function getMatchKickoffDate(event = {}) {
     if (!Number.isNaN(timestampDate.getTime())) return timestampDate;
   }
 
-  const dateValue = getEventDateKey(event);
-  const rawTime = event.strTimeLocal || event.strTime || '00:00:00';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return null;
+  const isGithubWorldCupFallback = String(event.idEvent || '').startsWith('github-wc2026-');
+  const utcDateValue = String(event.dateEvent || '').trim();
+  const utcTimeMatch = String(event.strTime || '').match(/\d{1,2}:\d{2}(?::\d{2})?/);
 
-  const timeValue = normalizeMatchTime(rawTime);
-  const kickoff = new Date(`${dateValue}T${timeValue}+03:00`);
-  return Number.isNaN(kickoff.getTime()) ? null : kickoff;
+  if (!isGithubWorldCupFallback && /^\d{4}-\d{2}-\d{2}$/.test(utcDateValue) && utcTimeMatch) {
+    const utcKickoff = new Date(`${utcDateValue}T${normalizeMatchTime(utcTimeMatch[0])}Z`);
+    if (!Number.isNaN(utcKickoff.getTime())) return utcKickoff;
+  }
+
+  const localDateValue = String(event.dateEventLocal || event.dateEvent || '').trim();
+  const localTimeMatch = String(event.strTimeLocal || event.strTime || '').match(/\d{1,2}:\d{2}(?::\d{2})?/);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(localDateValue) || !localTimeMatch) return null;
+
+  const localKickoff = new Date(`${localDateValue}T${normalizeMatchTime(localTimeMatch[0])}+03:00`);
+  return Number.isNaN(localKickoff.getTime()) ? null : localKickoff;
 }
 
 function normalizeMatchTime(value = '') {
@@ -211,7 +219,9 @@ function normalizeMatchTime(value = '') {
 }
 
 function getEventDateKey(event = {}) {
-  return event.dateEventLocal || event.dateEvent || '';
+  const kickoff = getMatchKickoffDate(event);
+  if (kickoff) return getLocalDateKey(kickoff);
+  return event.dateEvent || event.dateEventLocal || '';
 }
 
 function parseWorldCupLocalDate(value = '') {

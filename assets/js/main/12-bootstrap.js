@@ -28,9 +28,11 @@ function initApp() {
                     currentUser = { uid: user.uid, ...userData };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
-                    initFirebaseMessaging()
-                        .then(() => syncFcmTokenWithPreferences())
-                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        initFirebaseMessaging()
+                            .then(() => syncFcmTokenWithPreferences())
+                            .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    }
                     if (appLogo) appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
@@ -62,37 +64,31 @@ function initApp() {
         }
     });
 
-        // Splash Screen Logic
+    // Keep the splash brief so it does not delay the largest page content.
     const splash = document.getElementById('splash');
-    const mainContent = document.getElementById('main-content');
-
     const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
 
-    if (hasSeenSplash) {
-        if (splash) splash.style.display = 'none';
-        if (mainContent) mainContent.style.display = 'grid';
+    const hideSplash = () => {
+        if (!splash || splash.classList.contains('done')) return;
+        splash.classList.add('done');
+        window.setTimeout(() => {
+            console.log('✓ Splash screen hidden, main content shown');
+        }, 220);
+    };
 
+    if (hasSeenSplash) {
+        splash?.classList.add('done');
         console.log('✓ Splash skipped');
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');
 
         const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        const configuredDuration = Number(appSettings.splashDuration || 1.2);
+        const configuredDuration = Number(appSettings.splashDuration || 0.45);
         const splashDelay = prefersReducedMotion
             ? 0
-            : Math.min(Math.max(configuredDuration, 0.4), 1.5) * 1000;
+            : Math.min(Math.max(configuredDuration, 0.2), 0.65) * 1000;
 
-        setTimeout(() => {
-            if (splash) {
-                splash.classList.add('done');
-                splash.style.display = 'none';
-            }
-
-            if (mainContent) {
-                mainContent.style.display = 'grid';
-                console.log('✓ Splash screen hidden, main content shown');
-            }
-        }, splashDelay);
+        window.setTimeout(hideSplash, splashDelay);
     }
 
     window.addEventListener('hashchange', () => {

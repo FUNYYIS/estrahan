@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   buildUpcomingMatchesFromSources,
   chunk,
+  getEventDateKey,
   getLocalDateKey,
   getMatchKey,
   getMatchKickoffDate,
@@ -35,13 +36,26 @@ test('builds notification teams from supported API field names', () => {
   }), null);
 });
 
-test('parses kickoff dates in Riyadh time and rejects invalid dates', () => {
-  const kickoff = getMatchKickoffDate({
-    dateEvent: '2026-06-23',
-    strTime: '19:30:00'
+test('uses TheSportsDB UTC kickoff and converts its date to Riyadh', () => {
+  const event = {
+    dateEvent: '2026-06-27',
+    strTime: '00:00:00',
+    dateEventLocal: '2026-06-26',
+    strTimeLocal: '19:00:00'
+  };
+
+  const kickoff = getMatchKickoffDate(event);
+  assert.equal(kickoff.toISOString(), '2026-06-27T00:00:00.000Z');
+  assert.equal(getEventDateKey(event), '2026-06-27');
+});
+
+test('supports Riyadh-local fallback, timestamps, and invalid dates', () => {
+  const localKickoff = getMatchKickoffDate({
+    dateEventLocal: '2026-06-23',
+    strTimeLocal: '19:30:00'
   });
 
-  assert.equal(kickoff.toISOString(), '2026-06-23T16:30:00.000Z');
+  assert.equal(localKickoff.toISOString(), '2026-06-23T16:30:00.000Z');
   assert.equal(getMatchKickoffDate({ dateEvent: 'bad-date', strTime: '19:30:00' }), null);
 
   const timestampKickoff = getMatchKickoffDate({ strTimestamp: '2026-06-23T19:30:00Z' });

@@ -94,7 +94,7 @@ const DEFAULT_APP_SETTINGS = {
     splashEnabled: true,
     splashType: 'logo',
     splashTitle: 'تطبيق الاستراحة',
-    splashDuration: 6,
+    splashDuration: 0.45,
     splashImageUrl: '',
     splashVideoUrl: '',
 
@@ -156,10 +156,11 @@ function applySplashSettings() {
     if (!splash || !splashCard) return;
 
     if (appSettings.splashEnabled === false) {
-        splash.style.display = 'none';
+        splash.hidden = true;
         return;
     }
 
+    splash.hidden = false;
     const type = appSettings.splashType || 'logo';
     const title = appSettings.splashTitle || appSettings.siteName || 'تطبيق الاستراحة';
     const imageUrl = safeExternalUrl(appSettings.splashImageUrl || appSettings.themeLogoUrl || '', '');
@@ -167,18 +168,18 @@ function applySplashSettings() {
 
     if (type === 'video' && videoUrl) {
         splashCard.innerHTML = `
-            <video class="splash-media" src="${escapeHtml(videoUrl)}" autoplay muted playsinline preload="auto"></video>
+            <video class="splash-media" src="${escapeHtml(videoUrl)}" autoplay muted playsinline preload="metadata"></video>
             <strong>${escapeHtml(title)}</strong>
         `;
     } else if (type === 'image' && imageUrl) {
         splashCard.innerHTML = `
-            <img class="splash-logo splash-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <img class="splash-logo splash-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/images/estraha-logo.svg';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=276';
         splashCard.innerHTML = `
-            <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" loading="eager" decoding="async">
+            <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     }
@@ -408,13 +409,46 @@ const recaptchaManager = {
 };
 
 // --- وظائف مساعدة ---
+let alertReturnFocus = null;
+
+function closeAlert() {
+    if (!customAlert) return;
+
+    const returnTarget = alertReturnFocus;
+    alertReturnFocus = null;
+
+    if (returnTarget instanceof HTMLElement && returnTarget.isConnected) {
+        returnTarget.focus({ preventScroll: true });
+    } else {
+        alertCloseBtn?.blur();
+    }
+
+    customAlert.style.display = 'none';
+    customAlert.setAttribute('aria-hidden', 'true');
+    customAlert.setAttribute('inert', '');
+}
+
 function showAlert(message) {
     if (!customAlert || !alertMessage) return;
+
+    alertReturnFocus = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     alertMessage.textContent = message;
+    customAlert.removeAttribute('inert');
+    customAlert.setAttribute('aria-hidden', 'false');
     customAlert.style.display = 'flex';
+    window.requestAnimationFrame(() => alertCloseBtn?.focus({ preventScroll: true }));
 }
-alertCloseBtn?.addEventListener('click', () => {
-    if (customAlert) customAlert.style.display = 'none';
+
+alertCloseBtn?.addEventListener('click', closeAlert);
+customAlert?.addEventListener('click', (event) => {
+    if (event.target === customAlert) closeAlert();
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && customAlert?.getAttribute('aria-hidden') === 'false') {
+        closeAlert();
+    }
 });
 
 function copyToClipboard(text) {
@@ -465,8 +499,12 @@ function syncShellUserState() {
     if (logoutButton) logoutButton.classList.toggle('hidden', !currentUser);
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
+<<<<<<< HEAD
     if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/images/estraha-logo.svg';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
+=======
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
+>>>>>>> origin/main
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });
@@ -479,6 +517,16 @@ function updateNotificationBadge(count = 0) {
     notificationCount.textContent = safeCount > 99 ? '99+' : String(safeCount);
     notificationCount.classList.toggle('hidden', safeCount <= 0);
     notificationCount.setAttribute('aria-hidden', safeCount <= 0 ? 'true' : 'false');
+}
+
+function waitForBrowserIdle(timeout = 1200) {
+    return new Promise((resolve) => {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => resolve(), { timeout });
+            return;
+        }
+        window.setTimeout(resolve, 250);
+    });
 }
 
 async function initFirebaseMessaging() {
@@ -496,6 +544,7 @@ async function initFirebaseMessaging() {
             return null;
         }
 
+        await waitForBrowserIdle();
         const registration = await navigator.serviceWorker.register('/service-worker.js');
         firebaseMessaging = getMessaging(app);
 
@@ -3531,9 +3580,11 @@ function initApp() {
                     currentUser = { uid: user.uid, ...userData };
                     document.body.classList.add('is-authenticated');
                     syncShellUserState();
-                    initFirebaseMessaging()
-                        .then(() => syncFcmTokenWithPreferences())
-                        .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        initFirebaseMessaging()
+                            .then(() => syncFcmTokenWithPreferences())
+                            .catch((error) => console.warn('Firebase Cloud Messaging init failed:', error));
+                    }
                     if (appLogo) appLogo.style.display = 'block';
                     console.log('✓ User profile found, navigating to home');
                     await renderPage(window.location.hash || '#home');
@@ -3565,37 +3616,31 @@ function initApp() {
         }
     });
 
-        // Splash Screen Logic
+    // Keep the splash brief so it does not delay the largest page content.
     const splash = document.getElementById('splash');
-    const mainContent = document.getElementById('main-content');
-
     const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
 
-    if (hasSeenSplash) {
-        if (splash) splash.style.display = 'none';
-        if (mainContent) mainContent.style.display = 'grid';
+    const hideSplash = () => {
+        if (!splash || splash.classList.contains('done')) return;
+        splash.classList.add('done');
+        window.setTimeout(() => {
+            console.log('✓ Splash screen hidden, main content shown');
+        }, 220);
+    };
 
+    if (hasSeenSplash) {
+        splash?.classList.add('done');
         console.log('✓ Splash skipped');
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');
 
         const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        const configuredDuration = Number(appSettings.splashDuration || 1.2);
+        const configuredDuration = Number(appSettings.splashDuration || 0.45);
         const splashDelay = prefersReducedMotion
             ? 0
-            : Math.min(Math.max(configuredDuration, 0.4), 1.5) * 1000;
+            : Math.min(Math.max(configuredDuration, 0.2), 0.65) * 1000;
 
-        setTimeout(() => {
-            if (splash) {
-                splash.classList.add('done');
-                splash.style.display = 'none';
-            }
-
-            if (mainContent) {
-                mainContent.style.display = 'grid';
-                console.log('✓ Splash screen hidden, main content shown');
-            }
-        }, splashDelay);
+        window.setTimeout(hideSplash, splashDelay);
     }
 
     window.addEventListener('hashchange', () => {

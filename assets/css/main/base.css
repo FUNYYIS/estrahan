@@ -58,18 +58,20 @@ textarea:focus-visible,
   color: var(--ink);
   overflow: hidden;
   background:
-    linear-gradient(rgba(22, 69, 53, 0.08), rgba(22, 69, 53, 0.08)),
-    url('../../images/al-istiraha-splash.jpg') center / cover no-repeat,
-    #F5F3EE;
-  transition: opacity 0.44s ease, visibility 0.44s ease;
-  animation: splash-shell-out 0.6s ease 3.5s forwards;
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.72), transparent 30rem),
+    linear-gradient(160deg, #f7f4ee 0%, #ebe4d8 58%, #dfe8df 100%);
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+  animation: splash-shell-out 0.22s ease 0.65s forwards;
+  will-change: opacity;
 }
 
 .splash::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 46%, rgba(255, 253, 248, 0.04), rgba(22, 69, 53, 0.08));
+  background:
+    radial-gradient(circle at 25% 80%, rgba(31, 90, 70, 0.10), transparent 18rem),
+    radial-gradient(circle at 78% 20%, rgba(216, 182, 101, 0.12), transparent 16rem);
   pointer-events: none;
 }
 
@@ -85,10 +87,11 @@ textarea:focus-visible,
   padding: 2.15rem 1.65rem;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 28px;
-  background: rgba(255, 253, 248, 0.72);
-  box-shadow: 0 24px 58px rgba(31, 50, 42, 0.16);
-  backdrop-filter: blur(6px);
-  animation: splash-card-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  background: rgba(255, 253, 248, 0.82);
+  box-shadow: 0 24px 58px rgba(31, 50, 42, 0.14);
+  backdrop-filter: blur(10px);
+  animation: splash-card-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  contain: layout paint;
 }
 
 .splash img {
@@ -96,12 +99,12 @@ textarea:focus-visible,
   height: 112px;
   margin-bottom: 0.5rem;
   filter: drop-shadow(0 16px 24px rgba(31, 90, 70, 0.18));
-  animation: splash-mark-in 0.66s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  animation: splash-mark-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.03s both;
 }
 
 .splash strong,
 .splash span {
-  animation: splash-text-in 0.56s ease 0.16s both;
+  animation: splash-text-in 0.3s ease 0.06s both;
 }
 
 .splash strong {
@@ -119,32 +122,28 @@ textarea:focus-visible,
   font-weight: 700;
 }
 
-.splash.done { opacity: 0; visibility: hidden; }
+.splash.done { opacity: 0; visibility: hidden; pointer-events: none; }
 
 @keyframes splash-card-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes splash-mark-in {
-  from { opacity: 0; transform: scale(0.88); }
+  from { opacity: 0; transform: scale(0.94); }
   to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes splash-text-in {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes splash-shell-out {
-  to { opacity: 0; visibility: hidden; }
+  to { opacity: 0; visibility: hidden; pointer-events: none; }
 }
 
 @media (max-width: 640px) {
-  .splash {
-    background-position: center;
-  }
-
   .splash-card {
     width: min(84vw, 290px);
     min-height: 244px;

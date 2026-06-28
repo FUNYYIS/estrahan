@@ -17,7 +17,6 @@ const ICON_LABELS = {
   'log-out': 'تسجيل الخروج'
 };
 
-let lastFocusedElement = null;
 let offlineBanner = null;
 
 const FRESHNESS_STORAGE_PREFIX = 'estraha:last-updated:';
@@ -165,34 +164,19 @@ function improveCustomAlert() {
   const message = document.getElementById('alert-message');
   const closeButton = document.getElementById('alert-close-btn');
   if (!alert || !message || !closeButton || alert.dataset.a11yBound === 'true') return;
+
   alert.dataset.a11yBound = 'true';
   alert.setAttribute('role', 'dialog');
   alert.setAttribute('aria-modal', 'true');
   alert.setAttribute('aria-labelledby', message.id || 'alert-message');
 
-  const syncFocus = () => {
-    const visible = isElementVisible(alert);
-    alert.setAttribute('aria-hidden', visible ? 'false' : 'true');
-    if (visible) {
-      lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      window.requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
-    } else if (lastFocusedElement?.isConnected) {
-      lastFocusedElement.focus({ preventScroll: true });
-      lastFocusedElement = null;
-    }
-  };
+  if (!alert.hasAttribute('aria-hidden')) {
+    alert.setAttribute('aria-hidden', 'true');
+  }
 
-  new MutationObserver(syncFocus).observe(alert, {
-    attributes: true,
-    attributeFilter: ['class', 'style', 'hidden']
-  });
-  alert.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && isElementVisible(alert)) {
-      event.preventDefault();
-      closeButton.click();
-    }
-  });
-  syncFocus();
+  if (alert.getAttribute('aria-hidden') === 'true') {
+    alert.setAttribute('inert', '');
+  }
 }
 
 function applyRuntimeEnhancements(root = document) {

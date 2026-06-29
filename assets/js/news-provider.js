@@ -44,9 +44,17 @@ function safeImageUrl(value = '') {
   }
 }
 
+function shouldProxyNewsImage() {
+  const host = window.location.hostname;
+  return !['localhost', '127.0.0.1', '::1'].includes(host);
+}
+
 function proxiedNewsImageUrl(value = '') {
   const image = safeImageUrl(value);
-  return image ? `/.netlify/functions/alarabiya-image?url=${encodeURIComponent(image)}` : '';
+  if (!image) return '';
+  return shouldProxyNewsImage()
+    ? `/.netlify/functions/alarabiya-image?url=${encodeURIComponent(image)}`
+    : image;
 }
 
 function newsCacheKey(limit) {

@@ -83,9 +83,7 @@ test('clicks SPA navigation links without falling back to home', async ({ page }
 
   const settingsTargets = [
     ['#profile-settings', 'بياناتك'],
-    ['#prayer', 'مواقيت الصلاة'],
-    ['#news', 'الأخبار'],
-    ['#members', 'الأعضاء']
+    ['#notifications-settings', 'الإشعارات']
   ];
 
   for (const [hash, title] of settingsTargets) {

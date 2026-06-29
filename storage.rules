@@ -4,7 +4,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function isAdmin() {
       return request.auth != null
-        && request.auth.uid == "tquFv8nhU3ZPGgqumfCo3Hx67k02";
+        && request.auth.uid == "g0qsFSAGg1dKy10Nnen8Djk6NB53";
     }
 
     function isImage(maxSize) {

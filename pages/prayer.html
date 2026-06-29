@@ -3,20 +3,37 @@
         <img src="assets/images/estraha-logo.svg" alt="تطبيق الاستراحة" class="app-page-logo" loading="lazy" decoding="async">
         <div>
             <span>اليوم في موقعك</span>
-            <h2>مواقيت الصلاة</h2>
+            <h2>مواقيت الصلاة والقبلة</h2>
         </div>
     </div>
-    <a href="#qibla" class="service-link">القبلة</a>
+    <i data-lucide="moon-star"></i>
 </header>
 
-<section class="panel">
-    <div class="panel-head">
-        <h2><i data-lucide="moon-star"></i> مواقيت الصلاة والقبلة</h2>
-        <a href="#qibla" class="service-link">اتجاه القبلة</a>
-    </div>
-    <p class="muted">تحقق من إذن الوصول للموقع.</p>
-</section>
+<div class="prayer-qibla-layout">
+    <section class="panel prayer-times-panel">
+        <div class="panel-head">
+            <h2><i data-lucide="moon-star"></i> مواقيت الصلاة</h2>
+        </div>
 
-<section id="prayer-times-container" class="cards-grid">
-    <p class="text-center w-full">جاري جلب مواقيت الصلاة لموقعك...</p>
-</section>
+        <div id="prayer-times-container" class="cards-grid prayer-times-grid">
+            <p class="text-center w-full">جاري جلب مواقيت الصلاة لموقعك...</p>
+        </div>
+    </section>
+
+    <section id="qibla-container" class="panel qibla-card qibla-action-card">
+        <div class="panel-head">
+            <h2><i data-lucide="compass"></i> اتجاه القبلة</h2>
+        </div>
+
+        <div class="qibla-card-intro">
+            <strong>اعرف اتجاه القبلة من موقعك الحالي</strong>
+            <p class="muted">تحقق من إذن الوصول للموقع.</p>
+        </div>
+
+        <p id="qibla-status" class="text-sm qibla-status" aria-live="polite">جاري تجهيز اتجاه القبلة...</p>
+
+        <div id="compass" class="qibla-dial" style="display: none;">
+            <div id="qibla-arrow" class="qibla-needle"></div>
+        </div>
+    </section>
+</div>

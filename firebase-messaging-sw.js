@@ -1,1 +1,1 @@
-importScripts('/service-worker.js?v=277');
+importScripts('/service-worker.js?v=278');

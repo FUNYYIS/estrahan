@@ -128,6 +128,9 @@ test('uses saved prayer location without sending real location data', async ({ p
 
   await openApp(page, '#prayer');
   await expect(page.locator('#prayer-times-container')).toContainText('الفجر');
+  await expect(page.locator('#page-content')).toContainText('اتجاه القبلة');
+  await expect(page.locator('#qibla-container')).toContainText('تحقق من إذن الوصول للموقع.');
+  await expect(page.locator('#qibla-status')).toContainText(/القبلة|الاتجاه|الموقع|الحركة/);
 
   const saveLocation = page.locator('#save-prayer-location');
   if (await saveLocation.count()) {

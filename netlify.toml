@@ -5,7 +5,7 @@
 # وسيط أخبار العربية قبل تحويلات التطبيق
 [[redirects]]
   from = "/api/alarabiya-news"
-  to = "/.netlify/functions/alarabiya-news"
+  to = "/.netlify/functions/alarabiya-news-v3"
   status = 200
   force = true
 

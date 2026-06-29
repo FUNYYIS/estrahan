@@ -4,10 +4,9 @@ const NEWS_ENDPOINT = '/.netlify/functions/alarabiya-news-v3';
 const NEWS_PLACEHOLDER = '/assets/images/news-placeholder.svg';
 const HOME_NEWS_LIMIT = 3;
 const FULL_NEWS_LIMIT = 18;
-const NEWS_CACHE_KEY = 'estraha-news-v5';
+const NEWS_CACHE_KEY = 'estraha-news-v3';
 const NEWS_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const NEWS_REFRESH_AFTER_MS = 10 * 60 * 1000;
-const NEWS_API_VERSION = '281';
 
 const newsRequests = new WeakMap();
 const newsObservers = new WeakMap();
@@ -100,7 +99,7 @@ async function fetchNews(limit) {
   const timeout = window.setTimeout(() => controller.abort(), 14000);
 
   try {
-    const response = await fetch(`${NEWS_ENDPOINT}?limit=${limit}&v=${NEWS_API_VERSION}`, {
+    const response = await fetch(`${NEWS_ENDPOINT}?limit=${limit}`, {
       signal: controller.signal,
       headers: { accept: 'application/json' },
       cache: 'no-store'

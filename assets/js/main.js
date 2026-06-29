@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '281';
+const APP_ASSET_VERSION = '280';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,7 +177,7 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=281';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=280';
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
@@ -500,7 +500,7 @@ function syncShellUserState() {
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=281';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=280';
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });
@@ -3264,7 +3264,6 @@ async function loadMatches(container, limit = 10, compact = false) {
             .map((event) => ({ ...event, strSource: 'TheSportsDB' }));
         const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
             .filter((event) => getEventDateKey(event) >= today)
-            .filter(matchHasKnownTeams)
             .sort(compareSportsDbEvents)
             .slice(0, limit);
         queueNextMatchNotification([
@@ -3278,7 +3277,7 @@ async function loadMatches(container, limit = 10, compact = false) {
                 ...todayMatches,
                 ...saudiUpcoming,
                 ...worldCupUpcoming
-            ].filter(matchHasKnownTeams).slice(0, limit);
+            ].slice(0, limit);
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
                 : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
@@ -3365,8 +3364,8 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
         strLeague: 'FIFA World Cup 2026',
         strSeason: '2026',
         strSource: 'GitHub schedule',
-        strHomeTeam: home?.name_en || 'لم يتحدد',
-        strAwayTeam: away?.name_en || 'لم يتحدد',
+        strHomeTeam: home?.name_en || 'TBD',
+        strAwayTeam: away?.name_en || 'TBD',
         strHomeTeamBadge: safeFlagUrl(home?.iso2 || home?.fifa_code),
         strAwayTeamBadge: safeFlagUrl(away?.iso2 || away?.fifa_code),
         intHomeScore: isFinished ? Number(match.home_score || 0) : null,
@@ -3604,43 +3603,23 @@ function renderSportsDbMatchCard(event) {
     const score = isFinished
         ? `${event.intHomeScore ?? 0} - ${event.intAwayScore ?? 0}`
         : formatSaudiMatchTime(event);
-
-    const homeTeam = normalizeMatchTeamName(event.strHomeTeam);
-    const awayTeam = normalizeMatchTeamName(event.strAwayTeam);
-
-    const homeLogo = matchTeamIsKnown(homeTeam) ? safeExternalUrl(event.strHomeTeamBadge, '') : '';
-    const awayLogo = matchTeamIsKnown(awayTeam) ? safeExternalUrl(event.strAwayTeamBadge, '') : '';
-
-    const homeMark = renderTeamMark(homeLogo, homeTeam);
-    const awayMark = renderTeamMark(awayLogo, awayTeam);
+    const homeLogo = safeExternalUrl(event.strHomeTeamBadge, '');
+    const awayLogo = safeExternalUrl(event.strAwayTeamBadge, '');
+    const homeMark = renderTeamMark(homeLogo, event.strHomeTeam);
+    const awayMark = renderTeamMark(awayLogo, event.strAwayTeam);
 
     return `
         <article class="match-card card">
             <span class="badge ${statusClass}">${statusLabel}</span>
             <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}${event.strSource ? ` · ${escapeHtml(event.strSource)}` : ''}</p>
             <div class="match-teams">
-                <span>${homeMark} ${escapeHtml(homeTeam)}</span>
-                <span>${awayMark} ${escapeHtml(awayTeam)}</span>
+                <span>${homeMark} ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
+                <span>${awayMark} ${escapeHtml(event.strAwayTeam || 'فريق')}</span>
             </div>
             <div class="match-score">${escapeHtml(score)}</div>
             <p class="muted">${escapeHtml(formatSaudiMatchDate(event))} · بتوقيت السعودية</p>
         </article>
     `;
-}
-
-function normalizeMatchTeamName(value = '') {
-    const team = String(value || '').trim();
-    return matchTeamIsKnown(team) ? team : 'لم يتحدد';
-}
-
-function matchTeamIsKnown(value = '') {
-    const team = String(value || '').trim().toLowerCase();
-    if (!team) return false;
-    return !/^(tbd|to be determined|unknown|null|undefined|لم يتحدد|فريق|-|\[object object\])$/i.test(team);
-}
-
-function matchHasKnownTeams(event = {}) {
-    return matchTeamIsKnown(event.strHomeTeam) && matchTeamIsKnown(event.strAwayTeam);
 }
 
 function renderTeamMark(src, teamName = '') {
@@ -3666,8 +3645,7 @@ function bindMatchImageFallbacks(container) {
 
 function getTeamInitial(teamName = '') {
     const clean = String(teamName || '').trim();
-    if (!matchTeamIsKnown(clean)) return '—';
-    return clean.slice(0, 2).toUpperCase();
+    return clean ? clean.slice(0, 2).toUpperCase() : 'FC';
 }
 
 async function loadNews(container, limit = 10) {

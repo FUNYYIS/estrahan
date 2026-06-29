@@ -44,10 +44,3 @@
     flex-basis: 92px !important;
   }
 }
-
-
-.compact-news-thumb.is-placeholder {
-  opacity: 0.45;
-  object-fit: contain;
-  padding: 14px;
-}

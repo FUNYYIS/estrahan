@@ -7,8 +7,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Keep this UID aligned with assets/js/main/00-core-firebase-settings.js and functions/index.js.
+      // TODO: migrate admin authorization to Firebase custom claims after a staged rollout.
       return signedIn()
-        && request.auth.uid == "tquFv8nhU3ZPGgqumfCo3Hx67k02";
+        && request.auth.uid == "g0qsFSAGg1dKy10Nnen8Djk6NB53";
     }
 
     function userDoc(uid) {

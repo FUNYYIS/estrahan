@@ -44,6 +44,11 @@ function safeImageUrl(value = '') {
   }
 }
 
+function proxiedNewsImageUrl(value = '') {
+  const image = safeImageUrl(value);
+  return image ? `/.netlify/functions/alarabiya-image?url=${encodeURIComponent(image)}` : '';
+}
+
 function newsCacheKey(limit) {
   return `${NEWS_CACHE_KEY}:${limit}`;
 }
@@ -141,7 +146,8 @@ function renderNews(container, articles, compact, { cached = false, savedAt = 0 
   container.innerHTML = visible.map((article) => {
     const title = String(article.title || 'خبر رياضي').trim();
     const url = safeHttpUrl(article.url) || '#';
-    const actualImage = safeImageUrl(article.image);
+    const rawImage = article.image || article.imageUrl || article.thumbnail || article.thumbnailUrl || article.enclosure || '';
+    const actualImage = proxiedNewsImageUrl(rawImage);
     const image = actualImage || NEWS_PLACEHOLDER;
     const placeholderClass = actualImage ? '' : ' is-placeholder';
 

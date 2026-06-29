@@ -264,7 +264,7 @@ function cleanImageUrl(value, baseUrl = ALARABIYA_ORIGIN) {
     const host = url.hostname.toLowerCase();
     const path = `${url.pathname}${url.search}`.toLowerCase();
     if (url.protocol !== 'https:') return '';
-    if (host === 'news.google.com' || host.endsWith('.gstatic.com') || host.endsWith('.googleusercontent.com')) return '';
+    if (host === 'news.google.com') return '';
     if (/\.(?:svg|mp4|m3u8|mov|webm)(?:$|\?)/i.test(path)) return '';
     if (/(?:^|[\/_-])(logo|icon|favicon|sprite|placeholder)(?:[\/_-]|\.|$)/i.test(path)) return '';
     return url.href;

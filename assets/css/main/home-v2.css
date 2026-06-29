@@ -1410,7 +1410,7 @@ body:not(.is-authenticated) .view {
    ========================================================= */
 
 :root {
-  --desert-bg-url: url("../../images/shagrdiyah-desert-bg.png");
+  --desert-bg-url: url("../../images/shagrdiyah-desert-bg.webp");
 }
 
 /* الخلفية الأصلية الصح */
@@ -2033,7 +2033,7 @@ body[data-theme="dark"] {
 
 body::before,
 body[data-theme="dark"]::before {
-  background: url("../../images/shagrdiyah-desert-bg.png") center bottom / cover no-repeat !important;
+  background: url("../../images/shagrdiyah-desert-bg.webp") center bottom / cover no-repeat !important;
   filter: brightness(0.78) saturate(0.9) contrast(1.04) !important;
 }
 
@@ -2066,7 +2066,7 @@ body[data-theme="dark"] .splash {
 }
 
 .splash::before {
-  background: linear-gradient(180deg, rgba(7, 19, 15, 0.5), rgba(7, 19, 15, 0.88)), url("../../images/shagrdiyah-desert-bg.png") center bottom / cover no-repeat !important;
+  background: linear-gradient(180deg, rgba(7, 19, 15, 0.5), rgba(7, 19, 15, 0.88)), url("../../images/shagrdiyah-desert-bg.webp") center bottom / cover no-repeat !important;
 }
 
 .splash-card {
@@ -5423,7 +5423,7 @@ body.is-authenticated #bottom-nav.nav .nav-link[href="#settings"] span::before {
 /* Audit cleanup: one active background, route chrome, and admin spacing */
 :root {
   --theme-bg-color: #07130f;
-  --active-bg-image: var(--theme-bg-image, url("../../images/shagrdiyah-desert-bg.png"));
+  --active-bg-image: var(--theme-bg-image, url("../../images/shagrdiyah-desert-bg.webp"));
   --active-bg-position: center bottom;
 }
 

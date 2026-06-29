@@ -12,7 +12,6 @@ function read(file) {
 
 const mainJs = read('assets/js/main.js');
 const mainCss = read('assets/css/main.css');
-const indexHtml = read('index.html');
 const serviceWorker = read('service-worker.js');
 
 const assetVersion = mainJs.match(/APP_ASSET_VERSION\s*=\s*['"]([^'"]+)['"]/)?.[1];
@@ -25,16 +24,27 @@ if (assetVersion !== cacheVersion) {
   fail(`APP_ASSET_VERSION (${assetVersion}) does not match service-worker cache version (${cacheVersion}).`);
 }
 
-const assetRefs = [...indexHtml.matchAll(/<(?:script|link)\b[^>]+(?:src|href)=["']([^"']+\.(?:js|css)\?v=([^"']+))["']/g)]
-  .map((match) => ({ ref: match[1], version: match[2] }));
+const versionedRefFiles = [
+  'index.html',
+  'offline.html',
+  'firebase-messaging-sw.js',
+  'assets/js/main.js',
+  'assets/js/runtime-ux.js',
+  'pages/home.html'
+].filter((file) => fs.existsSync(file));
+
+const assetRefs = versionedRefFiles.flatMap((file) => (
+  [...read(file).matchAll(/\?v=(\d+)/g)]
+    .map((match) => ({ file, ref: match[0], version: match[1] }))
+));
 
 if (!assetRefs.length) {
-  fail('No JavaScript or CSS query versions were found in index.html.');
+  fail(`No asset query versions were found in ${versionedRefFiles.join(', ')}.`);
 }
 
 const mismatchedRefs = assetRefs.filter((item) => item.version !== assetVersion);
 if (mismatchedRefs.length) {
-  fail(`index.html has asset query versions that do not match ${assetVersion}: ${mismatchedRefs.map((item) => item.ref).join(', ')}`);
+  fail(`Asset query versions do not match ${assetVersion}: ${mismatchedRefs.map((item) => `${item.file}${item.ref}`).join(', ')}`);
 }
 
 const appShellMatch = serviceWorker.match(/const\s+APP_SHELL_URLS\s*=\s*\[([\s\S]*?)\];/);

@@ -120,8 +120,8 @@ const firebaseModules = {
       const name = source?.name || '';
       if (name === 'users') {
         return Promise.resolve(snapshot([
-          docSnap('e2e-user', { name: 'عضو الاختبار', paymentStatus: 'paid', createdAt: now }),
-          docSnap(adminUid, { name: 'مشرف الاختبار', paymentStatus: 'late', createdAt: now })
+          docSnap('e2e-user', { name: 'عضو الاختبار', phone: '0500000000', paymentStatus: 'paid', createdAt: now }),
+          docSnap(adminUid, { name: 'مشرف الاختبار', phone: '0555555555', paymentStatus: 'late', createdAt: now })
         ]));
       }
       if (name === 'payments') {

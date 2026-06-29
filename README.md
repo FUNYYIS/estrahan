@@ -79,13 +79,12 @@ Netlify ينشر ملفات الواجهة الثابتة ويستخدم `netlif
 
 عند تعديل CSS أو JS أو Service Worker:
 
-- حدّث `APP_ASSET_VERSION` في `assets/js/main.js`.
-- حدّث query string في `index.html`.
-- حدّث `CACHE_NAME` في `service-worker.js`.
+- شغّل `npm run bump:version -- <number>` لتحديث `APP_ASSET_VERSION` وquery strings و`CACHE_NAME` معاً.
+- شغّل `npm run build` بعد أي تعديل على إعدادات runtime أو ملفات JavaScript المقسمة.
 
 لا تستخدم cache طويل immutable لملفات JS/CSS غير content-hashed.
 
-الإصدار الحالي المتزامن بين الواجهة والـ Service Worker هو `270`.
+الإصدار الحالي المتزامن بين الواجهة والـ Service Worker هو `277`.
 
 ## المجموعات الرئيسية
 

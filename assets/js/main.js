@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '276';
+const APP_ASSET_VERSION = '277';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,7 +177,7 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=276';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=277';
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
@@ -500,7 +500,7 @@ function syncShellUserState() {
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=277';
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });
@@ -2346,6 +2346,7 @@ function loadMembers() {
     try {
         const membersCollection = collection(db, "users");
         unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
+            const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
             membersList.innerHTML = '';
 
             if (snapshot.empty) {
@@ -2364,7 +2365,7 @@ function loadMembers() {
                     : `<span class="font-bold payment-status-late">❌ متأخر</span>`;
 
                 let adminControls = '';
-                if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
+                if (isAdminUser) {
                     adminControls = `
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn btn-compact ms-2">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger btn-compact">لم يدفع</button>
@@ -2375,10 +2376,14 @@ function loadMembers() {
                     `;
                 }
 
+                const phoneLine = isAdminUser
+                    ? `<p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>`
+                    : '';
+
                 div.innerHTML = `
                     <div>
                         <p class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</p>
-                        <p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>
+                        ${phoneLine}
                     </div>
                     <div class="flex items-center">
                         ${adminControls}
@@ -2586,6 +2591,7 @@ async function loadPaymentOverview() {
 
     try {
         const snapshot = await getDocs(collection(db, "users"));
+        const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
         const members = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
         const paid = members.filter((member) => member.paymentStatus === 'paid');
         const late = members.filter((member) => member.paymentStatus !== 'paid');
@@ -2596,15 +2602,21 @@ async function loadPaymentOverview() {
 
         if (lateMembersList) {
             lateMembersList.innerHTML = late.length
-                ? late.slice(0, 8).map((member) => `
-                    <div class="list-item-card text-sm">
-                        <div>
-                            <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
-                            <small>${escapeHtml(member.phone || 'بدون رقم')}</small>
+                ? late.slice(0, 8).map((member) => {
+                    const phoneLine = isAdminUser
+                        ? `<small>${escapeHtml(member.phone || 'بدون رقم')}</small>`
+                        : '';
+
+                    return `
+                        <div class="list-item-card text-sm">
+                            <div>
+                                <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
+                                ${phoneLine}
+                            </div>
+                            <span class="status-badge overdue">متأخر</span>
                         </div>
-                        <span class="status-badge overdue">متأخر</span>
-                    </div>
-                `).join('')
+                    `;
+                }).join('')
                 : '<p class="text-center">كل الأعضاء مسددين.</p>';
         }
     } catch (error) {

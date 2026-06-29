@@ -120,8 +120,8 @@ const firebaseModules = {
       const name = source?.name || '';
       if (name === 'users') {
         return Promise.resolve(snapshot([
-          docSnap('e2e-user', { name: 'عضو الاختبار', paymentStatus: 'paid', createdAt: now }),
-          docSnap(adminUid, { name: 'مشرف الاختبار', paymentStatus: 'late', createdAt: now })
+          docSnap('e2e-user', { name: 'عضو الاختبار', phone: '0500000000', paymentStatus: 'paid', createdAt: now }),
+          docSnap(adminUid, { name: 'مشرف الاختبار', phone: '0555555555', paymentStatus: 'late', createdAt: now })
         ]));
       }
       if (name === 'payments') {
@@ -312,22 +312,31 @@ async function installAppMocks(page) {
     ])
   }));
 
-  await page.route(/https:\/\/api\.aladhan\.com\/.+/, (route) => route.fulfill({
-    contentType: 'application/json',
-    body: JSON.stringify({
-      data: {
-        timings: {
-          Fajr: '04:10',
-          Sunrise: '05:35',
-          Dhuhr: '12:15',
-          Asr: '15:40',
-          Maghrib: '18:55',
-          Isha: '20:25'
-        },
-        date: { hijri: { day: '10', month: { ar: 'محرم' }, year: '1448' } }
-      }
-    })
-  }));
+  await page.route(/https:\/\/api\.aladhan\.com\/.+/, (route) => {
+    if (route.request().url().includes('/qibla/')) {
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { direction: 293.4 } })
+      });
+    }
+
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          timings: {
+            Fajr: '04:10',
+            Sunrise: '05:35',
+            Dhuhr: '12:15',
+            Asr: '15:40',
+            Maghrib: '18:55',
+            Isha: '20:25'
+          },
+          date: { hijri: { day: '10', month: { ar: 'محرم' }, year: '1448' } }
+        }
+      })
+    });
+  });
 
   await page.route(/https:\/\/api\.open-meteo\.com\/.+/, (route) => route.fulfill({
     contentType: 'application/json',

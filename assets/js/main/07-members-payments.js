@@ -52,6 +52,7 @@ function loadMembers() {
     try {
         const membersCollection = collection(db, "users");
         unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
+            const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
             membersList.innerHTML = '';
 
             if (snapshot.empty) {
@@ -70,7 +71,7 @@ function loadMembers() {
                     : `<span class="font-bold payment-status-late">❌ متأخر</span>`;
 
                 let adminControls = '';
-                if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
+                if (isAdminUser) {
                     adminControls = `
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn btn-compact ms-2">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger btn-compact">لم يدفع</button>
@@ -81,10 +82,14 @@ function loadMembers() {
                     `;
                 }
 
+                const phoneLine = isAdminUser
+                    ? `<p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>`
+                    : '';
+
                 div.innerHTML = `
                     <div>
                         <p class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</p>
-                        <p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>
+                        ${phoneLine}
                     </div>
                     <div class="flex items-center">
                         ${adminControls}
@@ -292,6 +297,7 @@ async function loadPaymentOverview() {
 
     try {
         const snapshot = await getDocs(collection(db, "users"));
+        const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
         const members = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
         const paid = members.filter((member) => member.paymentStatus === 'paid');
         const late = members.filter((member) => member.paymentStatus !== 'paid');
@@ -302,15 +308,21 @@ async function loadPaymentOverview() {
 
         if (lateMembersList) {
             lateMembersList.innerHTML = late.length
-                ? late.slice(0, 8).map((member) => `
-                    <div class="list-item-card text-sm">
-                        <div>
-                            <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
-                            <small>${escapeHtml(member.phone || 'بدون رقم')}</small>
+                ? late.slice(0, 8).map((member) => {
+                    const phoneLine = isAdminUser
+                        ? `<small>${escapeHtml(member.phone || 'بدون رقم')}</small>`
+                        : '';
+
+                    return `
+                        <div class="list-item-card text-sm">
+                            <div>
+                                <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
+                                ${phoneLine}
+                            </div>
+                            <span class="status-badge overdue">متأخر</span>
                         </div>
-                        <span class="status-badge overdue">متأخر</span>
-                    </div>
-                `).join('')
+                    `;
+                }).join('')
                 : '<p class="text-center">كل الأعضاء مسددين.</p>';
         }
     } catch (error) {

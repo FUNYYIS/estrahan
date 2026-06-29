@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '276';
+const APP_ASSET_VERSION = '280';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,7 +177,7 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=276';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=280';
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
@@ -284,7 +284,7 @@ const routeTitles = {
     '#members': 'الأعضاء',
     '#payments': 'القطة الشهرية',
     '#chat': 'الدردشة',
-    '#settings': 'المزيد',
+    '#settings': 'الإعدادات',
     '#profile-settings': 'بياناتك',
     '#notifications-settings': 'الإشعارات',
     '#admin-notifications': 'لوحة التحكم',
@@ -500,7 +500,7 @@ function syncShellUserState() {
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
+    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=280';
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });
@@ -1886,6 +1886,7 @@ function loadPageData(pageId) {
                 break;
             case 'prayer':
                 loadPrayerTimes();
+                initQibla();
                 break;
             case 'qibla':
                 initQibla();
@@ -2346,6 +2347,7 @@ function loadMembers() {
     try {
         const membersCollection = collection(db, "users");
         unsubscribeMembers = onSnapshot(membersCollection, (snapshot) => {
+            const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
             membersList.innerHTML = '';
 
             if (snapshot.empty) {
@@ -2364,7 +2366,7 @@ function loadMembers() {
                     : `<span class="font-bold payment-status-late">❌ متأخر</span>`;
 
                 let adminControls = '';
-                if ((auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)) {
+                if (isAdminUser) {
                     adminControls = `
                         <button data-id="${memberId}" data-status="paid" class="toggle-payment-btn btn btn-compact ms-2">دفع</button>
                         <button data-id="${memberId}" data-status="late" class="toggle-payment-btn btn btn-danger btn-compact">لم يدفع</button>
@@ -2375,10 +2377,14 @@ function loadMembers() {
                     `;
                 }
 
+                const phoneLine = isAdminUser
+                    ? `<p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>`
+                    : '';
+
                 div.innerHTML = `
                     <div>
                         <p class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</p>
-                        <p class="text-sm">${escapeHtml(member.phone || 'بدون رقم')}</p>
+                        ${phoneLine}
                     </div>
                     <div class="flex items-center">
                         ${adminControls}
@@ -2586,6 +2592,7 @@ async function loadPaymentOverview() {
 
     try {
         const snapshot = await getDocs(collection(db, "users"));
+        const isAdminUser = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
         const members = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
         const paid = members.filter((member) => member.paymentStatus === 'paid');
         const late = members.filter((member) => member.paymentStatus !== 'paid');
@@ -2596,15 +2603,21 @@ async function loadPaymentOverview() {
 
         if (lateMembersList) {
             lateMembersList.innerHTML = late.length
-                ? late.slice(0, 8).map((member) => `
-                    <div class="list-item-card text-sm">
-                        <div>
-                            <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
-                            <small>${escapeHtml(member.phone || 'بدون رقم')}</small>
+                ? late.slice(0, 8).map((member) => {
+                    const phoneLine = isAdminUser
+                        ? `<small>${escapeHtml(member.phone || 'بدون رقم')}</small>`
+                        : '';
+
+                    return `
+                        <div class="list-item-card text-sm">
+                            <div>
+                                <span class="font-bold">${escapeHtml(member.name || 'بدون اسم')}</span>
+                                ${phoneLine}
+                            </div>
+                            <span class="status-badge overdue">متأخر</span>
                         </div>
-                        <span class="status-badge overdue">متأخر</span>
-                    </div>
-                `).join('')
+                    `;
+                }).join('')
                 : '<p class="text-center">كل الأعضاء مسددين.</p>';
         }
     } catch (error) {
@@ -3268,6 +3281,7 @@ async function loadMatches(container, limit = 10, compact = false) {
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
                 : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+            bindMatchImageFallbacks(container);
             return;
         }
 
@@ -3291,6 +3305,7 @@ async function loadMatches(container, limit = 10, compact = false) {
                 </div>
             </div>
         `;
+        bindMatchImageFallbacks(container);
 
     } catch (error) {
         console.error("Error fetching matches:", error);
@@ -3396,10 +3411,83 @@ function compareSportsDbEvents(a, b) {
     return firstKickoff - secondKickoff;
 }
 
+const FIFA_TO_FLAG_CODE = {
+    ksa: 'sa',
+    sau: 'sa',
+    usa: 'us',
+    uae: 'ae',
+    qatar: 'qa',
+    qat: 'qa',
+    kuwait: 'kw',
+    kuw: 'kw',
+    bahrain: 'bh',
+    bhr: 'bh',
+    oman: 'om',
+    omn: 'om',
+    jordan: 'jo',
+    jor: 'jo',
+    iraq: 'iq',
+    irq: 'iq',
+    egypt: 'eg',
+    egy: 'eg',
+    morocco: 'ma',
+    mar: 'ma',
+    tunisia: 'tn',
+    tun: 'tn',
+    algeria: 'dz',
+    alg: 'dz',
+    england: 'gb-eng',
+    eng: 'gb-eng',
+    wales: 'gb-wls',
+    wal: 'gb-wls',
+    scotland: 'gb-sct',
+    sco: 'gb-sct',
+    germany: 'de',
+    ger: 'de',
+    france: 'fr',
+    fra: 'fr',
+    spain: 'es',
+    esp: 'es',
+    portugal: 'pt',
+    por: 'pt',
+    argentina: 'ar',
+    arg: 'ar',
+    brazil: 'br',
+    bra: 'br',
+    mexico: 'mx',
+    mex: 'mx',
+    canada: 'ca',
+    can: 'ca',
+    japan: 'jp',
+    jpn: 'jp',
+    korea: 'kr',
+    kor: 'kr',
+    australia: 'au',
+    aus: 'au',
+    italy: 'it',
+    ita: 'it',
+    netherlands: 'nl',
+    ned: 'nl',
+    belgium: 'be',
+    bel: 'be',
+    croatia: 'hr',
+    cro: 'hr',
+    switzerland: 'ch',
+    sui: 'ch',
+    uruguay: 'uy',
+    uru: 'uy',
+    colombia: 'co',
+    col: 'co'
+};
+
 function safeFlagUrl(code) {
     const normalized = String(code || '').trim().toLowerCase();
-    if (!/^[a-z]{2,3}(?:-[a-z]{3})?$/.test(normalized)) return '';
-    return `https://flagcdn.com/w80/${normalized}.png`;
+    if (!normalized) return '';
+
+    const flagCode = FIFA_TO_FLAG_CODE[normalized] || normalized;
+
+    if (!/^[a-z]{2}(?:-[a-z]{3})?$/.test(flagCode)) return '';
+    return `https://flagcdn.com/w80/${flagCode}.png`;
 }
 
 async function getSaudiLeagueSeason(apiKey, leagueId) {
@@ -3535,10 +3623,24 @@ function renderSportsDbMatchCard(event) {
 }
 
 function renderTeamMark(src, teamName = '') {
+    const initial = getTeamInitial(teamName);
+
     if (src) {
-        return `<img src="${escapeHtml(src)}" alt="" class="team-logo" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+        return `<img src="${escapeHtml(src)}" alt="" class="team-logo" data-team-initial="${escapeHtml(initial)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
     }
-    return `<span class="team-logo team-initial">${escapeHtml(getTeamInitial(teamName))}</span>`;
+
+    return `<span class="team-logo team-initial">${escapeHtml(initial)}</span>`;
+}
+
+function bindMatchImageFallbacks(container) {
+    container?.querySelectorAll('img.team-logo').forEach((image) => {
+        image.addEventListener('error', () => {
+            const fallback = document.createElement('span');
+            fallback.className = 'team-logo team-initial';
+            fallback.textContent = image.dataset.teamInitial || 'FC';
+            image.replaceWith(fallback);
+        }, { once: true });
+    });
 }
 
 function getTeamInitial(teamName = '') {

@@ -27,7 +27,6 @@ const files = [
   'assets/js/offline.js',
   'service-worker.js',
   'firebase-messaging-sw.js',
-  'netlify/functions/alarabiya-news.js',
   'netlify/functions/alarabiya-news-v2.js',
   'netlify/functions/alarabiya-news-v3.js',
   'netlify/functions/alarabiya-image.js',

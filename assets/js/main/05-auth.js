@@ -29,6 +29,7 @@ function loadPageData(pageId) {
                 break;
             case 'prayer':
                 loadPrayerTimes();
+                initQibla();
                 break;
             case 'qibla':
                 initQibla();

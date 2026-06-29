@@ -56,6 +56,7 @@ async function loadMatches(container, limit = 10, compact = false) {
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
                 : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+            bindMatchImageFallbacks(container);
             return;
         }
 
@@ -79,6 +80,7 @@ async function loadMatches(container, limit = 10, compact = false) {
                 </div>
             </div>
         `;
+        bindMatchImageFallbacks(container);
 
     } catch (error) {
         console.error("Error fetching matches:", error);
@@ -184,10 +186,83 @@ function compareSportsDbEvents(a, b) {
     return firstKickoff - secondKickoff;
 }
 
+const FIFA_TO_FLAG_CODE = {
+    ksa: 'sa',
+    sau: 'sa',
+    usa: 'us',
+    uae: 'ae',
+    qatar: 'qa',
+    qat: 'qa',
+    kuwait: 'kw',
+    kuw: 'kw',
+    bahrain: 'bh',
+    bhr: 'bh',
+    oman: 'om',
+    omn: 'om',
+    jordan: 'jo',
+    jor: 'jo',
+    iraq: 'iq',
+    irq: 'iq',
+    egypt: 'eg',
+    egy: 'eg',
+    morocco: 'ma',
+    mar: 'ma',
+    tunisia: 'tn',
+    tun: 'tn',
+    algeria: 'dz',
+    alg: 'dz',
+    england: 'gb-eng',
+    eng: 'gb-eng',
+    wales: 'gb-wls',
+    wal: 'gb-wls',
+    scotland: 'gb-sct',
+    sco: 'gb-sct',
+    germany: 'de',
+    ger: 'de',
+    france: 'fr',
+    fra: 'fr',
+    spain: 'es',
+    esp: 'es',
+    portugal: 'pt',
+    por: 'pt',
+    argentina: 'ar',
+    arg: 'ar',
+    brazil: 'br',
+    bra: 'br',
+    mexico: 'mx',
+    mex: 'mx',
+    canada: 'ca',
+    can: 'ca',
+    japan: 'jp',
+    jpn: 'jp',
+    korea: 'kr',
+    kor: 'kr',
+    australia: 'au',
+    aus: 'au',
+    italy: 'it',
+    ita: 'it',
+    netherlands: 'nl',
+    ned: 'nl',
+    belgium: 'be',
+    bel: 'be',
+    croatia: 'hr',
+    cro: 'hr',
+    switzerland: 'ch',
+    sui: 'ch',
+    uruguay: 'uy',
+    uru: 'uy',
+    colombia: 'co',
+    col: 'co'
+};
+
 function safeFlagUrl(code) {
     const normalized = String(code || '').trim().toLowerCase();
-    if (!/^[a-z]{2,3}(?:-[a-z]{3})?$/.test(normalized)) return '';
-    return `https://flagcdn.com/w80/${normalized}.png`;
+    if (!normalized) return '';
+
+    const flagCode = FIFA_TO_FLAG_CODE[normalized] || normalized;
+
+    if (!/^[a-z]{2}(?:-[a-z]{3})?$/.test(flagCode)) return '';
+    return `https://flagcdn.com/w80/${flagCode}.png`;
 }
 
 async function getSaudiLeagueSeason(apiKey, leagueId) {
@@ -323,10 +398,24 @@ function renderSportsDbMatchCard(event) {
 }
 
 function renderTeamMark(src, teamName = '') {
+    const initial = getTeamInitial(teamName);
+
     if (src) {
-        return `<img src="${escapeHtml(src)}" alt="" class="team-logo" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
+        return `<img src="${escapeHtml(src)}" alt="" class="team-logo" data-team-initial="${escapeHtml(initial)}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`;
     }
-    return `<span class="team-logo team-initial">${escapeHtml(getTeamInitial(teamName))}</span>`;
+
+    return `<span class="team-logo team-initial">${escapeHtml(initial)}</span>`;
+}
+
+function bindMatchImageFallbacks(container) {
+    container?.querySelectorAll('img.team-logo').forEach((image) => {
+        image.addEventListener('error', () => {
+            const fallback = document.createElement('span');
+            fallback.className = 'team-logo team-initial';
+            fallback.textContent = image.dataset.teamInitial || 'FC';
+            image.replaceWith(fallback);
+        }, { once: true });
+    });
 }
 
 function getTeamInitial(teamName = '') {

@@ -339,6 +339,16 @@ async function installAppMocks(page) {
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#1f5a46"/></svg>'
   }));
 
+  await page.route(/https:\/\/fonts\.googleapis\.com\/.+/, (route) => route.fulfill({
+    contentType: 'text/css',
+    body: ''
+  }));
+
+  await page.route(/https:\/\/fonts\.gstatic\.com\/.+/, (route) => route.fulfill({
+    contentType: 'font/woff2',
+    body: ''
+  }));
+
   return {
     assertClean() {
       if (errors.length) {

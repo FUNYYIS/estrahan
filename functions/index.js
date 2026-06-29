@@ -814,8 +814,6 @@ async function buildAdminTestMessage(type) {
   }
 
   if (type === 'prayer') {
-    const settings = await getAppSettings();
-    const minutesBefore = clampNumber(settings.prayerReminderMinutes, 1, 60, 10);
     return buildPrayerReminderMessage('العصر', 0, 'موقعك');
   }
 

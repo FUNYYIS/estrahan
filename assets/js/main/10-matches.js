@@ -311,7 +311,7 @@ function renderSportsDbMatchCard(event) {
     return `
         <article class="match-card card">
             <span class="badge ${statusClass}">${statusLabel}</span>
-            <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}${event.strSource ? ` · ${escapeHtml(event.strSource)}` : ''}</p>
+            <p class="muted">${escapeHtml(event.strLeague || 'Saudi Pro League')}</p>
             <div class="match-teams">
                 <span>${homeMark} ${escapeHtml(event.strHomeTeam || 'فريق')}</span>
                 <span>${awayMark} ${escapeHtml(event.strAwayTeam || 'فريق')}</span>

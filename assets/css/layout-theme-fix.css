@@ -190,3 +190,85 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
     padding: 7px 10px !important;
   }
 }
+
+/* =====================================================================
+   Mobile UI pass: real light mode, readability, prayer box, chat spacing.
+   Light-mode rules are scoped to body:not([data-theme="dark"]) so the
+   night theme is untouched.
+   ===================================================================== */
+
+/* Issue 2: a full-screen dark veil on body::after (from home-v2.css) was
+   darkening light mode on every page. Soften it to a calm warm wash so the
+   day theme reads as off-white + light green, keeping the identity. */
+body:not([data-theme="dark"])::after {
+  background: linear-gradient(
+      rgba(120, 145, 90, 0.05),
+      rgba(120, 145, 90, 0.05)
+    ),
+    rgba(247, 244, 236, 0.55) !important;
+}
+
+/* Issue 3: slightly larger, calmer body text on phones (kept conservative). */
+@media (max-width: 640px) {
+  body.is-authenticated { font-size: 16.5px; line-height: 1.65; }
+
+  body.is-authenticated .text-sm,
+  body.is-authenticated .muted,
+  body.is-authenticated .panel small,
+  body.is-authenticated .list-item-card p {
+    font-size: 0.92rem !important;
+    line-height: 1.6 !important;
+  }
+}
+
+/* Issue 4: prayer time cards — clear contrast and comfortable, aligned numbers. */
+body:not([data-theme="dark"]) #prayer-times-container,
+body:not([data-theme="dark"]) #home-prayer-times,
+body:not([data-theme="dark"]) .prayer-location-note {
+  color: var(--ink, #1c2b24) !important;
+}
+
+#prayer-times-container .stat,
+#home-prayer-times .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+#prayer-times-container .stat span,
+#home-prayer-times .stat span {
+  font-size: 0.9rem;
+  color: var(--muted, #6f746d);
+}
+
+#prayer-times-container .stat strong,
+#home-prayer-times .stat strong {
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  color: #164535;
+}
+
+body[data-theme="dark"] #prayer-times-container .stat strong,
+body[data-theme="dark"] #home-prayer-times .stat strong {
+  color: #eaf3ec;
+}
+
+.prayer-location-note {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+/* Issue 5: trim the empty space above the chat thread on phones. */
+.compact-chat-page {
+  gap: 6px !important;
+}
+
+.chat-page-header {
+  min-height: 44px !important;
+  padding: 6px 12px !important;
+}

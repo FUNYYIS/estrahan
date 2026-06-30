@@ -47,27 +47,29 @@ async function loadHomePrayerAndDate() {
         console.error("Could not fetch Hijri date:", error);
     }
 
+    const homeKeys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
     if (!navigator.geolocation) {
-        prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">جهازك ما يدعم تحديد الموقع.</p>`;
+        await renderPrayerCardsInto(
+            prayerContainer,
+            JEDDAH_FALLBACK_LOCATION.latitude,
+            JEDDAH_FALLBACK_LOCATION.longitude,
+            homeKeys,
+            'مواقيت جدة'
+        );
         return;
     }
 
     navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            try {
-                const { latitude, longitude } = position.coords;
-                const data = await getPrayerData(latitude, longitude);
-                const timings = data.data.timings;
-
-                prayerContainer.innerHTML = prayerCards(timings, ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
-            } catch (error) {
-                console.error('Error fetching prayer times:', error);
-                prayerContainer.innerHTML = `<p class="text-red-400 text-center w-full">ما قدرنا نجيب المواقيت.</p>`;
-            }
-        },
-        () => {
-            prayerContainer.innerHTML = `<p class="text-yellow-400 text-center w-full">فعّل الموقع عشان نجيب المواقيت.</p>`;
-        }
+        (position) => renderPrayerCardsInto(prayerContainer, position.coords.latitude, position.coords.longitude, homeKeys),
+        () => renderPrayerCardsInto(
+            prayerContainer,
+            JEDDAH_FALLBACK_LOCATION.latitude,
+            JEDDAH_FALLBACK_LOCATION.longitude,
+            homeKeys,
+            'مواقيت جدة'
+        ),
+        { timeout: 10000, maximumAge: 600000 }
     );
 }
 
@@ -216,37 +218,59 @@ async function loadHomeNews() {
 }
 
 
+// موقع احتياطي (جدة) لعرض المواقيت حتى لو فشل تحديد الموقع.
+const JEDDAH_FALLBACK_LOCATION = { latitude: 21.4858, longitude: 39.1925, label: 'جدة' };
+
+async function renderPrayerCardsInto(container, latitude, longitude, keys, note = '') {
+    if (!container) return;
+    try {
+        const data = await getPrayerData(latitude, longitude);
+        if (!data.data || !data.data.timings) {
+            throw new Error('Invalid prayer data structure');
+        }
+        const noteHtml = note
+            ? `<p class="prayer-location-note muted text-center w-full">${escapeHtml(note)}</p>`
+            : '';
+        container.innerHTML = noteHtml + prayerCards(data.data.timings, keys);
+    } catch (error) {
+        console.error('Error fetching prayer times:', error);
+        container.innerHTML = `<p class="text-center w-full">ما قدرنا نجيب مواقيت الصلاة. جرّب مرة ثانية.</p>`;
+    }
+}
+
 async function loadPrayerTimes() {
     const container = document.getElementById('prayer-times-container');
     if (!container) return;
 
-    container.innerHTML = `<p class="text-center w-full">اسمح بالموقع عشان نجيب المواقيت...</p>`;
+    const keys = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    container.innerHTML = `<p class="text-center w-full">جاري جلب مواقيت الصلاة...</p>`;
 
     if (!navigator.geolocation) {
-        container.innerHTML = `<p class="text-yellow-400 text-center w-full">جهازك ما يدعم تحديد الموقع.</p>`;
+        await renderPrayerCardsInto(
+            container,
+            JEDDAH_FALLBACK_LOCATION.latitude,
+            JEDDAH_FALLBACK_LOCATION.longitude,
+            keys,
+            'نعرض مواقيت جدة، لأن جهازك لا يدعم تحديد الموقع.'
+        );
         return;
     }
 
     navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            try {
-                const { latitude, longitude } = position.coords;
-                const data = await getPrayerData(latitude, longitude);
-
-                if (!data.data || !data.data.timings) {
-                    throw new Error('Invalid prayer data structure');
-                }
-
-                const timings = data.data.timings;
-                container.innerHTML = prayerCards(timings, ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
-            } catch (error) {
-                console.error('Error fetching prayer times:', error);
-                container.innerHTML = `<p class="text-red-400 text-center w-full">ما قدرنا نجيب مواقيت الصلاة.</p>`;
-            }
+        (position) => renderPrayerCardsInto(container, position.coords.latitude, position.coords.longitude, keys),
+        (error) => {
+            const denied = error && error.code === 1;
+            renderPrayerCardsInto(
+                container,
+                JEDDAH_FALLBACK_LOCATION.latitude,
+                JEDDAH_FALLBACK_LOCATION.longitude,
+                keys,
+                denied
+                    ? 'نعرض مواقيت جدة. فعّل إذن الموقع من إعدادات المتصفح لمواقيت منطقتك.'
+                    : 'نعرض مواقيت جدة. تعذّر تحديد موقعك الحالي.'
+            );
         },
-        () => {
-            container.innerHTML = `<p class="text-yellow-400 text-center w-full">الموقع مقفل، ما نقدر نعرض المواقيت.</p>`;
-        }
+        { timeout: 10000, maximumAge: 600000 }
     );
 }
 

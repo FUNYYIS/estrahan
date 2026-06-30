@@ -311,3 +311,97 @@ body.is-authenticated #bottom-nav.nav a,
     min-height: 60px !important;
   }
 }
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — second pass
+   ===================================================================== */
+
+/* 1. Chat: hide redundant logo from page header — the topbar already
+      shows app identity. Keep only the icon + title text. */
+.chat-page-header .app-page-logo {
+  display: none !important;
+}
+
+/* 2. Compact the topbar specifically when on the chat page so more of
+      the viewport is available for messages. */
+body.is-authenticated:has(.compact-chat-page) .topbar {
+  min-height: 44px !important;
+  height: 44px !important;
+  padding-block: 4px !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) .top-profile {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 2px 6px 2px 8px !important;
+  gap: 0.35rem !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) .profile-avatar {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) .profile-copy strong {
+  font-size: 0.82rem !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) .profile-copy small {
+  display: none !important;
+}
+
+body.is-authenticated:has(.compact-chat-page) .notify-bell {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Recalculate viewport height with the slimmer topbar (44 px vs ~58 px) */
+body.is-authenticated:has(.compact-chat-page) .compact-chat-page {
+  height: calc(100dvh - 150px - env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated:has(.compact-chat-page) .compact-chat-page {
+    height: calc(100dvh - 140px - env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* 3. Day mode: top-profile member card — light surface, dark ink.
+      home-v2.css V213/V215 hardcode dark backgrounds with !important;
+      these rules have higher specificity and load after. */
+body:not([data-theme="dark"]) .top-profile {
+  color: var(--ink, #1c2b24) !important;
+  background: rgba(255, 253, 248, 0.96) !important;
+  border-color: rgba(31, 90, 70, 0.15) !important;
+  box-shadow: 0 6px 18px rgba(31, 50, 42, 0.08) !important;
+}
+
+body:not([data-theme="dark"]) .profile-copy strong {
+  color: var(--ink, #1c2b24) !important;
+}
+
+body:not([data-theme="dark"]) .profile-copy small {
+  color: var(--muted, #6f746d) !important;
+}
+
+body:not([data-theme="dark"]) .notify-bell {
+  color: #164535 !important;
+  background: rgba(255, 253, 248, 0.96) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+body:not([data-theme="dark"]) .icon-btn {
+  color: #164535 !important;
+  background: rgba(255, 253, 248, 0.88) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+/* 4. Typography: explicit base on desktop — mobile already gets 16.5 px
+      from the @media (max-width: 640px) block above. */
+@media (min-width: 641px) {
+  body.is-authenticated {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+}

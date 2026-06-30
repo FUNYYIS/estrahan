@@ -198,11 +198,15 @@ function applyCustomTheme() {
 
     root.style.setProperty('--theme-bg-color', background);
 
-    document.querySelectorAll('.panel, .home-reference-card, .payment-summary-card, .list-item-card, .service-card, .stat-card').forEach((el) => {
+    document.querySelectorAll(
+        '.panel, .home-reference-card, .payment-summary-card, .list-item-card, ' +
+        '.service-card, .stat-card, .match-card, .prayer-card, .qibla-card, ' +
+        '.home-prayer-card, .home-weather-card'
+    ).forEach((el) => {
         el.style.backgroundColor = card;
     });
 
-    document.querySelectorAll('.btn').forEach((el) => {
+    document.querySelectorAll('.btn:not(.btn-danger):not(.btn-secondary)').forEach((el) => {
         el.style.backgroundColor = primary;
     });
 
@@ -1927,7 +1931,7 @@ function getAdminNotificationErrorMessage(error) {
     }
 
     if (code.includes('failed-precondition')) {
-        return message || 'فشل الإرسال: لا توجد بيانات كافية لإرسال هذا الاختبار.';
+        return 'ما في مباراة قريبة حالياً لإرسال إشعار تجريبي. سيُرسل الإشعار تلقائياً قبل المباراة القادمة.';
     }
 
     if (code.includes('invalid-argument')) {

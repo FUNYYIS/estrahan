@@ -203,3 +203,50 @@ body.is-authenticated:has(.estraha-reference-home) #page-content {
     padding-bottom: calc(66px + env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* Merged from news-home-fix.css — home football news preview: limit to 3 cards, enforce image-led sizing. */
+#home-arabiya-news-list .compact-news-item:nth-of-type(n + 4) {
+  display: none !important;
+}
+
+#home-arabiya-news-list .compact-news-item {
+  min-height: 88px !important;
+  gap: 12px !important;
+  padding: 8px 10px !important;
+}
+
+#home-arabiya-news-list .compact-news-thumb {
+  width: 104px !important;
+  height: 72px !important;
+  flex: 0 0 104px !important;
+  border-radius: 12px !important;
+  object-fit: cover !important;
+}
+
+#home-arabiya-news-list .compact-news-item.no-image .compact-news-thumb {
+  object-fit: contain !important;
+  padding: 8px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#home-arabiya-news-list .compact-news-item strong {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+@media (max-width: 600px) {
+  #home-arabiya-news-list .compact-news-item {
+    min-height: 82px !important;
+    gap: 10px !important;
+  }
+
+  #home-arabiya-news-list .compact-news-thumb {
+    width: 92px !important;
+    height: 66px !important;
+    flex-basis: 92px !important;
+  }
+}

@@ -500,7 +500,12 @@ function syncShellUserState() {
     if (profileName) profileName.textContent = currentUser?.name ? `أهلاً ${currentUser.name}` : '';
     if (profileSince) profileSince.textContent = currentUser ? 'من أعضاء الاستراحة' : '';
     const isAdmin = auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID;
-    if (shellAvatar) shellAvatar.src = currentUser?.avatarUrl || 'assets/icons/icon-192-original-zoom.png?v=276';
+    if (shellAvatar) {
+        const av = currentUser?.avatarUrl || '';
+        shellAvatar.src = (av.startsWith('data:image/') || av.startsWith('https://'))
+            ? av
+            : 'assets/icons/icon-192-original-zoom.png?v=276';
+    }
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);
     });
@@ -546,7 +551,6 @@ async function initFirebaseMessaging() {
 
         if (!foregroundMessageUnsubscribe) {
             foregroundMessageUnsubscribe = onMessage(firebaseMessaging, async (payload) => {
-                console.log('Received foreground FCM message:', payload);
                 const data = payload.data || {};
                 const title = data.title || payload.notification?.title || 'تطبيق الاستراحة';
                 const body = data.body || payload.notification?.body || '';
@@ -2066,7 +2070,6 @@ async function handleSendCode(e) {
         return;
     }
 
-    console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
     setAuthStatus('phone', 'نجهز التحقق ونرسل لك الرمز...');
 
@@ -2816,7 +2819,7 @@ function getSafeAvatarUrl(value = '') {
 
     try {
         const parsed = new URL(url, window.location.origin);
-        return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+        return parsed.protocol === 'https:' ? parsed.href : '';
     } catch {
         return '';
     }

@@ -209,7 +209,6 @@ async function handleSendCode(e) {
         return;
     }
 
-    console.log(`Sending verification code to: ${phoneNumber}`);
     setFormLoading(e.currentTarget, true, 'جاري إرسال الرمز...');
     setAuthStatus('phone', 'نجهز التحقق ونرسل لك الرمز...');
 

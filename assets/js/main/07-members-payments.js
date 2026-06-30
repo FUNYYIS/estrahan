@@ -113,8 +113,8 @@ function loadMembers() {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
                     const oldName = e.currentTarget.dataset.name || '';
-                    const newName = prompt('اكتب الاسم الجديد:', oldName);
-                    if (!newName || !newName.trim()) return;
+                    const newName = await showPrompt('اكتب الاسم الجديد:', oldName);
+                    if (!newName) return;
 
                     try {
                         const updateMemberName = httpsCallable(functions, 'updateMemberName');
@@ -147,8 +147,7 @@ function loadMembers() {
             document.querySelectorAll('.reset-avatar-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
-                    const confirmed = confirm('متأكد تبي تصفر صورة هذا العضو؟');
-                    if (!confirmed) return;
+                    if (!await showConfirm('متأكد تبي تصفر صورة هذا العضو؟')) return;
 
                     try {
                         const resetMemberAvatar = httpsCallable(functions, 'resetMemberAvatar');
@@ -164,8 +163,7 @@ function loadMembers() {
             document.querySelectorAll('.delete-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
-                    const confirmed = confirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.');
-                    if (!confirmed) return;
+                    if (!await showConfirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.')) return;
 
                     try {
                         const deleteMember = httpsCallable(functions, 'deleteMember');

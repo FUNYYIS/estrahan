@@ -410,6 +410,7 @@ const recaptchaManager = {
 
 // --- وظائف مساعدة ---
 let alertReturnFocus = null;
+let _dialogCloseCallback = null;
 
 function closeAlert() {
     if (!customAlert) return;
@@ -421,6 +422,18 @@ function closeAlert() {
         returnTarget.focus({ preventScroll: true });
     } else {
         alertCloseBtn?.blur();
+    }
+
+    // Clean up any confirm/prompt temporary elements
+    document.getElementById('alert-confirm-btn')?.remove();
+    document.getElementById('alert-prompt-input')?.remove();
+    if (alertCloseBtn) alertCloseBtn.textContent = 'حسنًا';
+
+    // Resolve any pending dialog promise as cancelled
+    if (_dialogCloseCallback) {
+        const cb = _dialogCloseCallback;
+        _dialogCloseCallback = null;
+        cb(false);
     }
 
     customAlert.style.display = 'none';
@@ -439,6 +452,85 @@ function showAlert(message) {
     customAlert.setAttribute('aria-hidden', 'false');
     customAlert.style.display = 'flex';
     window.requestAnimationFrame(() => alertCloseBtn?.focus({ preventScroll: true }));
+}
+
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        if (!customAlert || !alertMessage) { resolve(false); return; }
+
+        // Clean up any leftover elements from a previous dialog
+        document.getElementById('alert-confirm-btn')?.remove();
+        document.getElementById('alert-prompt-input')?.remove();
+
+        _dialogCloseCallback = resolve;
+        alertReturnFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement : null;
+
+        alertMessage.textContent = message;
+        if (alertCloseBtn) alertCloseBtn.textContent = 'إلغاء';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'alert-confirm-btn';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'تأكيد';
+        alertCloseBtn?.parentElement?.insertBefore(confirmBtn, alertCloseBtn);
+
+        confirmBtn.addEventListener('click', () => {
+            _dialogCloseCallback = null;
+            closeAlert();
+            resolve(true);
+        }, { once: true });
+
+        customAlert.removeAttribute('inert');
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlert.style.display = 'flex';
+        window.requestAnimationFrame(() => confirmBtn.focus({ preventScroll: true }));
+    });
+}
+
+function showPrompt(message, defaultValue = '') {
+    return new Promise((resolve) => {
+        if (!customAlert || !alertMessage) { resolve(null); return; }
+
+        // Clean up any leftover elements from a previous dialog
+        document.getElementById('alert-confirm-btn')?.remove();
+        document.getElementById('alert-prompt-input')?.remove();
+
+        _dialogCloseCallback = () => resolve(null);
+        alertReturnFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement : null;
+
+        alertMessage.textContent = message;
+        if (alertCloseBtn) alertCloseBtn.textContent = 'إلغاء';
+
+        const input = document.createElement('input');
+        input.id = 'alert-prompt-input';
+        input.type = 'text';
+        input.value = defaultValue;
+        input.className = 'field';
+        input.style.cssText = 'width:100%;margin:0 0 14px;text-align:right;direction:rtl';
+        alertMessage.insertAdjacentElement('afterend', input);
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'alert-confirm-btn';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'حفظ';
+        alertCloseBtn?.parentElement?.insertBefore(confirmBtn, alertCloseBtn);
+
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
+
+        confirmBtn.addEventListener('click', () => {
+            const value = input.value.trim();
+            _dialogCloseCallback = null;
+            closeAlert();
+            resolve(value || null);
+        }, { once: true });
+
+        customAlert.removeAttribute('inert');
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlert.style.display = 'flex';
+        window.requestAnimationFrame(() => input.focus({ preventScroll: true }));
+    });
 }
 
 alertCloseBtn?.addEventListener('click', closeAlert);
@@ -2410,8 +2502,8 @@ function loadMembers() {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
                     const oldName = e.currentTarget.dataset.name || '';
-                    const newName = prompt('اكتب الاسم الجديد:', oldName);
-                    if (!newName || !newName.trim()) return;
+                    const newName = await showPrompt('اكتب الاسم الجديد:', oldName);
+                    if (!newName) return;
 
                     try {
                         const updateMemberName = httpsCallable(functions, 'updateMemberName');
@@ -2444,8 +2536,7 @@ function loadMembers() {
             document.querySelectorAll('.reset-avatar-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
-                    const confirmed = confirm('متأكد تبي تصفر صورة هذا العضو؟');
-                    if (!confirmed) return;
+                    if (!await showConfirm('متأكد تبي تصفر صورة هذا العضو؟')) return;
 
                     try {
                         const resetMemberAvatar = httpsCallable(functions, 'resetMemberAvatar');
@@ -2461,8 +2552,7 @@ function loadMembers() {
             document.querySelectorAll('.delete-member-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const memberId = e.currentTarget.dataset.id;
-                    const confirmed = confirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.');
-                    if (!confirmed) return;
+                    if (!await showConfirm('متأكد تبي تحذف هذا العضو؟ لا يمكن التراجع.')) return;
 
                     try {
                         const deleteMember = httpsCallable(functions, 'deleteMember');
@@ -2636,7 +2726,7 @@ async function handleChatBoxClick(event) {
     if (muteBtn) {
         const userId = muteBtn.dataset.userId;
         if (!userId) return;
-        if (!confirm('متأكد تبي تكتم هذا العضو؟')) return;
+        if (!await showConfirm('متأكد تبي تكتم هذا العضو؟')) return;
         try {
             await loadAppSettings();
             const muted = Array.isArray(appSettings.mutedUserIds) ? [...appSettings.mutedUserIds] : [];
@@ -2654,7 +2744,7 @@ async function handleChatBoxClick(event) {
     const deleteBtn = event.target.closest('.delete-chat-message-btn');
     if (deleteBtn) {
         const messageId = deleteBtn.dataset.id;
-        if (!confirm('متأكد تبي تحذف الرسالة؟') || !messageId) return;
+        if (!await showConfirm('متأكد تبي تحذف الرسالة؟') || !messageId) return;
         try {
             await deleteDoc(doc(db, "chat", messageId));
             showAlert('تم حذف الرسالة.');

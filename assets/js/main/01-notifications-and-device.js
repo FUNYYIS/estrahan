@@ -74,6 +74,7 @@ const recaptchaManager = {
 
 // --- وظائف مساعدة ---
 let alertReturnFocus = null;
+let _dialogCloseCallback = null;
 
 function closeAlert() {
     if (!customAlert) return;
@@ -85,6 +86,18 @@ function closeAlert() {
         returnTarget.focus({ preventScroll: true });
     } else {
         alertCloseBtn?.blur();
+    }
+
+    // Clean up any confirm/prompt temporary elements
+    document.getElementById('alert-confirm-btn')?.remove();
+    document.getElementById('alert-prompt-input')?.remove();
+    if (alertCloseBtn) alertCloseBtn.textContent = 'حسنًا';
+
+    // Resolve any pending dialog promise as cancelled
+    if (_dialogCloseCallback) {
+        const cb = _dialogCloseCallback;
+        _dialogCloseCallback = null;
+        cb(false);
     }
 
     customAlert.style.display = 'none';
@@ -103,6 +116,85 @@ function showAlert(message) {
     customAlert.setAttribute('aria-hidden', 'false');
     customAlert.style.display = 'flex';
     window.requestAnimationFrame(() => alertCloseBtn?.focus({ preventScroll: true }));
+}
+
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        if (!customAlert || !alertMessage) { resolve(false); return; }
+
+        // Clean up any leftover elements from a previous dialog
+        document.getElementById('alert-confirm-btn')?.remove();
+        document.getElementById('alert-prompt-input')?.remove();
+
+        _dialogCloseCallback = resolve;
+        alertReturnFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement : null;
+
+        alertMessage.textContent = message;
+        if (alertCloseBtn) alertCloseBtn.textContent = 'إلغاء';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'alert-confirm-btn';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'تأكيد';
+        alertCloseBtn?.parentElement?.insertBefore(confirmBtn, alertCloseBtn);
+
+        confirmBtn.addEventListener('click', () => {
+            _dialogCloseCallback = null;
+            closeAlert();
+            resolve(true);
+        }, { once: true });
+
+        customAlert.removeAttribute('inert');
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlert.style.display = 'flex';
+        window.requestAnimationFrame(() => confirmBtn.focus({ preventScroll: true }));
+    });
+}
+
+function showPrompt(message, defaultValue = '') {
+    return new Promise((resolve) => {
+        if (!customAlert || !alertMessage) { resolve(null); return; }
+
+        // Clean up any leftover elements from a previous dialog
+        document.getElementById('alert-confirm-btn')?.remove();
+        document.getElementById('alert-prompt-input')?.remove();
+
+        _dialogCloseCallback = () => resolve(null);
+        alertReturnFocus = document.activeElement instanceof HTMLElement
+            ? document.activeElement : null;
+
+        alertMessage.textContent = message;
+        if (alertCloseBtn) alertCloseBtn.textContent = 'إلغاء';
+
+        const input = document.createElement('input');
+        input.id = 'alert-prompt-input';
+        input.type = 'text';
+        input.value = defaultValue;
+        input.className = 'field';
+        input.style.cssText = 'width:100%;margin:0 0 14px;text-align:right;direction:rtl';
+        alertMessage.insertAdjacentElement('afterend', input);
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'alert-confirm-btn';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'حفظ';
+        alertCloseBtn?.parentElement?.insertBefore(confirmBtn, alertCloseBtn);
+
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
+
+        confirmBtn.addEventListener('click', () => {
+            const value = input.value.trim();
+            _dialogCloseCallback = null;
+            closeAlert();
+            resolve(value || null);
+        }, { once: true });
+
+        customAlert.removeAttribute('inert');
+        customAlert.setAttribute('aria-hidden', 'false');
+        customAlert.style.display = 'flex';
+        window.requestAnimationFrame(() => input.focus({ preventScroll: true }));
+    });
 }
 
 alertCloseBtn?.addEventListener('click', closeAlert);

@@ -101,6 +101,12 @@ function initApp() {
     console.log('✓ App initialization complete');
 }
 
+// Register service worker independently of FCM so the PWA is installable
+// and offline-capable even for users who have not granted notification permission.
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+}
+
 // Start the app
 initApp();
 

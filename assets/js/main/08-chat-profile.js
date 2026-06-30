@@ -18,7 +18,7 @@ async function handleChatBoxClick(event) {
     if (muteBtn) {
         const userId = muteBtn.dataset.userId;
         if (!userId) return;
-        if (!confirm('متأكد تبي تكتم هذا العضو؟')) return;
+        if (!await showConfirm('متأكد تبي تكتم هذا العضو؟')) return;
         try {
             await loadAppSettings();
             const muted = Array.isArray(appSettings.mutedUserIds) ? [...appSettings.mutedUserIds] : [];
@@ -36,7 +36,7 @@ async function handleChatBoxClick(event) {
     const deleteBtn = event.target.closest('.delete-chat-message-btn');
     if (deleteBtn) {
         const messageId = deleteBtn.dataset.id;
-        if (!confirm('متأكد تبي تحذف الرسالة؟') || !messageId) return;
+        if (!await showConfirm('متأكد تبي تحذف الرسالة؟') || !messageId) return;
         try {
             await deleteDoc(doc(db, "chat", messageId));
             showAlert('تم حذف الرسالة.');

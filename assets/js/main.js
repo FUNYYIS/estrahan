@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '277';
+const APP_ASSET_VERSION = '278';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,7 +177,7 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=277';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=278';
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
@@ -646,7 +646,7 @@ async function initFirebaseMessaging() {
                 const data = payload.data || {};
                 const title = data.title || payload.notification?.title || 'تطبيق الاستراحة';
                 const body = data.body || payload.notification?.body || '';
-                if (Notification.permission === 'granted' && title) {
+                if (window.Notification?.permission === 'granted' && title) {
                     await registration.showNotification(title, {
                         body,
                         icon: '/assets/icons/icon-512.png',
@@ -727,7 +727,6 @@ async function savePrayerLocationFromDevice(button, statusElement) {
             savedAt: new Date().toISOString()
         };
         localStorage.setItem('al-istiraha-prayer-location', JSON.stringify(preference));
-        if (Notification.permission === 'granted') await syncFcmTokenWithPreferences();
         if (statusElement) statusElement.textContent = 'تم ربط تنبيه الصلاة بموقع هذا الجهاز.';
         showAlert('تم ضبط تنبيه الصلاة حسب موقعك الحالي.');
     } catch (error) {

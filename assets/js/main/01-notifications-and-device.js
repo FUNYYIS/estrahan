@@ -310,7 +310,7 @@ async function initFirebaseMessaging() {
                 const data = payload.data || {};
                 const title = data.title || payload.notification?.title || 'تطبيق الاستراحة';
                 const body = data.body || payload.notification?.body || '';
-                if (Notification.permission === 'granted' && title) {
+                if (window.Notification?.permission === 'granted' && title) {
                     await registration.showNotification(title, {
                         body,
                         icon: '/assets/icons/icon-512.png',
@@ -391,7 +391,6 @@ async function savePrayerLocationFromDevice(button, statusElement) {
             savedAt: new Date().toISOString()
         };
         localStorage.setItem('al-istiraha-prayer-location', JSON.stringify(preference));
-        if (Notification.permission === 'granted') await syncFcmTokenWithPreferences();
         if (statusElement) statusElement.textContent = 'تم ربط تنبيه الصلاة بموقع هذا الجهاز.';
         showAlert('تم ضبط تنبيه الصلاة حسب موقعك الحالي.');
     } catch (error) {

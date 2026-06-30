@@ -260,7 +260,7 @@ function syncShellUserState() {
         const av = currentUser?.avatarUrl || '';
         shellAvatar.src = (av.startsWith('data:image/') || av.startsWith('https://'))
             ? av
-            : 'assets/icons/icon-192-original-zoom.png?v=276';
+            : 'assets/icons/icon-192-original-zoom.png?v=277';
     }
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
         element.classList.toggle('hidden', !isAdmin);

@@ -1,3 +1,52 @@
+async function handleChatBoxClick(event) {
+    const pinBtn = event.target.closest('.pin-chat-message-btn');
+    if (pinBtn) {
+        const messageId = pinBtn.dataset.id;
+        if (!messageId) return;
+        try {
+            await setDoc(doc(db, 'settings', 'app'), { pinnedMessageId: messageId }, { merge: true });
+            appSettings.pinnedMessageId = messageId;
+            showAlert('تم تثبيت الرسالة.');
+        } catch (error) {
+            console.error('Pin message failed:', error);
+            showAlert('فشل تثبيت الرسالة.');
+        }
+        return;
+    }
+
+    const muteBtn = event.target.closest('.mute-chat-user-btn');
+    if (muteBtn) {
+        const userId = muteBtn.dataset.userId;
+        if (!userId) return;
+        if (!confirm('متأكد تبي تكتم هذا العضو؟')) return;
+        try {
+            await loadAppSettings();
+            const muted = Array.isArray(appSettings.mutedUserIds) ? [...appSettings.mutedUserIds] : [];
+            if (!muted.includes(userId)) muted.push(userId);
+            await setDoc(doc(db, 'settings', 'app'), { mutedUserIds: muted }, { merge: true });
+            appSettings.mutedUserIds = muted;
+            showAlert('تم كتم العضو.');
+        } catch (error) {
+            console.error('Mute user failed:', error);
+            showAlert('فشل كتم العضو.');
+        }
+        return;
+    }
+
+    const deleteBtn = event.target.closest('.delete-chat-message-btn');
+    if (deleteBtn) {
+        const messageId = deleteBtn.dataset.id;
+        if (!confirm('متأكد تبي تحذف الرسالة؟') || !messageId) return;
+        try {
+            await deleteDoc(doc(db, "chat", messageId));
+            showAlert('تم حذف الرسالة.');
+        } catch (error) {
+            console.error('Chat message delete failed:', error);
+            showAlert('فشل حذف الرسالة.');
+        }
+    }
+}
+
 function loadChat() {
     const chatBox = document.getElementById('chat-box');
     if (!chatBox) {
@@ -9,6 +58,11 @@ function loadChat() {
     if (searchInput && searchInput.dataset.bound !== 'true') {
         searchInput.dataset.bound = 'true';
         searchInput.addEventListener('input', () => renderChatMessages(chatBox));
+    }
+
+    if (chatBox.dataset.delegationBound !== 'true') {
+        chatBox.dataset.delegationBound = 'true';
+        chatBox.addEventListener('click', handleChatBoxClick);
     }
 
     try {
@@ -103,74 +157,6 @@ function renderChatMessages(chatBox) {
     });
 
 
-
-    document.querySelectorAll('.pin-chat-message-btn').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            const messageId = event.currentTarget.dataset.id;
-            if (!messageId) return;
-
-            try {
-                await setDoc(doc(db, 'settings', 'app'), {
-                    pinnedMessageId: messageId
-                }, { merge: true });
-
-                appSettings.pinnedMessageId = messageId;
-                showAlert('تم تثبيت الرسالة.');
-            } catch (error) {
-                console.error('Pin message failed:', error);
-                showAlert('فشل تثبيت الرسالة.');
-            }
-        });
-    });
-
-    document.querySelectorAll('.mute-chat-user-btn').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            const userId = event.currentTarget.dataset.userId;
-            if (!userId) return;
-
-            const confirmed = confirm('متأكد تبي تكتم هذا العضو؟');
-            if (!confirmed) return;
-
-            try {
-                await loadAppSettings();
-
-                const muted = Array.isArray(appSettings.mutedUserIds)
-                    ? [...appSettings.mutedUserIds]
-                    : [];
-
-                if (!muted.includes(userId)) {
-                    muted.push(userId);
-                }
-
-                await setDoc(doc(db, 'settings', 'app'), {
-                    mutedUserIds: muted
-                }, { merge: true });
-
-                appSettings.mutedUserIds = muted;
-
-                showAlert('تم كتم العضو.');
-            } catch (error) {
-                console.error('Mute user failed:', error);
-                showAlert('فشل كتم العضو.');
-            }
-        });
-    });
-
-    document.querySelectorAll('.delete-chat-message-btn').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            const messageId = event.currentTarget.dataset.id;
-            const confirmed = confirm('متأكد تبي تحذف الرسالة؟');
-            if (!confirmed || !messageId) return;
-
-            try {
-                await deleteDoc(doc(db, "chat", messageId));
-                showAlert('تم حذف الرسالة.');
-            } catch (error) {
-                console.error('Chat message delete failed:', error);
-                showAlert('فشل حذف الرسالة.');
-            }
-        });
-    });
 
     if (shouldStickToBottom) {
         chatBox.scrollTop = chatBox.scrollHeight;

@@ -112,17 +112,19 @@ body:not([data-theme="dark"]) .compact-news-item,
 body:not([data-theme="dark"]) .news-load-error {
   color: var(--ink) !important;
   border-color: rgba(31, 90, 70, 0.14) !important;
-  background: rgba(255, 253, 248, 0.94) !important;
+  background: var(--theme-card, rgba(255, 253, 248, 0.94)) !important;
   box-shadow: 0 12px 30px rgba(31, 50, 42, 0.08) !important;
 }
 
+/* Topbar uses the page background, not the card surface */
 body:not([data-theme="dark"]) .topbar {
-  background: rgba(245, 243, 238, 0.88) !important;
+  background: var(--theme-background, rgba(245, 243, 238, 0.88)) !important;
 }
 
+/* Bottom nav gets card color (opaque) */
 body:not([data-theme="dark"]) #bottom-nav,
 body:not([data-theme="dark"]) #bottom-nav.nav {
-  background: rgba(255, 253, 248, 0.97) !important;
+  background: var(--theme-card, rgba(255, 253, 248, 0.97)) !important;
 }
 
 body:not([data-theme="dark"]) #bottom-nav .nav-link {
@@ -130,8 +132,14 @@ body:not([data-theme="dark"]) #bottom-nav .nav-link {
 }
 
 body:not([data-theme="dark"]) #bottom-nav .nav-link.active {
-  color: #164535 !important;
-  background: rgba(216, 222, 195, 0.9) !important;
+  color: var(--theme-primary, #164535) !important;
+  background: var(--theme-primary-dim, rgba(216, 222, 195, 0.9)) !important;
+}
+
+/* Dark mode: active nav link still uses theme accent */
+body[data-theme="dark"] #bottom-nav .nav-link.active {
+  color: var(--theme-primary, #a0c8a8) !important;
+  background: var(--theme-primary-dim, rgba(120, 145, 90, 0.22)) !important;
 }
 
 body:not([data-theme="dark"]) .chat-title-row h2,
@@ -249,7 +257,7 @@ body:not([data-theme="dark"]) .prayer-location-note {
   font-size: 1.2rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.3px;
-  color: #164535;
+  color: var(--theme-primary, #164535);
 }
 
 body[data-theme="dark"] #prayer-times-container .stat strong,
@@ -386,18 +394,46 @@ body:not([data-theme="dark"]) .profile-copy small {
 }
 
 body:not([data-theme="dark"]) .notify-bell {
-  color: #164535 !important;
+  color: var(--theme-primary, #164535) !important;
   background: rgba(255, 253, 248, 0.96) !important;
   border-color: rgba(31, 90, 70, 0.14) !important;
 }
 
 body:not([data-theme="dark"]) .icon-btn {
-  color: #164535 !important;
+  color: var(--theme-primary, #164535) !important;
   background: rgba(255, 253, 248, 0.88) !important;
   border-color: rgba(31, 90, 70, 0.14) !important;
 }
 
-/* 4. Typography: explicit base on desktop — mobile already gets 16.5 px
+/* 5. Panel headings, page titles, and icon accents track the theme primary. */
+body:not([data-theme="dark"]) .panel-head h2,
+body:not([data-theme="dark"]) .panel-head h3,
+body:not([data-theme="dark"]) .card-head h2,
+body:not([data-theme="dark"]) .app-page-header h2,
+body:not([data-theme="dark"]) .top-actions h1,
+body:not([data-theme="dark"]) #pageTitle {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Page header icon (the lucide icon on the right side) */
+body:not([data-theme="dark"]) .app-page-header > [data-lucide],
+body:not([data-theme="dark"]) .app-page-header > i {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Home heading (already handled earlier, but reinforce with var) */
+body:not([data-theme="dark"]) #home-welcome-title {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Dark mode: panel headings stay light/cream, not theme primary */
+body[data-theme="dark"] .panel-head h2,
+body[data-theme="dark"] .panel-head h3,
+body[data-theme="dark"] .app-page-header h2 {
+  color: #f7f2e8 !important;
+}
+
+/* 6. Typography: explicit base on desktop — mobile already gets 16.5 px
       from the @media (max-width: 640px) block above. */
 @media (min-width: 641px) {
   body.is-authenticated {

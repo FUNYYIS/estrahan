@@ -185,6 +185,15 @@ function applySplashSettings() {
     }
 }
 
+function hexToRgbParts(hex) {
+    const h = hex.replace('#', '');
+    return [
+        parseInt(h.slice(0, 2), 16),
+        parseInt(h.slice(2, 4), 16),
+        parseInt(h.slice(4, 6), 16)
+    ];
+}
+
 function applyCustomTheme() {
     const root = document.documentElement;
 
@@ -195,8 +204,17 @@ function applyCustomTheme() {
     root.style.setProperty('--theme-primary', primary);
     root.style.setProperty('--theme-background', background);
     root.style.setProperty('--theme-card', card);
-
     root.style.setProperty('--theme-bg-color', background);
+
+    // Soft tint of primary for active-state backgrounds and hover fills
+    try {
+        const [r, g, b] = hexToRgbParts(primary);
+        root.style.setProperty('--theme-primary-dim', `rgba(${r},${g},${b},0.14)`);
+        root.style.setProperty('--theme-primary-faint', `rgba(${r},${g},${b},0.07)`);
+    } catch {
+        root.style.setProperty('--theme-primary-dim', 'rgba(120,145,90,0.14)');
+        root.style.setProperty('--theme-primary-faint', 'rgba(120,145,90,0.07)');
+    }
 
     document.querySelectorAll(
         '.panel, .home-reference-card, .payment-summary-card, .list-item-card, ' +

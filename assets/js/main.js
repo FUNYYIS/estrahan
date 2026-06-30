@@ -3750,7 +3750,24 @@ function initApp() {
 // Register service worker independently of FCM so the PWA is installable
 // and offline-capable even for users who have not granted notification permission.
 if ('serviceWorker' in navigator) {
+    const wasControlled = !!navigator.serviceWorker.controller;
+
     navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!wasControlled) return;
+        if (sessionStorage.getItem('sw-update-dismissed')) return;
+        const customAlertEl = document.getElementById('custom-alert');
+        if (typeof showConfirm !== 'function') return;
+        if (customAlertEl && customAlertEl.getAttribute('aria-hidden') === 'false') return;
+        showConfirm('فيه تحديث جديد للتطبيق. تبغى نحدثه الآن؟').then(confirmed => {
+            if (confirmed) {
+                window.location.reload();
+            } else {
+                sessionStorage.setItem('sw-update-dismissed', '1');
+            }
+        });
+    });
 }
 
 // Start the app

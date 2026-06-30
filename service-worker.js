@@ -7,7 +7,6 @@ const APP_SHELL_URLS = [
   '/assets/css/chat-fix.css',
   '/assets/css/page-fixes.css',
   '/assets/css/home-layout-fix.css',
-  '/assets/css/news-home-fix.css',
   '/assets/css/layout-theme-fix.css',
   '/assets/css/chat-composer-fix.css',
   '/assets/css/home-polish.css',

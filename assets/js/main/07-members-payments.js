@@ -185,7 +185,7 @@ function loadMembers() {
     }
 }
 
-function loadPaymentLog() {
+async function loadPaymentLog() {
     const logList = document.getElementById('payment-log-list');
     if (!logList) {
         console.warn('payment-log-list element not found');
@@ -193,6 +193,15 @@ function loadPaymentLog() {
     }
 
     try {
+        // Load users collection once to cross-reference names when payment.userName is missing
+        let usersMap = new Map();
+        try {
+            const usersSnap = await getDocs(collection(db, "users"));
+            usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data().name || '']));
+        } catch {
+            // Continue without name lookup if users fetch fails
+        }
+
         unsubscribePayments = onSnapshot(
             query(collection(db, "payments"), orderBy("date", "desc")),
             (snapshot) => {
@@ -208,9 +217,10 @@ function loadPaymentLog() {
                     const date = payment.date
                         ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA')
                         : 'غير محدد';
+                    const name = payment.userName || usersMap.get(payment.userId) || 'بدون اسم';
                     div.innerHTML = `
                         <div>
-                            <span class="font-bold">${escapeHtml(payment.userName || 'بدون اسم')}</span>
+                            <span class="font-bold">${escapeHtml(name)}</span>
                             <small>${escapeHtml(date)}</small>
                         </div>
                         <span class="status-badge paid">تم السداد</span>

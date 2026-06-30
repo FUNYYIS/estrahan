@@ -40,7 +40,7 @@
 }
 
 .brand small {
-  color: #B58A38;
+  color: rgba(28, 43, 36, 0.72);
   font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: 0;
@@ -52,7 +52,7 @@
 }
 
 .nav a {
-  min-height: 54px;
+  min-height: 46px;
   padding: 0 0.95rem;
   border: 1px solid transparent !important;
   border-radius: 11px !important;
@@ -100,7 +100,7 @@
 }
 
 .sidebar-logout svg {
-  color: #B58A38;
+  color: #164535;
 }
 
 .panel,

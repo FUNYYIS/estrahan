@@ -35,8 +35,7 @@ async function loadMatches(container, limit = 10, compact = false) {
             .slice(0, limit);
         const saudiUpcoming = saudiEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
         const sportsDbWorldCup = (worldCupData.events || [])
-            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID)
-            .map((event) => ({ ...event, strSource: 'TheSportsDB' }));
+            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID);
         const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
             .filter((event) => getEventDateKey(event) >= today)
             .sort(compareSportsDbEvents)
@@ -47,6 +46,8 @@ async function loadMatches(container, limit = 10, compact = false) {
             ...worldCupUpcoming
         ]);
 
+        const totalMatches = todayMatches.length + saudiUpcoming.length + worldCupUpcoming.length;
+
         if (compact) {
             const compactMatches = [
                 ...todayMatches,
@@ -55,29 +56,41 @@ async function loadMatches(container, limit = 10, compact = false) {
             ].slice(0, limit);
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
-                : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+                : '<div class="empty card">ما فيه مباريات متاحة الآن.</div>';
+            return;
+        }
+
+        if (totalMatches === 0) {
+            container.innerHTML = `
+                <div class="panel">
+                    <p class="text-center">ما قدرنا نجيب المباريات الآن. جرّب بعد قليل.</p>
+                </div>
+            `;
             return;
         }
 
         container.innerHTML = `
+            ${todayMatches.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">اليوم</span></div>
                 <div class="cards-grid matches-grid">
-                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
+                    ${todayMatches.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${saudiUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">قادمة</span></div>
                 <div class="cards-grid matches-grid">
-                    ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
+                    ${saudiUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${worldCupUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">الجدول</span></div>
                 <div class="cards-grid matches-grid">
-                    ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
+                    ${worldCupUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
         `;
 
     } catch (error) {
@@ -154,12 +167,24 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
 }
 
 function parseWorldCupLocalDate(value = '') {
-    const [dateValue = '', timeValue = ''] = String(value).split(' ');
-    const [month, day, year] = dateValue.split('/');
-    const date = year && month && day
-        ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        : '';
-    const time = timeValue ? `${timeValue}:00`.slice(0, 8) : '';
+    // Handle ISO (2026-06-12T15:00), ISO space (2026-06-12 15:00), and MM/DD/YYYY formats
+    const str = String(value).trim().replace('T', ' ');
+    const spaceIdx = str.indexOf(' ');
+    const dateStr = spaceIdx >= 0 ? str.slice(0, spaceIdx) : str;
+    const timeStr = spaceIdx >= 0 ? str.slice(spaceIdx + 1) : '';
+
+    let date = '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        date = dateStr;
+    } else {
+        const [month, day, year] = dateStr.split('/');
+        if (year && month && day) {
+            date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+    }
+
+    const timeMatch = timeStr.match(/\d{1,2}:\d{2}(?::\d{2})?/);
+    const time = timeMatch ? `${timeMatch[0]}:00`.slice(0, 8) : '';
     return { date, time };
 }
 

@@ -2573,7 +2573,7 @@ function loadMembers() {
     }
 }
 
-function loadPaymentLog() {
+async function loadPaymentLog() {
     const logList = document.getElementById('payment-log-list');
     if (!logList) {
         console.warn('payment-log-list element not found');
@@ -2581,6 +2581,15 @@ function loadPaymentLog() {
     }
 
     try {
+        // Load users collection once to cross-reference names when payment.userName is missing
+        let usersMap = new Map();
+        try {
+            const usersSnap = await getDocs(collection(db, "users"));
+            usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data().name || '']));
+        } catch {
+            // Continue without name lookup if users fetch fails
+        }
+
         unsubscribePayments = onSnapshot(
             query(collection(db, "payments"), orderBy("date", "desc")),
             (snapshot) => {
@@ -2596,9 +2605,10 @@ function loadPaymentLog() {
                     const date = payment.date
                         ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA')
                         : 'غير محدد';
+                    const name = payment.userName || usersMap.get(payment.userId) || 'بدون اسم';
                     div.innerHTML = `
                         <div>
-                            <span class="font-bold">${escapeHtml(payment.userName || 'بدون اسم')}</span>
+                            <span class="font-bold">${escapeHtml(name)}</span>
                             <small>${escapeHtml(date)}</small>
                         </div>
                         <span class="status-badge paid">تم السداد</span>
@@ -3236,80 +3246,84 @@ async function loadPrayerTimes() {
     );
 }
 
-async function initQibla() {
-    const container = document.getElementById('qibla-container');
-    const status = document.getElementById('qibla-status');
-    const compass = document.getElementById('compass');
+function initQibla() {
+    const status = document.getElementById('qibla-fix-status');
+    const enableBtn = document.getElementById('qibla-enable-button');
+    const compassEl = document.getElementById('qibla-fix-compass');
+    const arrowEl = document.getElementById('qibla-fix-arrow');
 
-    if (!container || !status || !compass) {
-        console.warn('Qibla elements not found');
-        return;
-    }
+    if (!enableBtn) return;
 
-    if (!navigator.geolocation) {
-        status.textContent = 'جهازك ما يدعم تحديد الموقع.';
-        return;
-    }
+    enableBtn.addEventListener('click', async function handleQiblaClick() {
+        enableBtn.removeEventListener('click', handleQiblaClick);
+        enableBtn.disabled = true;
 
-    status.textContent = "اسمح بالموقع عشان نحدد القبلة...";
-
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        // Request device orientation permission first — must be synchronous within
+        // the user gesture context on iOS 13+ (Safari requires requestPermission
+        // to be called before any other async operations in the click chain).
+        let orientationReady = false;
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
-                const { latitude, longitude } = position.coords;
-                const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch qibla direction');
-                }
-
-                const data = await response.json();
-
-                if (!data.data || data.data.direction === undefined) {
-                    throw new Error('Invalid qibla data structure');
-                }
-
-                const qiblaAngle = data.data.direction;
-
-                status.textContent = "حرك جوالك وبتضبط معك القبلة";
-                compass.style.display = 'block';
-
-                if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-                    try {
-                        const permission = await window.DeviceOrientationEvent.requestPermission();
-                        if (permission === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        } else {
-                            status.textContent = 'تم رفض حساس الحركة.';
-                        }
-                    } catch (permError) {
-                        console.error('Permission request error:', permError);
-                        status.textContent = 'صار خطأ بطلب الإذن.';
-                    }
-                } else if ('DeviceOrientationEvent' in window) {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                } else {
-                    status.textContent = 'جهازك ما يدعم تحديد الاتجاه.';
-                }
-
-                function handleOrientation(event) {
-                    let direction = event.webkitCompassHeading || event.alpha;
-                    if (direction === null) return;
-                    compass.style.transform = `rotate(${-direction}deg)`;
-                    const qiblaArrow = document.getElementById('qibla-arrow');
-                    if (qiblaArrow) {
-                        qiblaArrow.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
-                    }
-                }
-            } catch (error) {
-                console.error('Error in initQibla:', error);
-                status.textContent = 'ما قدرنا نحسب اتجاه القبلة.';
+                const perm = await DeviceOrientationEvent.requestPermission();
+                orientationReady = perm === 'granted';
+            } catch {
+                orientationReady = false;
             }
-        },
-        () => {
-            status.textContent = 'الموقع مقفل، ما نقدر نعرض القبلة.';
+        } else {
+            orientationReady = typeof DeviceOrientationEvent !== 'undefined';
         }
-    );
+
+        if (!navigator.geolocation) {
+            if (status) status.textContent = 'جهازك ما يدعم تحديد الموقع.';
+            return;
+        }
+
+        if (status) status.textContent = 'جاري تحديد موقعك...';
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                if (status) status.textContent = 'جاري حساب اتجاه القبلة...';
+
+                try {
+                    const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
+                    if (!response.ok) throw new Error('qibla fetch failed');
+                    const data = await response.json();
+                    const qiblaAngle = data.data?.direction;
+                    if (qiblaAngle == null) throw new Error('no angle');
+
+                    if (compassEl) compassEl.removeAttribute('hidden');
+
+                    if (orientationReady) {
+                        if (status) status.textContent = 'حرّك جوالك ببطء لضبط القبلة';
+                        window.addEventListener('deviceorientation', function(event) {
+                            let heading = event.webkitCompassHeading;
+                            if (heading == null) heading = event.alpha;
+                            if (heading == null) return;
+                            if (compassEl) compassEl.style.transform = `rotate(${-heading}deg)`;
+                            if (arrowEl) arrowEl.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                        });
+                    } else {
+                        const deg = Math.round(qiblaAngle);
+                        if (status) status.textContent = `اتجاه القبلة ${deg}° من الشمال الحقيقي`;
+                        if (arrowEl) arrowEl.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                    }
+                } catch {
+                    if (status) status.textContent = 'ما قدرنا نحسب اتجاه القبلة. جرّب مرة ثانية.';
+                    enableBtn.disabled = false;
+                }
+            },
+            (error) => {
+                const denied = error?.code === 1;
+                if (status) status.textContent = denied
+                    ? 'الموقع محجوب. فعّل إذن الموقع من إعدادات Safari أو المتصفح.'
+                    : 'ما قدرنا تحديد موقعك. جرّب مرة ثانية.';
+                enableBtn.disabled = false;
+            },
+            { timeout: 12000, maximumAge: 600000 }
+        );
+    });
 }
 
 async function loadMatches(container, limit = 10, compact = false) {
@@ -3349,8 +3363,7 @@ async function loadMatches(container, limit = 10, compact = false) {
             .slice(0, limit);
         const saudiUpcoming = saudiEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
         const sportsDbWorldCup = (worldCupData.events || [])
-            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID)
-            .map((event) => ({ ...event, strSource: 'TheSportsDB' }));
+            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID);
         const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
             .filter((event) => getEventDateKey(event) >= today)
             .sort(compareSportsDbEvents)
@@ -3361,6 +3374,8 @@ async function loadMatches(container, limit = 10, compact = false) {
             ...worldCupUpcoming
         ]);
 
+        const totalMatches = todayMatches.length + saudiUpcoming.length + worldCupUpcoming.length;
+
         if (compact) {
             const compactMatches = [
                 ...todayMatches,
@@ -3369,29 +3384,41 @@ async function loadMatches(container, limit = 10, compact = false) {
             ].slice(0, limit);
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
-                : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+                : '<div class="empty card">ما فيه مباريات متاحة الآن.</div>';
+            return;
+        }
+
+        if (totalMatches === 0) {
+            container.innerHTML = `
+                <div class="panel">
+                    <p class="text-center">ما قدرنا نجيب المباريات الآن. جرّب بعد قليل.</p>
+                </div>
+            `;
             return;
         }
 
         container.innerHTML = `
+            ${todayMatches.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">اليوم</span></div>
                 <div class="cards-grid matches-grid">
-                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
+                    ${todayMatches.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${saudiUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">قادمة</span></div>
                 <div class="cards-grid matches-grid">
-                    ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
+                    ${saudiUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${worldCupUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">الجدول</span></div>
                 <div class="cards-grid matches-grid">
-                    ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
+                    ${worldCupUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
         `;
 
     } catch (error) {
@@ -3468,12 +3495,24 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
 }
 
 function parseWorldCupLocalDate(value = '') {
-    const [dateValue = '', timeValue = ''] = String(value).split(' ');
-    const [month, day, year] = dateValue.split('/');
-    const date = year && month && day
-        ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        : '';
-    const time = timeValue ? `${timeValue}:00`.slice(0, 8) : '';
+    // Handle ISO (2026-06-12T15:00), ISO space (2026-06-12 15:00), and MM/DD/YYYY formats
+    const str = String(value).trim().replace('T', ' ');
+    const spaceIdx = str.indexOf(' ');
+    const dateStr = spaceIdx >= 0 ? str.slice(0, spaceIdx) : str;
+    const timeStr = spaceIdx >= 0 ? str.slice(spaceIdx + 1) : '';
+
+    let date = '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        date = dateStr;
+    } else {
+        const [month, day, year] = dateStr.split('/');
+        if (year && month && day) {
+            date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+    }
+
+    const timeMatch = timeStr.match(/\d{1,2}:\d{2}(?::\d{2})?/);
+    const time = timeMatch ? `${timeMatch[0]}:00`.slice(0, 8) : '';
     return { date, time };
 }
 

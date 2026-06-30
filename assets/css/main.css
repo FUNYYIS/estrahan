@@ -9,7 +9,6 @@
 @import url("./main/responsive.css"); /* first responsive pass */
 @import url("./main/layout-polish.css"); /* layout and auth polish */
 @import url("./main/home-polish.css"); /* home dashboard polish */
-@import url("./main/payments-polish.css"); /* payments polish */
 @import url("./main/responsive-polish.css"); /* responsive polish */
 @import url("./main/visual-theme.css"); /* background and glass visual theme */
 @import url("./main/navigation-polish.css"); /* navigation and tile polish */

@@ -23,7 +23,6 @@ const APP_SHELL_URLS = [
   '/assets/css/main/layout-polish.css',
   '/assets/css/main/layout.css',
   '/assets/css/main/navigation-polish.css',
-  '/assets/css/main/payments-polish.css',
   '/assets/css/main/payments.css',
   '/assets/css/main/responsive-polish.css',
   '/assets/css/main/responsive.css',

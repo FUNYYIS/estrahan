@@ -201,12 +201,11 @@ function applyCustomTheme() {
     const background = appSettings.themeBackgroundColor || '#f6f3ea';
     const card = appSettings.themeCardColor || '#ffffff';
 
+    // Primary accent — always applied; CSS light-mode rules consume via var(--theme-primary).
     root.style.setProperty('--theme-primary', primary);
-    root.style.setProperty('--theme-background', background);
-    root.style.setProperty('--theme-card', card);
     root.style.setProperty('--theme-bg-color', background);
 
-    // Soft tint of primary for active-state backgrounds and hover fills
+    // Soft tints of primary for active-state fills and hover backgrounds.
     try {
         const [r, g, b] = hexToRgbParts(primary);
         root.style.setProperty('--theme-primary-dim', `rgba(${r},${g},${b},0.14)`);
@@ -216,17 +215,29 @@ function applyCustomTheme() {
         root.style.setProperty('--theme-primary-faint', 'rgba(120,145,90,0.07)');
     }
 
-    document.querySelectorAll(
-        '.panel, .home-reference-card, .payment-summary-card, .list-item-card, ' +
-        '.service-card, .stat-card, .match-card, .prayer-card, .qibla-card, ' +
-        '.home-prayer-card, .home-weather-card'
-    ).forEach((el) => {
-        el.style.backgroundColor = card;
-    });
+    // Background: only override when admin chose a non-default value.
+    if (background && background !== '#f6f3ea') {
+        root.style.setProperty('--theme-background', background);
+    } else {
+        root.style.removeProperty('--theme-background');
+    }
 
-    document.querySelectorAll('.btn:not(.btn-danger):not(.btn-secondary)').forEach((el) => {
-        el.style.backgroundColor = primary;
-    });
+    // Card surface hierarchy: only override when admin set a non-default card color.
+    // When unset, CSS :root defaults provide the warm-cream surfaces with visual depth.
+    if (card && card !== '#ffffff') {
+        try {
+            const [rc, gc, bc] = hexToRgbParts(card);
+            root.style.setProperty('--theme-card', `rgba(${rc},${gc},${bc},0.94)`);
+            root.style.setProperty('--theme-surface', `rgba(${rc},${gc},${bc},0.80)`);
+            root.style.setProperty('--theme-card-muted', `rgba(${rc},${gc},${bc},0.54)`);
+        } catch {
+            root.style.setProperty('--theme-card', card);
+        }
+    } else {
+        root.style.removeProperty('--theme-card');
+        root.style.removeProperty('--theme-surface');
+        root.style.removeProperty('--theme-card-muted');
+    }
 
     const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '');
     if (logoUrl) {

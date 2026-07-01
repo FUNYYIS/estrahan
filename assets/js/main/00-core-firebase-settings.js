@@ -194,6 +194,11 @@ function hexToRgbParts(hex) {
     ];
 }
 
+function cardLuminance(r, g, b) {
+    const lin = c => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
 function applyCustomTheme() {
     const root = document.documentElement;
 
@@ -230,6 +235,15 @@ function applyCustomTheme() {
             root.style.setProperty('--theme-card', `rgba(${rc},${gc},${bc},0.94)`);
             root.style.setProperty('--theme-surface', `rgba(${rc},${gc},${bc},0.80)`);
             root.style.setProperty('--theme-card-muted', `rgba(${rc},${gc},${bc},0.54)`);
+            // Auto-contrast: dark card → light text, light card → dark text (default)
+            const lum = cardLuminance(rc, gc, bc);
+            if (lum < 0.35) {
+                root.style.setProperty('--card-ink', '#f0ece0');
+                root.style.setProperty('--card-muted', 'rgba(240, 236, 224, 0.72)');
+            } else {
+                root.style.removeProperty('--card-ink');
+                root.style.removeProperty('--card-muted');
+            }
         } catch {
             root.style.setProperty('--theme-card', card);
         }
@@ -237,6 +251,8 @@ function applyCustomTheme() {
         root.style.removeProperty('--theme-card');
         root.style.removeProperty('--theme-surface');
         root.style.removeProperty('--theme-card-muted');
+        root.style.removeProperty('--card-ink');
+        root.style.removeProperty('--card-muted');
     }
 
     const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '');

@@ -11,6 +11,8 @@
   --theme-card-muted:    rgba(255, 253, 248, 0.58);
   --theme-border:        rgba(31, 90, 70, 0.14);
   --theme-shadow:        0 12px 30px rgba(31, 50, 42, 0.08);
+  --card-ink:            var(--ink);
+  --card-muted:          var(--muted);
 }
 
 /* Keep only one bottom safe area. The fixed nav already owns its own height. */
@@ -123,7 +125,7 @@ body:not([data-theme="dark"]) .clean-chat-page #chat-form,
 body:not([data-theme="dark"]) .compact-chat-page #chat-box.messages,
 body:not([data-theme="dark"]) .compact-news-item,
 body:not([data-theme="dark"]) .news-load-error {
-  color: var(--ink) !important;
+  color: var(--card-ink, var(--ink)) !important;
   border-color: var(--theme-border, rgba(31, 90, 70, 0.14)) !important;
   background: var(--theme-card, rgba(255, 253, 248, 0.94)) !important;
   box-shadow: var(--theme-shadow, 0 12px 30px rgba(31, 50, 42, 0.08)) !important;
@@ -431,4 +433,207 @@ body:not([data-theme="dark"]) .btn:not(.btn-danger):not(.btn-secondary):not(.btn
 .pin-chat-message-btn:focus,
 .mute-chat-user-btn:focus {
   opacity: 1 !important;
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — third pass
+   Chat compact, admin dropdown, card depth, prayer/match sub-surfaces
+   ===================================================================== */
+
+/* 9. Chat header: hide subtitle span "سوالف الاستراحة" — topbar carries identity */
+.chat-page-header > div > div > span {
+  display: none !important;
+}
+
+.chat-page-header h2 {
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+}
+
+/* 10. Chat composer: compact — one-line input, small send button */
+.compact-chat-page #chat-form {
+  padding: 5px 8px !important;
+  gap: 6px !important;
+}
+
+.compact-chat-page #chat-input {
+  min-height: 38px !important;
+  max-height: 80px !important;
+  padding: 7px 12px !important;
+  font-size: 0.94rem !important;
+  border-radius: 12px !important;
+}
+
+.compact-chat-page #chat-form button[type="submit"],
+.compact-chat-page #chat-form .btn[type="submit"] {
+  width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  flex: 0 0 38px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.compact-chat-page #chat-form button[type="submit"] svg,
+.compact-chat-page #chat-form .btn[type="submit"] svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* 11. Chat message box: distinct surface with subtle inner shadow */
+body:not([data-theme="dark"]) .compact-chat-page #chat-box.messages {
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.18)) !important;
+  box-shadow: inset 0 2px 8px rgba(31, 50, 42, 0.04),
+              0 8px 20px rgba(31, 50, 42, 0.07) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 10px 8px !important;
+}
+
+body[data-theme="dark"] .compact-chat-page #chat-box.messages {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12),
+              0 8px 20px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* 12. Prayer stat items: each time gets a bordered sub-card */
+body:not([data-theme="dark"]) #prayer-times-container .stat,
+body:not([data-theme="dark"]) #home-prayer-times .stat {
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.12)) !important;
+  border-radius: 12px !important;
+  padding: 10px 6px !important;
+  background: var(--theme-surface, rgba(255, 255, 255, 0.82)) !important;
+  box-shadow: 0 2px 8px rgba(31, 50, 42, 0.05) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+body:not([data-theme="dark"]) #prayer-times-container .stat span,
+body:not([data-theme="dark"]) #home-prayer-times .stat span {
+  font-size: 0.82rem !important;
+  color: var(--muted, #6f746d) !important;
+}
+
+body:not([data-theme="dark"]) #prayer-times-container .stat strong,
+body:not([data-theme="dark"]) #home-prayer-times .stat strong {
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* 13. Match card: inner team block as lighter sub-surface */
+body:not([data-theme="dark"]) .match-card {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+body:not([data-theme="dark"]) .match-card .match-teams {
+  margin: 6px 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.1)) !important;
+  background: var(--theme-surface, rgba(255, 255, 255, 0.72)) !important;
+}
+
+body:not([data-theme="dark"]) .match-card .match-score {
+  color: var(--theme-primary, #164535) !important;
+  font-weight: 900 !important;
+}
+
+/* 14. Admin three-dots dropdown — keeps original class names for event delegation */
+.chat-admin-actions {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.chat-admin-toggle {
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted, #59665f);
+  cursor: pointer;
+  opacity: 0.52;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.chat-admin-toggle:hover,
+.chat-admin-toggle[aria-expanded="true"] {
+  opacity: 1;
+  background: var(--theme-primary-faint, rgba(120, 145, 90, 0.1)) !important;
+}
+
+.chat-admin-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: 60;
+  min-width: 108px;
+  padding: 4px;
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.18));
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow: 0 8px 24px rgba(31, 50, 42, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: none;
+}
+
+.chat-admin-menu.is-open {
+  display: block;
+}
+
+.chat-admin-menu button {
+  display: block !important;
+  width: 100% !important;
+  padding: 6px 10px !important;
+  text-align: start !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--ink, #1c2b24) !important;
+  cursor: pointer;
+  opacity: 1 !important;
+  min-height: auto !important;
+}
+
+.chat-admin-menu button:hover {
+  background: var(--theme-primary-faint, rgba(120, 145, 90, 0.1)) !important;
+}
+
+.chat-admin-menu .delete-chat-message-btn {
+  color: #c0392b !important;
+}
+
+.chat-admin-menu .delete-chat-message-btn:hover {
+  background: rgba(192, 57, 43, 0.08) !important;
+}
+
+body[data-theme="dark"] .chat-admin-menu {
+  background: rgba(18, 31, 27, 0.97);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+body[data-theme="dark"] .chat-admin-menu button {
+  color: #f7f2e8 !important;
+}
+
+body[data-theme="dark"] .chat-admin-menu button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
 }

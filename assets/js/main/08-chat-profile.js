@@ -1,4 +1,20 @@
 async function handleChatBoxClick(event) {
+    const toggleBtn = event.target.closest('.chat-admin-toggle');
+    if (toggleBtn) {
+        event.stopPropagation();
+        const menu = toggleBtn.nextElementSibling;
+        const isOpen = menu?.classList.contains('is-open');
+        document.querySelectorAll('.chat-admin-menu.is-open').forEach(m => {
+            m.classList.remove('is-open');
+            m.previousElementSibling?.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen && menu) {
+            menu.classList.add('is-open');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+        return;
+    }
+
     const pinBtn = event.target.closest('.pin-chat-message-btn');
     if (pinBtn) {
         const messageId = pinBtn.dataset.id;
@@ -63,6 +79,16 @@ function loadChat() {
     if (chatBox.dataset.delegationBound !== 'true') {
         chatBox.dataset.delegationBound = 'true';
         chatBox.addEventListener('click', handleChatBoxClick);
+    }
+
+    if (!document.body.dataset.chatMenuBound) {
+        document.body.dataset.chatMenuBound = 'true';
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.chat-admin-menu.is-open').forEach(m => {
+                m.classList.remove('is-open');
+                m.previousElementSibling?.setAttribute('aria-expanded', 'false');
+            });
+        });
     }
 
     try {
@@ -135,9 +161,16 @@ function renderChatMessages(chatBox) {
         const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
         const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
         const adminChatControls = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)
-            ? `<button type="button" class="pin-chat-message-btn btn btn-mini" data-id="${escapeHtml(msg.id)}">تثبيت</button>
-               <button type="button" class="mute-chat-user-btn btn btn-mini" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
-               <button type="button" class="delete-chat-message-btn btn btn-danger btn-mini" data-id="${escapeHtml(msg.id)}">حذف</button>`
+            ? `<div class="chat-admin-actions">
+                 <button type="button" class="chat-admin-toggle" aria-label="خيارات الرسالة" aria-expanded="false">
+                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                 </button>
+                 <div class="chat-admin-menu" role="menu">
+                   <button type="button" class="pin-chat-message-btn" data-id="${escapeHtml(msg.id)}">تثبيت</button>
+                   <button type="button" class="mute-chat-user-btn" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
+                   <button type="button" class="delete-chat-message-btn" data-id="${escapeHtml(msg.id)}">حذف</button>
+                 </div>
+               </div>`
             : '';
 
         div.innerHTML = `

@@ -5571,7 +5571,7 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
   gap: 14px;
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: visible;
 }
 
 .admin-notifications-page .admin-tabs {
@@ -5579,15 +5579,15 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
   top: 0;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   max-width: 100%;
   padding: 8px;
-  overflow-x: auto;
+  overflow-x: visible;
   border: 1px solid rgba(90, 101, 78, 0.14);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 12px 30px rgba(55, 51, 43, 0.08);
-  scrollbar-width: none;
 }
 
 .admin-notifications-page .admin-tabs::-webkit-scrollbar {
@@ -5595,8 +5595,8 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
 }
 
 .admin-notifications-page .tab-btn {
-  flex: 0 0 auto;
-  min-width: max-content;
+  flex: 1 1 max(108px, calc(50% - 8px));
+  min-width: 0;
   min-height: 42px;
   padding: 8px 14px;
   border: 1px solid transparent;
@@ -5605,6 +5605,28 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link span {
   background: transparent;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.admin-notifications-page .service-card {
+  width: 100%;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-align: center;
+  text-decoration: none;
+  background: rgba(255, 251, 243, 0.88);
+  box-shadow: var(--shadow);
+}
+
+.admin-notifications-page .service-card svg {
+  color: var(--gold-strong);
 }
 
 .admin-notifications-page .tab-btn.active {
@@ -5625,6 +5647,12 @@ body[data-theme="dark"] .admin-notifications-page .tab-btn {
 body[data-theme="dark"] .admin-notifications-page .tab-btn.active {
   color: #1f2a21;
   background: rgba(216, 222, 195, 0.9);
+}
+
+body[data-theme="dark"] .admin-notifications-page .service-card {
+  color: #f5f1e8;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(20, 23, 21, 0.88);
 }
 
 .admin-notifications-page .panel {
@@ -5725,17 +5753,16 @@ body[data-theme="dark"] .admin-notifications-page .tab-btn.active {
   }
 
   .admin-notifications-page {
-    overflow-x: hidden;
+    overflow-x: visible;
   }
 
   .admin-notifications-page .admin-tabs {
     margin-inline: -4px;
     padding-inline: 6px;
-    scroll-padding-inline: 6px;
   }
 
   .admin-notifications-page .tab-btn {
-    min-width: max(108px, max-content);
+    flex-basis: calc(50% - 8px);
     justify-content: center;
   }
 

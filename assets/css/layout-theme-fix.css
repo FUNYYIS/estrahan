@@ -851,6 +851,31 @@ body {
   min-height: 100dvh;
 }
 
+body.is-authenticated {
+  --bottom-nav-page-clearance: calc(128px + env(safe-area-inset-bottom));
+  scroll-padding-bottom: var(--bottom-nav-page-clearance);
+}
+
+body.is-authenticated #page-content {
+  padding-bottom: var(--bottom-nav-page-clearance) !important;
+  scroll-padding-bottom: var(--bottom-nav-page-clearance);
+}
+
+body.is-authenticated #page-content > :last-child {
+  scroll-margin-bottom: var(--bottom-nav-page-clearance);
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated {
+    --bottom-nav-page-clearance: calc(150px + env(safe-area-inset-bottom));
+  }
+}
+
+body.is-authenticated:has(.compact-chat-page) #page-content,
+body.is-authenticated #page-content:has(.clean-chat-page) {
+  padding-bottom: 0 !important;
+}
+
 /* Warm fill on page-content while new page renders (prevents dark desert
    background showing through the transparent view during route transitions). */
 body:not([data-theme="dark"]) #page-content {

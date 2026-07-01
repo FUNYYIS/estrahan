@@ -215,9 +215,14 @@ function applyCustomTheme() {
         const [r, g, b] = hexToRgbParts(primary);
         root.style.setProperty('--theme-primary-dim', `rgba(${r},${g},${b},0.14)`);
         root.style.setProperty('--theme-primary-faint', `rgba(${r},${g},${b},0.07)`);
+        const rl = Math.min(255, Math.round(r + (255 - r) * 0.48));
+        const gl = Math.min(255, Math.round(g + (255 - g) * 0.48));
+        const bl = Math.min(255, Math.round(b + (255 - b) * 0.48));
+        root.style.setProperty('--theme-primary-light', `rgb(${rl},${gl},${bl})`);
     } catch {
         root.style.setProperty('--theme-primary-dim', 'rgba(120,145,90,0.14)');
         root.style.setProperty('--theme-primary-faint', 'rgba(120,145,90,0.07)');
+        root.style.setProperty('--theme-primary-light', '#adc4a5');
     }
 
     // Background: only override when admin chose a non-default value.
@@ -616,7 +621,7 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'dark';
+    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
     applyTheme(savedTheme);
 }
 

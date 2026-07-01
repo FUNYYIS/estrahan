@@ -231,7 +231,7 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'dark';
+    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
     applyTheme(savedTheme);
 }
 

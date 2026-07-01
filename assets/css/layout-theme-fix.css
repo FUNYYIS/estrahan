@@ -5,6 +5,7 @@
   --theme-primary:       #78915a;
   --theme-primary-dim:   rgba(120, 145, 90, 0.14);
   --theme-primary-faint: rgba(120, 145, 90, 0.07);
+  --theme-primary-light: #adc4a5;
   --theme-background:    #f6f3ea;
   --theme-card:          rgba(255, 253, 248, 0.94);
   --theme-surface:       rgba(255, 255, 255, 0.82);
@@ -13,6 +14,21 @@
   --theme-shadow:        0 12px 30px rgba(31, 50, 42, 0.08);
   --card-ink:            var(--ink);
   --card-muted:          var(--muted);
+  /* Splash color tokens — consumed before any JS runs */
+  --splash-bg:           #f5f3ee;
+  --splash-card:         rgba(255, 253, 248, 0.82);
+  --splash-text:         #164535;
+  --splash-muted:        #4f5c55;
+  --splash-logo-bg:      rgba(255, 255, 255, 0.20);
+}
+
+/* Dark mode splash tokens */
+body[data-theme="dark"] {
+  --splash-bg:      #0c1a16;
+  --splash-card:    rgba(12, 24, 19, 0.92);
+  --splash-text:    #f0ece0;
+  --splash-muted:   rgba(240, 236, 224, 0.65);
+  --splash-logo-bg: rgba(255, 255, 255, 0.06);
 }
 
 /* Keep only one bottom safe area. The fixed nav already owns its own height. */
@@ -21,7 +37,7 @@ body.is-authenticated .main {
 }
 
 body.is-authenticated #page-content {
-  padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
 
 body.is-authenticated #page-content > :last-child,
@@ -144,9 +160,9 @@ body:not([data-theme="dark"]) #bottom-nav .nav-link.active {
   background: var(--theme-primary-dim, rgba(216, 222, 195, 0.9)) !important;
 }
 
-/* Dark mode: active nav link still uses theme accent */
+/* Dark mode: active nav link uses lightened accent so it's visible on dark surface */
 body[data-theme="dark"] #bottom-nav .nav-link.active {
-  color: var(--theme-primary, #a0c8a8) !important;
+  color: var(--theme-primary-light, #adc4a5) !important;
   background: var(--theme-primary-dim, rgba(120, 145, 90, 0.22)) !important;
 }
 
@@ -190,7 +206,7 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
 
 @media (max-width: 640px) {
   body.is-authenticated #page-content {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important;
   }
 
   body.is-authenticated:has(.compact-chat-page) #page-content {
@@ -198,7 +214,7 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
   }
 
   .compact-chat-page {
-    height: calc(100dvh - 154px - env(safe-area-inset-bottom)) !important;
+    height: calc(100dvh - 146px - env(safe-area-inset-bottom)) !important;
   }
 
   .chat-page-header {
@@ -266,7 +282,7 @@ body:not([data-theme="dark"]) .prayer-location-note {
 
 body[data-theme="dark"] #prayer-times-container .stat strong,
 body[data-theme="dark"] #home-prayer-times .stat strong {
-  color: #eaf3ec;
+  color: var(--theme-primary-light, #adc4a5);
 }
 
 .prayer-location-note {
@@ -299,28 +315,28 @@ body:not([data-theme="dark"]) .home-hero-main .home-eyebrow {
   color: #315f4d !important;
 }
 
-/* 2. Bottom nav: reduce link height */
+/* 2. Bottom nav: reduce height */
 body.is-authenticated #bottom-nav.nav a,
 #bottom-nav.nav a {
-  min-height: 46px !important;
+  min-height: 44px !important;
 }
 
 @media (max-width: 960px) {
   body.is-authenticated #bottom-nav.nav a {
-    min-height: 46px !important;
+    min-height: 44px !important;
   }
   body.is-authenticated #bottom-nav.nav {
-    min-height: 62px !important;
+    min-height: 56px !important;
   }
 }
 
 @media (max-width: 640px) {
   body.is-authenticated #bottom-nav.nav a {
-    min-height: 44px !important;
+    min-height: 40px !important;
     font-size: 0.70rem !important;
   }
   body.is-authenticated #bottom-nav.nav {
-    min-height: 60px !important;
+    min-height: 52px !important;
   }
 }
 
@@ -385,11 +401,13 @@ body:not([data-theme="dark"]) #home-welcome-title {
   color: var(--theme-primary, #164535) !important;
 }
 
-/* Dark mode: panel headings stay light/cream, not theme primary */
+/* Dark mode: headings and accents use lightened primary (readable on dark surface) */
 body[data-theme="dark"] .panel-head h2,
 body[data-theme="dark"] .panel-head h3,
-body[data-theme="dark"] .app-page-header h2 {
-  color: #f7f2e8 !important;
+body[data-theme="dark"] .app-page-header h2,
+body[data-theme="dark"] .home-reference-card-title h3,
+body[data-theme="dark"] .home-reference-card-title svg {
+  color: var(--theme-primary-light, #adc4a5) !important;
 }
 
 /* 6. Typography: explicit base on desktop — mobile already gets 16.5 px
@@ -401,12 +419,7 @@ body[data-theme="dark"] .app-page-header h2 {
   }
 }
 
-/* 7. Primary accent on action buttons — CSS variable replaces JS inline-style override. */
-body:not([data-theme="dark"]) .btn:not(.btn-danger):not(.btn-secondary):not(.btn-outline) {
-  background: var(--theme-primary, #164535) !important;
-  color: #fffaf1 !important;
-  border-color: transparent !important;
-}
+/* 7. Chat send button uses theme accent; all other buttons keep their gold default. */
 
 /* 8. Chat per-message admin controls: subtle at rest, visible on hover. */
 .pin-chat-message-btn,
@@ -465,6 +478,9 @@ body:not([data-theme="dark"]) .btn:not(.btn-danger):not(.btn-secondary):not(.btn
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  background: var(--theme-primary, #164535) !important;
+  color: #fffaf1 !important;
+  border-color: transparent !important;
 }
 
 .compact-chat-page #chat-form button[type="submit"] svg,
@@ -625,4 +641,81 @@ body[data-theme="dark"] .chat-admin-menu button {
 
 body[data-theme="dark"] .chat-admin-menu button:hover {
   background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — fourth pass
+   Home reference cards: override home-v2.css high-specificity rule so
+   weather / prayer / matches cards follow --theme-card like every other card.
+   Titles track --theme-primary accent (not a hardcoded green).
+   ===================================================================== */
+
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card {
+  background: var(--theme-card, rgba(255, 253, 248, 0.94)) !important;
+  border-color: var(--theme-border, rgba(31, 90, 70, 0.14)) !important;
+  box-shadow: var(--theme-shadow, 0 12px 30px rgba(31, 50, 42, 0.08)) !important;
+}
+
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card-title h3,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .reference-section-head h3,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .reference-section-link,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card-title svg {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Dark mode: home cards keep the dark surface, headings use lightened accent */
+body[data-theme="dark"].is-authenticated .home-reference-card-title h3,
+body[data-theme="dark"].is-authenticated .home-reference-card-title svg {
+  color: var(--theme-primary-light, #adc4a5) !important;
+}
+
+/* =====================================================================
+   Splash: day / night theming
+   body:not / body[data-theme="dark"] scoping gives specificity (0,2,1)
+   which beats all hardcoded .splash rules in earlier CSS files.
+   The inline <script> in index.html sets data-theme before first paint,
+   so there is no flash — the splash renders in the correct mode from
+   frame 1.
+   ===================================================================== */
+
+/* Day mode splash */
+body:not([data-theme="dark"]) .splash {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.60), transparent 28rem),
+    linear-gradient(160deg, #f7f4ee 0%, #ebe4d8 58%, #dfe8df 100%) !important;
+}
+
+body:not([data-theme="dark"]) .splash-card {
+  background: var(--splash-card, rgba(255, 253, 248, 0.82)) !important;
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: 0 26px 62px rgba(31, 50, 42, 0.16) !important;
+}
+
+body:not([data-theme="dark"]) .splash strong {
+  color: var(--splash-text, #164535) !important;
+}
+
+body:not([data-theme="dark"]) .splash span {
+  color: var(--splash-muted, #4f5c55) !important;
+}
+
+/* Night mode splash */
+body[data-theme="dark"] .splash {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.04), transparent 28rem),
+    linear-gradient(160deg, #0c1a16 0%, #0f2018 60%, #101c16 100%) !important;
+}
+
+body[data-theme="dark"] .splash-card {
+  background: var(--splash-card, rgba(12, 24, 19, 0.92)) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 26px 62px rgba(0, 0, 0, 0.45) !important;
+}
+
+body[data-theme="dark"] .splash strong {
+  color: var(--splash-text, #f0ece0) !important;
+}
+
+body[data-theme="dark"] .splash span {
+  color: var(--splash-muted, rgba(240, 236, 224, 0.65)) !important;
 }

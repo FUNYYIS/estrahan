@@ -23,7 +23,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="الاستراحة">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#101413">
+    <meta name="theme-color" content="#78915a">
 
     <!-- Load the split CSS files directly so the browser discovers them in parallel. -->
     <link rel="stylesheet" href="assets/css/main/base.css?v=278">
@@ -54,6 +54,19 @@
 </head>
 
 <body>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('al-istiraha-theme') || 'light';
+                var theme = t === 'dark' ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', theme);
+                var m = document.querySelector('meta[name="theme-color"]');
+                if (m) m.setAttribute('content', theme === 'dark' ? '#101413' : '#78915a');
+            } catch (e) {
+                document.body.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <div id="splash" class="splash" aria-hidden="true">
         <div class="splash-card">
             <img class="splash-logo" src="assets/icons/icon-512-original-zoom.png?v=278" alt="تطبيق الاستراحة" width="245" height="245" loading="eager" decoding="async" fetchpriority="high">

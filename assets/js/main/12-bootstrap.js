@@ -72,12 +72,14 @@ function initApp() {
         if (!splash || splash.classList.contains('done')) return;
         splash.classList.add('done');
         window.setTimeout(() => {
+            if (splash) splash.style.display = 'none';
             console.log('✓ Splash screen hidden, main content shown');
-        }, 220);
+        }, 300);
     };
 
     if (hasSeenSplash) {
         splash?.classList.add('done');
+        if (splash) splash.style.display = 'none';
         console.log('✓ Splash skipped');
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');

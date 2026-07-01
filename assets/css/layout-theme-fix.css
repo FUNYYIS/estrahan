@@ -110,7 +110,7 @@ body:not([data-theme="dark"]) {
 body:not([data-theme="dark"])::before {
   /* Keep background image from home-v2.css; lighten the filter for day mode readability */
   filter: saturate(0.85) contrast(0.90) brightness(1.15) !important;
-  transform: none !important;
+  transform: translate3d(0, 0, 0) !important;
   opacity: 1 !important;
 }
 
@@ -725,18 +725,18 @@ body[data-theme="dark"] .splash span {
    Fix 6 issues from Deploy Preview after commit 416f311.
    ===================================================================== */
 
-/* FIX 2: Prevent horizontal overflow on all pages */
+/* FIX 2: Prevent horizontal overflow — clip on html only.
+   overflow-x:hidden on body creates a scroll container on iOS Safari
+   that captures touch events and blocks position:fixed nav taps. */
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
-@media (max-width: 960px) {
-  body {
-    overflow-x: hidden !important;
-  }
-  #page-content {
-    overflow-x: clip !important;
-  }
+/* Cancel home-v2.css "body { overflow-x: hidden }" for iOS Safari.
+   That rule prevents touch events reaching position:fixed elements (the nav).
+   Horizontal scroll is stopped at html level above, so body can stay visible. */
+body {
+  overflow-x: visible !important;
 }
 
 /* FIX 3: Inner page header — compact on mobile */
@@ -830,4 +830,54 @@ body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand h2,
 body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand span,
 body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand p {
   color: var(--sh-green-dark, #164535) !important;
+}
+
+/* =====================================================================
+   iOS Safari fixes — after commit e038c55
+   Resolves: nav tap dead zones, viewport height break, dark flash on
+   refresh, background layer flicker after address bar changes.
+   ===================================================================== */
+
+/* iOS viewport stability.
+   -webkit-fill-available = actual visual height on Safari (excludes address bar).
+   100dvh = dynamic viewport height, updates as Safari address bar shows/hides.
+   Prevents the "content taller than screen" gap that triggers address bar re-hiding. */
+html {
+  height: -webkit-fill-available;
+}
+
+body {
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+}
+
+/* Warm fill on page-content while new page renders (prevents dark desert
+   background showing through the transparent view during route transitions). */
+body:not([data-theme="dark"]) #page-content {
+  background-color: rgba(246, 243, 234, 0.55);
+}
+
+/* Nav tappability on iOS Safari.
+   touch-action: manipulation removes the 300 ms tap delay.
+   pointer-events: auto is explicit so nothing can inherit a blocking value.
+   -webkit-tap-highlight-color: transparent removes the grey tap flash. */
+body.is-authenticated #bottom-nav.nav {
+  pointer-events: auto !important;
+}
+
+body.is-authenticated #bottom-nav.nav .nav-link {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Fully remove splash from the render tree after it fades out.
+   JS adds .done after the configured delay; CSS transition fades opacity
+   over 220 ms, then JS sets style.display="none" at 300 ms.
+   This rule also fires immediately for sessionStorage-skipped splashes
+   (hasSeenSplash), where .done is added with no delay. */
+#splash.done,
+.splash.done {
+  display: none !important;
 }

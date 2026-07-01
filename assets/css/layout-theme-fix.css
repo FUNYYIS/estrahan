@@ -92,17 +92,10 @@ body:not([data-theme="dark"]) {
 }
 
 body:not([data-theme="dark"])::before {
-  background-image: none !important;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(46, 122, 94, 0.11), transparent 26rem),
-    linear-gradient(145deg, rgba(250, 248, 242, 0.98), rgba(239, 235, 225, 0.98)) !important;
+  /* Keep background image from home-v2.css; lighten the filter for day mode readability */
+  filter: saturate(0.85) contrast(0.90) brightness(1.15) !important;
+  transform: none !important;
   opacity: 1 !important;
-}
-
-body:not([data-theme="dark"]).theme-custom-bg::before {
-  background-image: var(--theme-bg-image) !important;
-  background-position: center !important;
-  background-size: cover !important;
 }
 
 body:not([data-theme="dark"]) .topbar,
@@ -220,15 +213,11 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
    night theme is untouched.
    ===================================================================== */
 
-/* Issue 2: a full-screen dark veil on body::after (from home-v2.css) was
-   darkening light mode on every page. Soften it to a calm warm wash so the
-   day theme reads as off-white + light green, keeping the identity. */
+/* Day mode ::after: transparent warm wash — lets the background image show through */
 body:not([data-theme="dark"])::after {
-  background: linear-gradient(
-      rgba(120, 145, 90, 0.05),
-      rgba(120, 145, 90, 0.05)
-    ),
-    rgba(247, 244, 236, 0.55) !important;
+  background:
+    radial-gradient(circle at 50% 5%, rgba(255, 252, 244, 0.26), transparent 30rem),
+    linear-gradient(180deg, rgba(255, 250, 242, 0.52), rgba(255, 250, 242, 0.32) 50%, rgba(255, 250, 242, 0.48)) !important;
 }
 
 /* Issue 3: slightly larger, calmer body text on phones (kept conservative). */

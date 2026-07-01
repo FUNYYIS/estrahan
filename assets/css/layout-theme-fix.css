@@ -719,3 +719,115 @@ body[data-theme="dark"] .splash strong {
 body[data-theme="dark"] .splash span {
   color: var(--splash-muted, rgba(240, 236, 224, 0.65)) !important;
 }
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — sixth pass
+   Fix 6 issues from Deploy Preview after commit 416f311.
+   ===================================================================== */
+
+/* FIX 2: Prevent horizontal overflow on all pages */
+html {
+  overflow-x: hidden;
+}
+
+@media (max-width: 960px) {
+  body {
+    overflow-x: hidden !important;
+  }
+  #page-content {
+    overflow-x: clip !important;
+  }
+}
+
+/* FIX 3: Inner page header — compact on mobile */
+@media (max-width: 640px) {
+  .app-page-logo {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .app-page-header {
+    padding: 7px 10px !important;
+    margin-bottom: 10px !important;
+    border-radius: 14px !important;
+    gap: 8px !important;
+  }
+
+  .app-page-header h2 {
+    font-size: 0.98rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .app-page-header span {
+    font-size: 0.76rem !important;
+  }
+}
+
+/* FIX 4: Bottom padding — large enough that last page item clears the nav bar */
+body.is-authenticated #page-content {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated #page-content {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.is-authenticated:has(.compact-chat-page) #page-content {
+    padding-bottom: 0 !important;
+  }
+}
+
+/* FIX 5: Members/payments — admin button rows wrap on narrow screens */
+@media (max-width: 640px) {
+  .list-item-card .flex {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .list-item-card .btn-compact {
+    font-size: 0.72rem !important;
+    padding: 3px 8px !important;
+    min-height: 28px !important;
+    white-space: nowrap;
+  }
+}
+
+/* FIX 6: Login / register card — light cream surface in day mode.
+   home-v2.css line 2634 forces rgba(12,22,18,0.78) dark on all
+   .content-body when not authenticated, regardless of theme.
+   Specificity (0,4,1) beats home-v2.css's (0,3,1). */
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .content-body {
+  color: var(--sh-ink, #1c2b24) !important;
+  background: var(--sh-card-strong, rgba(255, 253, 248, 0.94)) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+  box-shadow: 0 22px 55px rgba(7, 18, 15, 0.14) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .content-body h2 {
+  color: var(--sh-green-dark, #164535) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .input-group label {
+  color: var(--sh-muted, #59665f) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .link-text {
+  color: var(--sh-muted, #59665f) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .link-text a {
+  color: var(--sh-green-dark, #164535) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand {
+  color: var(--sh-ink, #1c2b24) !important;
+  background: rgba(255, 253, 248, 0.80) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand h2,
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand span,
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand p {
+  color: var(--sh-green-dark, #164535) !important;
+}

@@ -3753,14 +3753,16 @@ body[data-theme="dark"] .auth-form-logo {
   }
 }
 
-/* V221 light-reference correction: clean off-white home, compact hero, fixed bottom nav */
-body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]),
+/* V221 light-reference correction: compact hero, fixed bottom nav */
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) {
+  color: #20231f !important;
+}
+
 body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .app-shell,
 body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .main,
 body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .view {
-  color: #20231f !important;
-  background: #fbf8f2 !important;
-  background-color: #fbf8f2 !important;
+  background: transparent !important;
+  background-color: transparent !important;
   background-image: none !important;
   background-attachment: scroll !important;
 }

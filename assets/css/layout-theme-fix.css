@@ -939,3 +939,34 @@ body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link {
 .splash.done {
   display: none !important;
 }
+
+/* =====================================================================
+   Mobile Safari: floating nav + overscroll background fix (v281)
+   ===================================================================== */
+
+/* Overscroll colour — html element background shows during pull-to-refresh.
+   body has the background image, but the area above it is html's colour. */
+html:has(body:not([data-theme="dark"])) {
+  background-color: #f5f3ee;
+}
+
+html:has(body[data-theme="dark"]) {
+  background-color: #0c1a16;
+}
+
+/* Mobile only: lift nav off the very bottom so it clears Safari's browser toolbar.
+   Uses margin approach (left/right: 12px, width: auto) instead of translateX centering,
+   so no transform creates a new containing block that Safari might misplace. */
+@media (max-width: 640px) {
+  body.is-authenticated #bottom-nav.nav,
+  body.is-authenticated:has(.estraha-reference-home) #bottom-nav.nav,
+  body.is-authenticated:has(.estraha-reference-home) #bottom-nav {
+    bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    transform: none !important;
+    z-index: 9999 !important;
+    border-radius: 22px !important;
+  }
+}

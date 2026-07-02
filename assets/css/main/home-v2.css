@@ -5432,7 +5432,7 @@ body {
   background-image: none !important;
   background-attachment: scroll !important;
   background-size: auto !important;
-  overflow-x: hidden !important;
+  overflow-x: visible !important;
 }
 
 body::before,

@@ -970,3 +970,30 @@ html:has(body[data-theme="dark"]) {
     border-radius: 22px !important;
   }
 }
+
+/* =====================================================================
+   Home topbar: compact logo card aligned with profile card
+   Fixes: logo card 86px tall vs profile card 44px → unbalanced topbar.
+   Scope: home page only via :has(.estraha-reference-home).
+   ===================================================================== */
+
+/* Shrink logo to 34px so the card height matches .top-profile (~44px) */
+body.is-authenticated:has(.estraha-reference-home) .topbar-logo {
+  width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  transform: none !important;
+}
+
+/* Glass card instead of heavy opaque white — lighter than profile card */
+body.is-authenticated:has(.estraha-reference-home) .top-actions {
+  padding: 5px 8px !important;
+  background: rgba(255, 253, 248, 0.50) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Dark mode: match dark surface */
+body[data-theme="dark"].is-authenticated:has(.estraha-reference-home) .top-actions {
+  background: rgba(31, 34, 31, 0.45) !important;
+}

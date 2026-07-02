@@ -14,49 +14,62 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap">
 
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="assets/icons/icon-192-original-zoom.png?v=278" type="image/png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-original-zoom.png?v=278">
+    <link rel="icon" href="assets/icons/icon-192-original-zoom.png?v=283" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-original-zoom.png?v=283">
 
-    <link rel="preload" href="assets/icons/icon-512-original-zoom.png?v=278" as="image" type="image/png" fetchpriority="high">
+    <link rel="preload" href="assets/icons/icon-512-original-zoom.png?v=283" as="image" type="image/png" fetchpriority="high">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="الاستراحة">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#101413">
+    <meta name="theme-color" content="#78915a">
 
     <!-- Load the split CSS files directly so the browser discovers them in parallel. -->
-    <link rel="stylesheet" href="assets/css/main/base.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/layout.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/payments.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/components.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/home.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/auth-chat-forms.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/utilities-theme.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/responsive.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/layout-polish.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/home-polish.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/responsive-polish.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/visual-theme.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/navigation-polish.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/auth-final.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/components-final.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/typography-splash-auth.css?v=278">
-    <link rel="stylesheet" href="assets/css/main/home-v2.css?v=278">
+    <link rel="stylesheet" href="assets/css/main/base.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/layout.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/payments.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/components.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/home.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/auth-chat-forms.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/utilities-theme.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/responsive.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/layout-polish.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/home-polish.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/responsive-polish.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/visual-theme.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/navigation-polish.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/auth-final.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/components-final.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/typography-splash-auth.css?v=283">
+    <link rel="stylesheet" href="assets/css/main/home-v2.css?v=283">
 
-    <link rel="stylesheet" href="assets/css/chat-fix.css?v=278">
-    <link rel="stylesheet" href="assets/css/page-fixes.css?v=278">
-    <link rel="stylesheet" href="assets/css/home-layout-fix.css?v=278">
-    <link rel="stylesheet" href="assets/css/layout-theme-fix.css?v=278">
-    <link rel="stylesheet" href="assets/css/chat-composer-fix.css?v=278">
-    <link rel="stylesheet" href="assets/css/home-polish.css?v=278">
+    <link rel="stylesheet" href="assets/css/chat-fix.css?v=283">
+    <link rel="stylesheet" href="assets/css/page-fixes.css?v=283">
+    <link rel="stylesheet" href="assets/css/home-layout-fix.css?v=283">
+    <link rel="stylesheet" href="assets/css/layout-theme-fix.css?v=283">
+    <link rel="stylesheet" href="assets/css/chat-composer-fix.css?v=283">
+    <link rel="stylesheet" href="assets/css/home-polish.css?v=283">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
 </head>
 
 <body>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('al-istiraha-theme') || 'light';
+                var theme = t === 'dark' ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', theme);
+                var m = document.querySelector('meta[name="theme-color"]');
+                if (m) m.setAttribute('content', theme === 'dark' ? '#101413' : '#78915a');
+            } catch (e) {
+                document.body.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <div id="splash" class="splash" aria-hidden="true">
         <div class="splash-card">
-            <img class="splash-logo" src="assets/icons/icon-512-original-zoom.png?v=278" alt="تطبيق الاستراحة" width="245" height="245" loading="eager" decoding="async" fetchpriority="high">
+            <img class="splash-logo" src="assets/icons/icon-512-original-zoom.png?v=283" alt="تطبيق الاستراحة" width="245" height="245" loading="eager" decoding="async" fetchpriority="high">
             <strong>تطبيق الاستراحة</strong>
             <span>إدارة خدمات الاستراحة والقطة والمباريات</span>
         </div>
@@ -65,23 +78,12 @@
     <div id="main-content" class="app-shell">
         <aside class="sidebar">
             <a class="brand" href="#home" aria-label="تطبيق الاستراحة">
-                <img id="app-logo" src="assets/icons/icon-192-original-zoom.png?v=278" alt="تطبيق الاستراحة" class="logo" width="82" height="82" loading="eager" decoding="async">
+                <img id="app-logo" src="assets/icons/icon-192-original-zoom.png?v=283" alt="تطبيق الاستراحة" class="logo" width="82" height="82" loading="eager" decoding="async">
                 <span>
                     <strong>تطبيق الاستراحة</strong>
                     <small>إدارة الاستراحة</small>
                 </span>
             </a>
-
-            <nav id="bottom-nav" class="nav hidden" aria-label="التنقل الرئيسي">
-                <a href="#home" class="nav-link"><i data-lucide="home"></i><span>الرئيسية</span></a>
-                <a href="#chat" class="nav-link"><i data-lucide="messages-square"></i><span>الدردشة</span></a>
-                <a href="#matches" class="nav-link"><i data-lucide="trophy"></i><span>المباريات</span></a>
-                <a href="#payments" class="nav-link"><i data-lucide="paw-print"></i><span>القطة</span></a>
-                <a href="#news" class="nav-link"><i data-lucide="newspaper"></i><span>الأخبار</span></a>
-                <a href="#members" class="nav-link"><i data-lucide="users"></i><span>الأعضاء</span></a>
-                <a href="#prayer" class="nav-link"><i data-lucide="landmark"></i><span>الصلاة</span></a>
-                <a href="#settings" class="nav-link"><i data-lucide="grid-2x2"></i><span>المزيد</span></a>
-            </nav>
 
             <button id="logout-button" class="sidebar-logout hidden" type="button">
                 <i data-lucide="log-out"></i>
@@ -97,7 +99,7 @@
 
                 <div class="top-profile" id="top-profile" role="button" tabindex="0" aria-label="بياناتك">
                     <div class="profile-avatar">
-                        <img id="shell-avatar" src="assets/icons/icon-192-original-zoom.png?v=278" alt="" width="58" height="58" loading="eager" decoding="async">
+                        <img id="shell-avatar" src="assets/icons/icon-192-original-zoom.png?v=283" alt="" width="58" height="58" loading="eager" decoding="async">
                     </div>
 
                     <div class="profile-copy">
@@ -114,7 +116,7 @@
                 </div>
 
                 <div class="top-actions">
-                    <img class="topbar-logo" src="assets/icons/icon-192-original-zoom.png?v=278" alt="تطبيق الاستراحة" width="48" height="48" loading="eager" decoding="async">
+                    <img class="topbar-logo" src="assets/icons/icon-192-original-zoom.png?v=283" alt="تطبيق الاستراحة" width="48" height="48" loading="eager" decoding="async">
                     <div class="topbar-title-copy">
                         <p id="todayLabel" class="eyebrow"></p>
                         <h1 id="pageTitle">تطبيق الاستراحة</h1>
@@ -127,6 +129,17 @@
         </main>
     </div>
 
+    <nav id="bottom-nav" class="nav hidden" aria-label="التنقل الرئيسي">
+        <a href="#home" class="nav-link"><i data-lucide="home"></i><span>الرئيسية</span></a>
+        <a href="#chat" class="nav-link"><i data-lucide="messages-square"></i><span>الدردشة</span></a>
+        <a href="#matches" class="nav-link"><i data-lucide="trophy"></i><span>المباريات</span></a>
+        <a href="#payments" class="nav-link"><i data-lucide="paw-print"></i><span>القطة</span></a>
+        <a href="#news" class="nav-link"><i data-lucide="newspaper"></i><span>الأخبار</span></a>
+        <a href="#members" class="nav-link"><i data-lucide="users"></i><span>الأعضاء</span></a>
+        <a href="#prayer" class="nav-link"><i data-lucide="landmark"></i><span>الصلاة</span></a>
+        <a href="#settings" class="nav-link"><i data-lucide="grid-2x2"></i><span>المزيد</span></a>
+    </nav>
+
     <div id="custom-alert" class="custom-alert" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="alert-message" inert>
         <div class="alert-content">
             <p id="alert-message"></p>
@@ -136,11 +149,11 @@
         </div>
     </div>
 
-    <script src="assets/js/app-config.js?v=278" defer></script>
-    <script type="module" src="assets/js/news-provider.js?v=278"></script>
-    <script type="module" src="assets/js/main.js?v=278"></script>
-    <script type="module" src="assets/js/page-fixes.js?v=278"></script>
-    <script type="module" src="assets/js/chat-layout-fix.js?v=278"></script>
-    <script type="module" src="assets/js/home-polish.js?v=278"></script>
+    <script src="assets/js/app-config.js?v=283" defer></script>
+    <script type="module" src="assets/js/news-provider.js?v=283"></script>
+    <script type="module" src="assets/js/main.js?v=283"></script>
+    <script type="module" src="assets/js/page-fixes.js?v=283"></script>
+    <script type="module" src="assets/js/chat-layout-fix.js?v=283"></script>
+    <script type="module" src="assets/js/home-polish.js?v=283"></script>
 </body>
 </html>

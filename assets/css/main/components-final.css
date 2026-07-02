@@ -9,7 +9,7 @@
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 50%;
-  color: #164535;
+  color: var(--theme-primary, #164535);
   background: rgba(255, 255, 255, 0.76);
   box-shadow: 0 12px 30px rgba(31, 50, 42, 0.12);
   backdrop-filter: blur(14px);
@@ -45,7 +45,7 @@
 
 .theme-choice button.active {
   color: #fffaf1;
-  background: linear-gradient(135deg, #1F5A46, #164535);
+  background: var(--theme-primary, #164535);
 }
 
 .profile-editor {
@@ -112,7 +112,7 @@
   min-height: 34px;
   padding: 0 0.72rem;
   border-radius: 999px;
-  color: #164535;
+  color: var(--theme-primary, #164535);
   background: rgba(216, 182, 101, 0.2);
   font-size: 0.86rem;
   font-weight: 900;

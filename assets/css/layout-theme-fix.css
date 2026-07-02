@@ -1,12 +1,43 @@
 /* Final layout and light-theme corrections loaded after all legacy styles. */
 
+/* Design-token defaults — consumed by light-mode rules below; overridden by applyCustomTheme() only for custom admin themes. */
+:root {
+  --theme-primary:       #78915a;
+  --theme-primary-dim:   rgba(120, 145, 90, 0.14);
+  --theme-primary-faint: rgba(120, 145, 90, 0.07);
+  --theme-primary-light: #adc4a5;
+  --theme-background:    #f6f3ea;
+  --theme-card:          rgba(255, 253, 248, 0.94);
+  --theme-surface:       rgba(255, 255, 255, 0.82);
+  --theme-card-muted:    rgba(255, 253, 248, 0.58);
+  --theme-border:        rgba(31, 90, 70, 0.14);
+  --theme-shadow:        0 12px 30px rgba(31, 50, 42, 0.08);
+  --card-ink:            var(--ink);
+  --card-muted:          var(--muted);
+  /* Splash color tokens — consumed before any JS runs */
+  --splash-bg:           #f5f3ee;
+  --splash-card:         rgba(255, 253, 248, 0.82);
+  --splash-text:         #164535;
+  --splash-muted:        #4f5c55;
+  --splash-logo-bg:      rgba(255, 255, 255, 0.20);
+}
+
+/* Dark mode splash tokens */
+body[data-theme="dark"] {
+  --splash-bg:      #0c1a16;
+  --splash-card:    rgba(12, 24, 19, 0.92);
+  --splash-text:    #f0ece0;
+  --splash-muted:   rgba(240, 236, 224, 0.65);
+  --splash-logo-bg: rgba(255, 255, 255, 0.06);
+}
+
 /* Keep only one bottom safe area. The fixed nav already owns its own height. */
 body.is-authenticated .main {
   padding-bottom: 0 !important;
 }
 
 body.is-authenticated #page-content {
-  padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
 
 body.is-authenticated #page-content > :last-child,
@@ -77,17 +108,10 @@ body:not([data-theme="dark"]) {
 }
 
 body:not([data-theme="dark"])::before {
-  background-image: none !important;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(46, 122, 94, 0.11), transparent 26rem),
-    linear-gradient(145deg, rgba(250, 248, 242, 0.98), rgba(239, 235, 225, 0.98)) !important;
+  /* Keep background image from home-v2.css; lighten the filter for day mode readability */
+  filter: saturate(0.85) contrast(0.90) brightness(1.15) !important;
+  transform: translate3d(0, 0, 0) !important;
   opacity: 1 !important;
-}
-
-body:not([data-theme="dark"]).theme-custom-bg::before {
-  background-image: var(--theme-bg-image) !important;
-  background-position: center !important;
-  background-size: cover !important;
 }
 
 body:not([data-theme="dark"]) .topbar,
@@ -110,19 +134,21 @@ body:not([data-theme="dark"]) .clean-chat-page #chat-form,
 body:not([data-theme="dark"]) .compact-chat-page #chat-box.messages,
 body:not([data-theme="dark"]) .compact-news-item,
 body:not([data-theme="dark"]) .news-load-error {
-  color: var(--ink) !important;
-  border-color: rgba(31, 90, 70, 0.14) !important;
-  background: rgba(255, 253, 248, 0.94) !important;
-  box-shadow: 0 12px 30px rgba(31, 50, 42, 0.08) !important;
+  color: var(--card-ink, var(--ink)) !important;
+  border-color: var(--theme-border, rgba(31, 90, 70, 0.14)) !important;
+  background: var(--theme-card, rgba(255, 253, 248, 0.94)) !important;
+  box-shadow: var(--theme-shadow, 0 12px 30px rgba(31, 50, 42, 0.08)) !important;
 }
 
+/* Topbar uses the page background, not the card surface */
 body:not([data-theme="dark"]) .topbar {
-  background: rgba(245, 243, 238, 0.88) !important;
+  background: var(--theme-background, rgba(245, 243, 238, 0.88)) !important;
 }
 
+/* Bottom nav gets card color (opaque) */
 body:not([data-theme="dark"]) #bottom-nav,
 body:not([data-theme="dark"]) #bottom-nav.nav {
-  background: rgba(255, 253, 248, 0.97) !important;
+  background: var(--theme-card, rgba(255, 253, 248, 0.97)) !important;
 }
 
 body:not([data-theme="dark"]) #bottom-nav .nav-link {
@@ -130,8 +156,14 @@ body:not([data-theme="dark"]) #bottom-nav .nav-link {
 }
 
 body:not([data-theme="dark"]) #bottom-nav .nav-link.active {
-  color: #164535 !important;
-  background: rgba(216, 222, 195, 0.9) !important;
+  color: var(--theme-primary, #164535) !important;
+  background: var(--theme-primary-dim, rgba(216, 222, 195, 0.9)) !important;
+}
+
+/* Dark mode: active nav link uses lightened accent so it's visible on dark surface */
+body[data-theme="dark"] #bottom-nav .nav-link.active {
+  color: var(--theme-primary-light, #adc4a5) !important;
+  background: var(--theme-primary-dim, rgba(120, 145, 90, 0.22)) !important;
 }
 
 body:not([data-theme="dark"]) .chat-title-row h2,
@@ -174,7 +206,7 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
 
 @media (max-width: 640px) {
   body.is-authenticated #page-content {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important;
   }
 
   body.is-authenticated:has(.compact-chat-page) #page-content {
@@ -182,7 +214,7 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
   }
 
   .compact-chat-page {
-    height: calc(100dvh - 154px - env(safe-area-inset-bottom)) !important;
+    height: calc(100dvh - 146px - env(safe-area-inset-bottom)) !important;
   }
 
   .chat-page-header {
@@ -197,15 +229,11 @@ body:not([data-theme="dark"]).is-authenticated textarea::placeholder {
    night theme is untouched.
    ===================================================================== */
 
-/* Issue 2: a full-screen dark veil on body::after (from home-v2.css) was
-   darkening light mode on every page. Soften it to a calm warm wash so the
-   day theme reads as off-white + light green, keeping the identity. */
+/* Day mode ::after: transparent warm wash — lets the background image show through */
 body:not([data-theme="dark"])::after {
-  background: linear-gradient(
-      rgba(120, 145, 90, 0.05),
-      rgba(120, 145, 90, 0.05)
-    ),
-    rgba(247, 244, 236, 0.55) !important;
+  background:
+    radial-gradient(circle at 50% 5%, rgba(255, 252, 244, 0.26), transparent 30rem),
+    linear-gradient(180deg, rgba(255, 250, 242, 0.52), rgba(255, 250, 242, 0.32) 50%, rgba(255, 250, 242, 0.48)) !important;
 }
 
 /* Issue 3: slightly larger, calmer body text on phones (kept conservative). */
@@ -249,12 +277,12 @@ body:not([data-theme="dark"]) .prayer-location-note {
   font-size: 1.2rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.3px;
-  color: #164535;
+  color: var(--theme-primary, #164535);
 }
 
 body[data-theme="dark"] #prayer-times-container .stat strong,
 body[data-theme="dark"] #home-prayer-times .stat strong {
-  color: #eaf3ec;
+  color: var(--theme-primary-light, #adc4a5);
 }
 
 .prayer-location-note {
@@ -271,4 +299,701 @@ body[data-theme="dark"] #home-prayer-times .stat strong {
 .chat-page-header {
   min-height: 44px !important;
   padding: 6px 12px !important;
+}
+
+/* ---- design/mobile-demo-ready-ui ---- */
+
+/* 1. Homepage title: dark green in day mode (text was cream/white on light background) */
+body:not([data-theme="dark"]) #home-welcome-title {
+  color: #164535 !important;
+}
+body:not([data-theme="dark"]) .home-reference-hero p {
+  color: #315f4d !important;
+}
+body:not([data-theme="dark"]) .home-reference-hero .home-eyebrow,
+body:not([data-theme="dark"]) .home-hero-main .home-eyebrow {
+  color: #315f4d !important;
+}
+
+/* 2. Bottom nav: reduce height */
+body.is-authenticated #bottom-nav.nav a,
+#bottom-nav.nav a {
+  min-height: 44px !important;
+}
+
+@media (max-width: 960px) {
+  body.is-authenticated #bottom-nav.nav a {
+    min-height: 44px !important;
+  }
+  body.is-authenticated #bottom-nav.nav {
+    min-height: 56px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated #bottom-nav.nav a {
+    min-height: 40px !important;
+    font-size: 0.70rem !important;
+  }
+  body.is-authenticated #bottom-nav.nav {
+    min-height: 52px !important;
+  }
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — second pass
+   ===================================================================== */
+
+/* 1. Chat: hide redundant logo from page header — the topbar already
+      shows app identity. Keep only the icon + title text. */
+.chat-page-header .app-page-logo {
+  display: none !important;
+}
+
+/* 3. Day mode: top-profile member card — light surface, dark ink.
+      home-v2.css V213/V215 hardcode dark backgrounds with !important;
+      these rules have higher specificity and load after. */
+body:not([data-theme="dark"]) .top-profile {
+  color: var(--ink, #1c2b24) !important;
+  background: rgba(255, 253, 248, 0.96) !important;
+  border-color: rgba(31, 90, 70, 0.15) !important;
+  box-shadow: 0 6px 18px rgba(31, 50, 42, 0.08) !important;
+}
+
+body:not([data-theme="dark"]) .profile-copy strong {
+  color: var(--ink, #1c2b24) !important;
+}
+
+body:not([data-theme="dark"]) .profile-copy small {
+  color: var(--muted, #6f746d) !important;
+}
+
+body:not([data-theme="dark"]) .notify-bell {
+  color: var(--theme-primary, #164535) !important;
+  background: rgba(255, 253, 248, 0.96) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+body:not([data-theme="dark"]) .icon-btn {
+  color: var(--theme-primary, #164535) !important;
+  background: rgba(255, 253, 248, 0.88) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+/* 5. Panel headings, page titles, and icon accents track the theme primary. */
+body:not([data-theme="dark"]) .panel-head h2,
+body:not([data-theme="dark"]) .panel-head h3,
+body:not([data-theme="dark"]) .card-head h2,
+body:not([data-theme="dark"]) .app-page-header h2,
+body:not([data-theme="dark"]) .top-actions h1,
+body:not([data-theme="dark"]) #pageTitle {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Page header icon (the lucide icon on the right side) */
+body:not([data-theme="dark"]) .app-page-header > [data-lucide],
+body:not([data-theme="dark"]) .app-page-header > i {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Home heading (already handled earlier, but reinforce with var) */
+body:not([data-theme="dark"]) #home-welcome-title {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Dark mode: headings and accents use lightened primary (readable on dark surface) */
+body[data-theme="dark"] .panel-head h2,
+body[data-theme="dark"] .panel-head h3,
+body[data-theme="dark"] .app-page-header h2,
+body[data-theme="dark"] .home-reference-card-title h3,
+body[data-theme="dark"] .home-reference-card-title svg {
+  color: var(--theme-primary-light, #adc4a5) !important;
+}
+
+/* 6. Typography: explicit base on desktop — mobile already gets 16.5 px
+      from the @media (max-width: 640px) block above. */
+@media (min-width: 641px) {
+  body.is-authenticated {
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+}
+
+/* 7. Chat send button uses theme accent; all other buttons keep their gold default. */
+
+/* 8. Chat per-message admin controls: subtle at rest, visible on hover. */
+.pin-chat-message-btn,
+.mute-chat-user-btn {
+  opacity: 0.5 !important;
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+  min-height: 24px !important;
+}
+
+.pin-chat-message-btn:hover,
+.mute-chat-user-btn:hover,
+.pin-chat-message-btn:focus,
+.mute-chat-user-btn:focus {
+  opacity: 1 !important;
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — third pass
+   Chat compact, admin dropdown, card depth, prayer/match sub-surfaces
+   ===================================================================== */
+
+/* 9. Chat header: hide subtitle span "سوالف الاستراحة" — topbar carries identity */
+.chat-page-header > div > div > span {
+  display: none !important;
+}
+
+.chat-page-header h2 {
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+}
+
+/* 10. Chat composer: compact — one-line input, small send button */
+.compact-chat-page #chat-form {
+  padding: 5px 8px !important;
+  gap: 6px !important;
+}
+
+.compact-chat-page #chat-input {
+  min-height: 38px !important;
+  max-height: 80px !important;
+  padding: 7px 12px !important;
+  font-size: 0.94rem !important;
+  border-radius: 12px !important;
+}
+
+.compact-chat-page #chat-form button[type="submit"],
+.compact-chat-page #chat-form .btn[type="submit"] {
+  width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  flex: 0 0 38px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--theme-primary, #164535) !important;
+  color: #fffaf1 !important;
+  border-color: transparent !important;
+}
+
+.compact-chat-page #chat-form button[type="submit"] svg,
+.compact-chat-page #chat-form .btn[type="submit"] svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* 11. Chat message box: distinct surface with subtle inner shadow */
+body:not([data-theme="dark"]) .compact-chat-page #chat-box.messages {
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.18)) !important;
+  box-shadow: inset 0 2px 8px rgba(31, 50, 42, 0.04),
+              0 8px 20px rgba(31, 50, 42, 0.07) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 10px 8px !important;
+}
+
+body[data-theme="dark"] .compact-chat-page #chat-box.messages {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12),
+              0 8px 20px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* 12. Prayer stat items: each time gets a bordered sub-card */
+body:not([data-theme="dark"]) #prayer-times-container .stat,
+body:not([data-theme="dark"]) #home-prayer-times .stat {
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.12)) !important;
+  border-radius: 12px !important;
+  padding: 10px 6px !important;
+  background: var(--theme-surface, rgba(255, 255, 255, 0.82)) !important;
+  box-shadow: 0 2px 8px rgba(31, 50, 42, 0.05) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+body:not([data-theme="dark"]) #prayer-times-container .stat span,
+body:not([data-theme="dark"]) #home-prayer-times .stat span {
+  font-size: 0.82rem !important;
+  color: var(--muted, #6f746d) !important;
+}
+
+body:not([data-theme="dark"]) #prayer-times-container .stat strong,
+body:not([data-theme="dark"]) #home-prayer-times .stat strong {
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* 13. Match card: inner team block as lighter sub-surface */
+body:not([data-theme="dark"]) .match-card {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+body:not([data-theme="dark"]) .match-card .match-teams {
+  margin: 6px 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.1)) !important;
+  background: var(--theme-surface, rgba(255, 255, 255, 0.72)) !important;
+}
+
+body:not([data-theme="dark"]) .match-card .match-score {
+  color: var(--theme-primary, #164535) !important;
+  font-weight: 900 !important;
+}
+
+/* 14. Admin three-dots dropdown — keeps original class names for event delegation */
+.chat-admin-actions {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.chat-admin-toggle {
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted, #59665f);
+  cursor: pointer;
+  opacity: 0.52;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.chat-admin-toggle:hover,
+.chat-admin-toggle[aria-expanded="true"] {
+  opacity: 1;
+  background: var(--theme-primary-faint, rgba(120, 145, 90, 0.1)) !important;
+}
+
+.chat-admin-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: 60;
+  min-width: 108px;
+  padding: 4px;
+  border: 1px solid var(--theme-border, rgba(31, 90, 70, 0.18));
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow: 0 8px 24px rgba(31, 50, 42, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: none;
+}
+
+.chat-admin-menu.is-open {
+  display: block;
+}
+
+.chat-admin-menu button {
+  display: block !important;
+  width: 100% !important;
+  padding: 6px 10px !important;
+  text-align: start !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--ink, #1c2b24) !important;
+  cursor: pointer;
+  opacity: 1 !important;
+  min-height: auto !important;
+}
+
+.chat-admin-menu button:hover {
+  background: var(--theme-primary-faint, rgba(120, 145, 90, 0.1)) !important;
+}
+
+.chat-admin-menu .delete-chat-message-btn {
+  color: #c0392b !important;
+}
+
+.chat-admin-menu .delete-chat-message-btn:hover {
+  background: rgba(192, 57, 43, 0.08) !important;
+}
+
+body[data-theme="dark"] .chat-admin-menu {
+  background: rgba(18, 31, 27, 0.97);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+body[data-theme="dark"] .chat-admin-menu button {
+  color: #f7f2e8 !important;
+}
+
+body[data-theme="dark"] .chat-admin-menu button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — fourth pass
+   Home reference cards: override home-v2.css high-specificity rule so
+   weather / prayer / matches cards follow --theme-card like every other card.
+   Titles track --theme-primary accent (not a hardcoded green).
+   ===================================================================== */
+
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card {
+  background: var(--theme-card, rgba(255, 253, 248, 0.94)) !important;
+  border-color: var(--theme-border, rgba(31, 90, 70, 0.14)) !important;
+  box-shadow: var(--theme-shadow, 0 12px 30px rgba(31, 50, 42, 0.08)) !important;
+}
+
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card-title h3,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .reference-section-head h3,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .reference-section-link,
+body.is-authenticated:has(.estraha-reference-home):not([data-theme="dark"]) .home-reference-card-title svg {
+  color: var(--theme-primary, #164535) !important;
+}
+
+/* Dark mode: home cards keep the dark surface, headings use lightened accent */
+body[data-theme="dark"].is-authenticated .home-reference-card-title h3,
+body[data-theme="dark"].is-authenticated .home-reference-card-title svg {
+  color: var(--theme-primary-light, #adc4a5) !important;
+}
+
+/* =====================================================================
+   Splash: day / night theming
+   body:not / body[data-theme="dark"] scoping gives specificity (0,2,1)
+   which beats all hardcoded .splash rules in earlier CSS files.
+   The inline <script> in index.html sets data-theme before first paint,
+   so there is no flash — the splash renders in the correct mode from
+   frame 1.
+   ===================================================================== */
+
+/* Day mode splash */
+body:not([data-theme="dark"]) .splash {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.60), transparent 28rem),
+    linear-gradient(160deg, #f7f4ee 0%, #ebe4d8 58%, #dfe8df 100%) !important;
+}
+
+body:not([data-theme="dark"]) .splash-card {
+  background: var(--splash-card, rgba(255, 253, 248, 0.82)) !important;
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: 0 26px 62px rgba(31, 50, 42, 0.16) !important;
+}
+
+body:not([data-theme="dark"]) .splash strong {
+  color: var(--splash-text, #164535) !important;
+}
+
+body:not([data-theme="dark"]) .splash span {
+  color: var(--splash-muted, #4f5c55) !important;
+}
+
+/* Night mode splash */
+body[data-theme="dark"] .splash {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.04), transparent 28rem),
+    linear-gradient(160deg, #0c1a16 0%, #0f2018 60%, #101c16 100%) !important;
+}
+
+body[data-theme="dark"] .splash-card {
+  background: var(--splash-card, rgba(12, 24, 19, 0.92)) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 26px 62px rgba(0, 0, 0, 0.45) !important;
+}
+
+body[data-theme="dark"] .splash strong {
+  color: var(--splash-text, #f0ece0) !important;
+}
+
+body[data-theme="dark"] .splash span {
+  color: var(--splash-muted, rgba(240, 236, 224, 0.65)) !important;
+}
+
+/* =====================================================================
+   design/mobile-demo-ready-ui — sixth pass
+   Fix 6 issues from Deploy Preview after commit 416f311.
+   ===================================================================== */
+
+/* FIX 2: Prevent horizontal overflow — clip on html only.
+   overflow-x:hidden on body creates a scroll container on iOS Safari
+   that captures touch events and blocks position:fixed nav taps. */
+html {
+  overflow-x: clip;
+}
+
+/* Cancel home-v2.css "body { overflow-x: hidden }" for iOS Safari.
+   That rule prevents touch events reaching position:fixed elements (the nav).
+   Horizontal scroll is stopped at html level above, so body can stay visible. */
+body {
+  overflow-x: visible !important;
+}
+
+/* FIX 3: Inner page header — compact on mobile */
+@media (max-width: 640px) {
+  .app-page-logo {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .app-page-header {
+    padding: 7px 10px !important;
+    margin-bottom: 10px !important;
+    border-radius: 14px !important;
+    gap: 8px !important;
+  }
+
+  .app-page-header h2 {
+    font-size: 0.98rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .app-page-header span {
+    font-size: 0.76rem !important;
+  }
+}
+
+/* FIX 4: Bottom padding — large enough that last page item clears the nav bar */
+body.is-authenticated #page-content {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated #page-content {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.is-authenticated:has(.compact-chat-page) #page-content {
+    padding-bottom: 0 !important;
+  }
+}
+
+/* FIX 5: Members/payments — admin button rows wrap on narrow screens */
+@media (max-width: 640px) {
+  .list-item-card .flex {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .list-item-card .btn-compact {
+    font-size: 0.72rem !important;
+    padding: 3px 8px !important;
+    min-height: 28px !important;
+    white-space: nowrap;
+  }
+}
+
+/* FIX 6: Login / register card — light cream surface in day mode.
+   home-v2.css line 2634 forces rgba(12,22,18,0.78) dark on all
+   .content-body when not authenticated, regardless of theme.
+   Specificity (0,4,1) beats home-v2.css's (0,3,1). */
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .content-body {
+  color: var(--sh-ink, #1c2b24) !important;
+  background: var(--sh-card-strong, rgba(255, 253, 248, 0.94)) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+  box-shadow: 0 22px 55px rgba(7, 18, 15, 0.14) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .content-body h2 {
+  color: var(--sh-green-dark, #164535) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-layout .input-group label {
+  color: var(--sh-muted, #59665f) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .link-text {
+  color: var(--sh-muted, #59665f) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .link-text a {
+  color: var(--sh-green-dark, #164535) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand {
+  color: var(--sh-ink, #1c2b24) !important;
+  background: rgba(255, 253, 248, 0.80) !important;
+  border-color: rgba(31, 90, 70, 0.14) !important;
+}
+
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand h2,
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand span,
+body:not([data-theme="dark"]):not(.is-authenticated) .auth-brand p {
+  color: var(--sh-green-dark, #164535) !important;
+}
+
+/* =====================================================================
+   iOS Safari fixes — after commit e038c55
+   Resolves: nav tap dead zones, viewport height break, dark flash on
+   refresh, background layer flicker after address bar changes.
+   ===================================================================== */
+
+/* iOS viewport stability.
+   -webkit-fill-available = actual visual height on Safari (excludes address bar).
+   100dvh = dynamic viewport height, updates as Safari address bar shows/hides.
+   Prevents the "content taller than screen" gap that triggers address bar re-hiding. */
+html {
+  height: -webkit-fill-available;
+}
+
+body {
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+}
+
+body.is-authenticated {
+  --bottom-nav-page-clearance: calc(128px + env(safe-area-inset-bottom));
+  scroll-padding-bottom: var(--bottom-nav-page-clearance);
+}
+
+body.is-authenticated #page-content {
+  padding-bottom: var(--bottom-nav-page-clearance) !important;
+  scroll-padding-bottom: var(--bottom-nav-page-clearance);
+}
+
+body.is-authenticated #page-content > :last-child {
+  scroll-margin-bottom: var(--bottom-nav-page-clearance);
+}
+
+@media (max-width: 640px) {
+  body.is-authenticated {
+    --bottom-nav-page-clearance: calc(150px + env(safe-area-inset-bottom));
+  }
+}
+
+body.is-authenticated:has(.compact-chat-page) #page-content,
+body.is-authenticated #page-content:has(.clean-chat-page) {
+  padding-bottom: 0 !important;
+}
+
+/* Warm fill on page-content while new page renders (prevents dark desert
+   background showing through the transparent view during route transitions). */
+body:not([data-theme="dark"]) #page-content {
+  background-color: rgba(246, 243, 234, 0.55);
+}
+
+/* Nav tappability on iOS Safari.
+   touch-action: manipulation removes the 300 ms tap delay.
+   pointer-events: auto is explicit so nothing can inherit a blocking value.
+   -webkit-tap-highlight-color: transparent removes the grey tap flash. */
+body.is-authenticated #bottom-nav.nav {
+  position: fixed !important;
+  z-index: 140 !important;
+  inset-block-start: auto !important;
+  inset-inline: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 0 !important;
+  width: min(100vw, 760px) !important;
+  max-width: 100vw !important;
+  transform: translateX(-50%) !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  isolation: isolate !important;
+  will-change: auto !important;
+}
+
+body.is-authenticated:has(.estraha-reference-home) #bottom-nav.nav,
+body.is-authenticated:has(.estraha-reference-home) #bottom-nav {
+  position: fixed !important;
+  z-index: 140 !important;
+  inset-block-start: auto !important;
+  inset-inline: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 0 !important;
+  width: min(100vw, 760px) !important;
+  max-width: 100vw !important;
+  transform: translateX(-50%) !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  isolation: isolate !important;
+  will-change: auto !important;
+}
+
+body.is-authenticated #bottom-nav.nav .nav-link,
+body.is-authenticated:has(.estraha-reference-home) #bottom-nav.nav .nav-link,
+body.is-authenticated:has(.estraha-reference-home) #bottom-nav .nav-link {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Fully remove splash from the render tree after it fades out.
+   JS adds .done after the configured delay; CSS transition fades opacity
+   over 220 ms, then JS sets style.display="none" at 300 ms.
+   This rule also fires immediately for sessionStorage-skipped splashes
+   (hasSeenSplash), where .done is added with no delay. */
+#splash.done,
+.splash.done {
+  display: none !important;
+}
+
+/* =====================================================================
+   Mobile Safari: floating nav + overscroll background fix (v281)
+   ===================================================================== */
+
+/* Overscroll colour — html element background shows during pull-to-refresh.
+   body has the background image, but the area above it is html's colour. */
+html:has(body:not([data-theme="dark"])) {
+  background-color: #f5f3ee;
+}
+
+html:has(body[data-theme="dark"]) {
+  background-color: #0c1a16;
+}
+
+/* Mobile only: lift nav off the very bottom so it clears Safari's browser toolbar.
+   Uses margin approach (left/right: 12px, width: auto) instead of translateX centering,
+   so no transform creates a new containing block that Safari might misplace. */
+@media (max-width: 640px) {
+  body.is-authenticated #bottom-nav.nav,
+  body.is-authenticated:has(.estraha-reference-home) #bottom-nav.nav,
+  body.is-authenticated:has(.estraha-reference-home) #bottom-nav {
+    bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    transform: none !important;
+    z-index: 9999 !important;
+    border-radius: 22px !important;
+  }
+}
+
+/* =====================================================================
+   Home topbar: compact logo card aligned with profile card
+   Fixes: logo card 86px tall vs profile card 44px → unbalanced topbar.
+   Scope: home page only via :has(.estraha-reference-home).
+   ===================================================================== */
+
+/* Shrink logo to 34px so the card height matches .top-profile (~44px) */
+body.is-authenticated:has(.estraha-reference-home) .topbar-logo {
+  width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  transform: none !important;
+}
+
+/* Glass card instead of heavy opaque white — lighter than profile card */
+body.is-authenticated:has(.estraha-reference-home) .top-actions {
+  padding: 5px 8px !important;
+  background: rgba(255, 253, 248, 0.50) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Dark mode: match dark surface */
+body[data-theme="dark"].is-authenticated:has(.estraha-reference-home) .top-actions {
+  background: rgba(31, 34, 31, 0.45) !important;
 }

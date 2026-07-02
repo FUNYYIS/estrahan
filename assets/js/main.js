@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '278';
+const APP_ASSET_VERSION = '283';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,12 +177,26 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=278';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || `assets/icons/icon-512-original-zoom.png?v=${APP_ASSET_VERSION}`;
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     }
+}
+
+function hexToRgbParts(hex) {
+    const h = hex.replace('#', '');
+    return [
+        parseInt(h.slice(0, 2), 16),
+        parseInt(h.slice(2, 4), 16),
+        parseInt(h.slice(4, 6), 16)
+    ];
+}
+
+function cardLuminance(r, g, b) {
+    const lin = c => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
 function applyCustomTheme() {
@@ -192,19 +206,59 @@ function applyCustomTheme() {
     const background = appSettings.themeBackgroundColor || '#f6f3ea';
     const card = appSettings.themeCardColor || '#ffffff';
 
+    // Primary accent — always applied; CSS light-mode rules consume via var(--theme-primary).
     root.style.setProperty('--theme-primary', primary);
-    root.style.setProperty('--theme-background', background);
-    root.style.setProperty('--theme-card', card);
-
     root.style.setProperty('--theme-bg-color', background);
 
-    document.querySelectorAll('.panel, .home-reference-card, .payment-summary-card, .list-item-card, .service-card, .stat-card').forEach((el) => {
-        el.style.backgroundColor = card;
-    });
+    // Soft tints of primary for active-state fills and hover backgrounds.
+    try {
+        const [r, g, b] = hexToRgbParts(primary);
+        root.style.setProperty('--theme-primary-dim', `rgba(${r},${g},${b},0.14)`);
+        root.style.setProperty('--theme-primary-faint', `rgba(${r},${g},${b},0.07)`);
+        const rl = Math.min(255, Math.round(r + (255 - r) * 0.48));
+        const gl = Math.min(255, Math.round(g + (255 - g) * 0.48));
+        const bl = Math.min(255, Math.round(b + (255 - b) * 0.48));
+        root.style.setProperty('--theme-primary-light', `rgb(${rl},${gl},${bl})`);
+    } catch {
+        root.style.setProperty('--theme-primary-dim', 'rgba(120,145,90,0.14)');
+        root.style.setProperty('--theme-primary-faint', 'rgba(120,145,90,0.07)');
+        root.style.setProperty('--theme-primary-light', '#adc4a5');
+    }
 
-    document.querySelectorAll('.btn').forEach((el) => {
-        el.style.backgroundColor = primary;
-    });
+    // Background: only override when admin chose a non-default value.
+    if (background && background !== '#f6f3ea') {
+        root.style.setProperty('--theme-background', background);
+    } else {
+        root.style.removeProperty('--theme-background');
+    }
+
+    // Card surface hierarchy: only override when admin set a non-default card color.
+    // When unset, CSS :root defaults provide the warm-cream surfaces with visual depth.
+    if (card && card !== '#ffffff') {
+        try {
+            const [rc, gc, bc] = hexToRgbParts(card);
+            root.style.setProperty('--theme-card', `rgba(${rc},${gc},${bc},0.94)`);
+            root.style.setProperty('--theme-surface', `rgba(${rc},${gc},${bc},0.80)`);
+            root.style.setProperty('--theme-card-muted', `rgba(${rc},${gc},${bc},0.54)`);
+            // Auto-contrast: dark card → light text, light card → dark text (default)
+            const lum = cardLuminance(rc, gc, bc);
+            if (lum < 0.35) {
+                root.style.setProperty('--card-ink', '#f0ece0');
+                root.style.setProperty('--card-muted', 'rgba(240, 236, 224, 0.72)');
+            } else {
+                root.style.removeProperty('--card-ink');
+                root.style.removeProperty('--card-muted');
+            }
+        } catch {
+            root.style.setProperty('--theme-card', card);
+        }
+    } else {
+        root.style.removeProperty('--theme-card');
+        root.style.removeProperty('--theme-surface');
+        root.style.removeProperty('--theme-card-muted');
+        root.style.removeProperty('--card-ink');
+        root.style.removeProperty('--card-muted');
+    }
 
     const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '');
     if (logoUrl) {
@@ -567,7 +621,7 @@ function toggleTheme() {
 }
 
 function loadTheme() {
-    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'dark';
+    const savedTheme = localStorage.getItem('al-istiraha-theme') || 'light';
     applyTheme(savedTheme);
 }
 
@@ -1927,7 +1981,7 @@ function getAdminNotificationErrorMessage(error) {
     }
 
     if (code.includes('failed-precondition')) {
-        return message || 'فشل الإرسال: لا توجد بيانات كافية لإرسال هذا الاختبار.';
+        return 'ما في مباراة قريبة حالياً لإرسال إشعار تجريبي. سيُرسل الإشعار تلقائياً قبل المباراة القادمة.';
     }
 
     if (code.includes('invalid-argument')) {
@@ -2573,7 +2627,7 @@ function loadMembers() {
     }
 }
 
-function loadPaymentLog() {
+async function loadPaymentLog() {
     const logList = document.getElementById('payment-log-list');
     if (!logList) {
         console.warn('payment-log-list element not found');
@@ -2581,6 +2635,15 @@ function loadPaymentLog() {
     }
 
     try {
+        // Load users collection once to cross-reference names when payment.userName is missing
+        let usersMap = new Map();
+        try {
+            const usersSnap = await getDocs(collection(db, "users"));
+            usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data().name || '']));
+        } catch {
+            // Continue without name lookup if users fetch fails
+        }
+
         unsubscribePayments = onSnapshot(
             query(collection(db, "payments"), orderBy("date", "desc")),
             (snapshot) => {
@@ -2596,9 +2659,10 @@ function loadPaymentLog() {
                     const date = payment.date
                         ? new Date(payment.date.seconds * 1000).toLocaleDateString('ar-SA')
                         : 'غير محدد';
+                    const name = payment.userName || usersMap.get(payment.userId) || 'بدون اسم';
                     div.innerHTML = `
                         <div>
-                            <span class="font-bold">${escapeHtml(payment.userName || 'بدون اسم')}</span>
+                            <span class="font-bold">${escapeHtml(name)}</span>
                             <small>${escapeHtml(date)}</small>
                         </div>
                         <span class="status-badge paid">تم السداد</span>
@@ -2706,6 +2770,22 @@ async function loadPaymentOverview() {
 }
 
 async function handleChatBoxClick(event) {
+    const toggleBtn = event.target.closest('.chat-admin-toggle');
+    if (toggleBtn) {
+        event.stopPropagation();
+        const menu = toggleBtn.nextElementSibling;
+        const isOpen = menu?.classList.contains('is-open');
+        document.querySelectorAll('.chat-admin-menu.is-open').forEach(m => {
+            m.classList.remove('is-open');
+            m.previousElementSibling?.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen && menu) {
+            menu.classList.add('is-open');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+        return;
+    }
+
     const pinBtn = event.target.closest('.pin-chat-message-btn');
     if (pinBtn) {
         const messageId = pinBtn.dataset.id;
@@ -2770,6 +2850,16 @@ function loadChat() {
     if (chatBox.dataset.delegationBound !== 'true') {
         chatBox.dataset.delegationBound = 'true';
         chatBox.addEventListener('click', handleChatBoxClick);
+    }
+
+    if (!document.body.dataset.chatMenuBound) {
+        document.body.dataset.chatMenuBound = 'true';
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.chat-admin-menu.is-open').forEach(m => {
+                m.classList.remove('is-open');
+                m.previousElementSibling?.setAttribute('aria-expanded', 'false');
+            });
+        });
     }
 
     try {
@@ -2842,9 +2932,16 @@ function renderChatMessages(chatBox) {
         const avatarUrl = getSafeAvatarUrl(msg.avatarUrl || profile.avatarUrl || (isMe ? currentUser?.avatarUrl : '')) || 'assets/images/estraha-logo.svg';
         const avatarContent = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(userDisplayName)}" loading="lazy" decoding="async">`;
         const adminChatControls = (auth.currentUser?.uid === ADMIN_UID || currentUser?.uid === ADMIN_UID)
-            ? `<button type="button" class="pin-chat-message-btn btn btn-mini" data-id="${escapeHtml(msg.id)}">تثبيت</button>
-               <button type="button" class="mute-chat-user-btn btn btn-mini" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
-               <button type="button" class="delete-chat-message-btn btn btn-danger btn-mini" data-id="${escapeHtml(msg.id)}">حذف</button>`
+            ? `<div class="chat-admin-actions">
+                 <button type="button" class="chat-admin-toggle" aria-label="خيارات الرسالة" aria-expanded="false">
+                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                 </button>
+                 <div class="chat-admin-menu" role="menu">
+                   <button type="button" class="pin-chat-message-btn" data-id="${escapeHtml(msg.id)}">تثبيت</button>
+                   <button type="button" class="mute-chat-user-btn" data-user-id="${escapeHtml(msg.userId || '')}">كتم</button>
+                   <button type="button" class="delete-chat-message-btn" data-id="${escapeHtml(msg.id)}">حذف</button>
+                 </div>
+               </div>`
             : '';
 
         div.innerHTML = `
@@ -3236,80 +3333,84 @@ async function loadPrayerTimes() {
     );
 }
 
-async function initQibla() {
-    const container = document.getElementById('qibla-container');
-    const status = document.getElementById('qibla-status');
-    const compass = document.getElementById('compass');
+function initQibla() {
+    const status = document.getElementById('qibla-fix-status');
+    const enableBtn = document.getElementById('qibla-enable-button');
+    const compassEl = document.getElementById('qibla-fix-compass');
+    const arrowEl = document.getElementById('qibla-fix-arrow');
 
-    if (!container || !status || !compass) {
-        console.warn('Qibla elements not found');
-        return;
-    }
+    if (!enableBtn) return;
 
-    if (!navigator.geolocation) {
-        status.textContent = 'جهازك ما يدعم تحديد الموقع.';
-        return;
-    }
+    enableBtn.addEventListener('click', async function handleQiblaClick() {
+        enableBtn.removeEventListener('click', handleQiblaClick);
+        enableBtn.disabled = true;
 
-    status.textContent = "اسمح بالموقع عشان نحدد القبلة...";
-
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        // Request device orientation permission first — must be synchronous within
+        // the user gesture context on iOS 13+ (Safari requires requestPermission
+        // to be called before any other async operations in the click chain).
+        let orientationReady = false;
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
-                const { latitude, longitude } = position.coords;
-                const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch qibla direction');
-                }
-
-                const data = await response.json();
-
-                if (!data.data || data.data.direction === undefined) {
-                    throw new Error('Invalid qibla data structure');
-                }
-
-                const qiblaAngle = data.data.direction;
-
-                status.textContent = "حرك جوالك وبتضبط معك القبلة";
-                compass.style.display = 'block';
-
-                if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-                    try {
-                        const permission = await window.DeviceOrientationEvent.requestPermission();
-                        if (permission === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        } else {
-                            status.textContent = 'تم رفض حساس الحركة.';
-                        }
-                    } catch (permError) {
-                        console.error('Permission request error:', permError);
-                        status.textContent = 'صار خطأ بطلب الإذن.';
-                    }
-                } else if ('DeviceOrientationEvent' in window) {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                } else {
-                    status.textContent = 'جهازك ما يدعم تحديد الاتجاه.';
-                }
-
-                function handleOrientation(event) {
-                    let direction = event.webkitCompassHeading || event.alpha;
-                    if (direction === null) return;
-                    compass.style.transform = `rotate(${-direction}deg)`;
-                    const qiblaArrow = document.getElementById('qibla-arrow');
-                    if (qiblaArrow) {
-                        qiblaArrow.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
-                    }
-                }
-            } catch (error) {
-                console.error('Error in initQibla:', error);
-                status.textContent = 'ما قدرنا نحسب اتجاه القبلة.';
+                const perm = await DeviceOrientationEvent.requestPermission();
+                orientationReady = perm === 'granted';
+            } catch {
+                orientationReady = false;
             }
-        },
-        () => {
-            status.textContent = 'الموقع مقفل، ما نقدر نعرض القبلة.';
+        } else {
+            orientationReady = typeof DeviceOrientationEvent !== 'undefined';
         }
-    );
+
+        if (!navigator.geolocation) {
+            if (status) status.textContent = 'جهازك ما يدعم تحديد الموقع.';
+            return;
+        }
+
+        if (status) status.textContent = 'جاري تحديد موقعك...';
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                if (status) status.textContent = 'جاري حساب اتجاه القبلة...';
+
+                try {
+                    const response = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
+                    if (!response.ok) throw new Error('qibla fetch failed');
+                    const data = await response.json();
+                    const qiblaAngle = data.data?.direction;
+                    if (qiblaAngle == null) throw new Error('no angle');
+
+                    if (compassEl) compassEl.removeAttribute('hidden');
+
+                    if (orientationReady) {
+                        if (status) status.textContent = 'حرّك جوالك ببطء لضبط القبلة';
+                        window.addEventListener('deviceorientation', function(event) {
+                            let heading = event.webkitCompassHeading;
+                            if (heading == null) heading = event.alpha;
+                            if (heading == null) return;
+                            if (compassEl) compassEl.style.transform = `rotate(${-heading}deg)`;
+                            if (arrowEl) arrowEl.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                        });
+                    } else {
+                        const deg = Math.round(qiblaAngle);
+                        if (status) status.textContent = `اتجاه القبلة ${deg}° من الشمال الحقيقي`;
+                        if (arrowEl) arrowEl.style.transform = `translateX(-50%) rotate(${qiblaAngle}deg)`;
+                    }
+                } catch {
+                    if (status) status.textContent = 'ما قدرنا نحسب اتجاه القبلة. جرّب مرة ثانية.';
+                    enableBtn.disabled = false;
+                }
+            },
+            (error) => {
+                const denied = error?.code === 1;
+                if (status) status.textContent = denied
+                    ? 'الموقع محجوب. فعّل إذن الموقع من إعدادات Safari أو المتصفح.'
+                    : 'ما قدرنا تحديد موقعك. جرّب مرة ثانية.';
+                enableBtn.disabled = false;
+            },
+            { timeout: 12000, maximumAge: 600000 }
+        );
+    });
 }
 
 async function loadMatches(container, limit = 10, compact = false) {
@@ -3349,8 +3450,7 @@ async function loadMatches(container, limit = 10, compact = false) {
             .slice(0, limit);
         const saudiUpcoming = saudiEvents.filter((event) => getEventDateKey(event) > today).slice(0, limit);
         const sportsDbWorldCup = (worldCupData.events || [])
-            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID)
-            .map((event) => ({ ...event, strSource: 'TheSportsDB' }));
+            .filter((event) => event.idLeague === WORLD_CUP_LEAGUE_ID);
         const worldCupUpcoming = mergeWorldCupFixtures(sportsDbWorldCup, githubWorldCup)
             .filter((event) => getEventDateKey(event) >= today)
             .sort(compareSportsDbEvents)
@@ -3361,6 +3461,8 @@ async function loadMatches(container, limit = 10, compact = false) {
             ...worldCupUpcoming
         ]);
 
+        const totalMatches = todayMatches.length + saudiUpcoming.length + worldCupUpcoming.length;
+
         if (compact) {
             const compactMatches = [
                 ...todayMatches,
@@ -3369,29 +3471,41 @@ async function loadMatches(container, limit = 10, compact = false) {
             ].slice(0, limit);
             container.innerHTML = compactMatches.length
                 ? compactMatches.map(renderSportsDbMatchCard).join('')
-                : '<div class="empty card">ما فيه مباريات متاحة حالياً.</div>';
+                : '<div class="empty card">ما فيه مباريات متاحة الآن.</div>';
+            return;
+        }
+
+        if (totalMatches === 0) {
+            container.innerHTML = `
+                <div class="panel">
+                    <p class="text-center">ما قدرنا نجيب المباريات الآن. جرّب بعد قليل.</p>
+                </div>
+            `;
             return;
         }
 
         container.innerHTML = `
+            ${todayMatches.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>مباريات اليوم</h2><span class="badge scheduled">اليوم</span></div>
                 <div class="cards-grid matches-grid">
-                    ${todayMatches.length ? todayMatches.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات اليوم.</div>'}
+                    ${todayMatches.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${saudiUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>الدوري السعودي</h2><span class="badge scheduled">قادمة</span></div>
                 <div class="cards-grid matches-grid">
-                    ${saudiUpcoming.length ? saudiUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه مباريات جاية للدوري السعودي حالياً.</div>'}
+                    ${saudiUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
+            ${worldCupUpcoming.length ? `
             <div class="panel">
                 <div class="panel-head"><h2>كأس العالم 2026</h2><span class="badge scheduled">الجدول</span></div>
                 <div class="cards-grid matches-grid">
-                    ${worldCupUpcoming.length ? worldCupUpcoming.map(renderSportsDbMatchCard).join('') : '<div class="empty card">ما فيه جدول كأس العالم متاح حالياً.</div>'}
+                    ${worldCupUpcoming.map(renderSportsDbMatchCard).join('')}
                 </div>
-            </div>
+            </div>` : ''}
         `;
 
     } catch (error) {
@@ -3468,12 +3582,24 @@ function normalizeGithubWorldCupMatch(match, teamsById) {
 }
 
 function parseWorldCupLocalDate(value = '') {
-    const [dateValue = '', timeValue = ''] = String(value).split(' ');
-    const [month, day, year] = dateValue.split('/');
-    const date = year && month && day
-        ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-        : '';
-    const time = timeValue ? `${timeValue}:00`.slice(0, 8) : '';
+    // Handle ISO (2026-06-12T15:00), ISO space (2026-06-12 15:00), and MM/DD/YYYY formats
+    const str = String(value).trim().replace('T', ' ');
+    const spaceIdx = str.indexOf(' ');
+    const dateStr = spaceIdx >= 0 ? str.slice(0, spaceIdx) : str;
+    const timeStr = spaceIdx >= 0 ? str.slice(spaceIdx + 1) : '';
+
+    let date = '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        date = dateStr;
+    } else {
+        const [month, day, year] = dateStr.split('/');
+        if (year && month && day) {
+            date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+    }
+
+    const timeMatch = timeStr.match(/\d{1,2}:\d{2}(?::\d{2})?/);
+    const time = timeMatch ? `${timeMatch[0]}:00`.slice(0, 8) : '';
     return { date, time };
 }
 
@@ -3741,12 +3867,14 @@ function initApp() {
         if (!splash || splash.classList.contains('done')) return;
         splash.classList.add('done');
         window.setTimeout(() => {
+            if (splash) splash.style.display = 'none';
             console.log('✓ Splash screen hidden, main content shown');
-        }, 220);
+        }, 300);
     };
 
     if (hasSeenSplash) {
         splash?.classList.add('done');
+        if (splash) splash.style.display = 'none';
         console.log('✓ Splash skipped');
     } else {
         sessionStorage.setItem('hasSeenSplash', 'true');
@@ -3809,3 +3937,32 @@ document.addEventListener('click', (event) => {
         console.error('Navigation failed:', error);
     });
 });
+
+// iOS Safari can drop the first synthetic click on the fixed bottom navigation.
+// A touchend fallback scoped to #bottom-nav keeps tab switching reliable there
+// without adding any document-wide listener or touching the router.
+if (bottomNav) {
+    let lastNavHash = '';
+    let lastNavAt = 0;
+
+    bottomNav.addEventListener('touchend', (event) => {
+        const link = event.target.closest?.('.nav-link[href^="#"]');
+        if (!link || !bottomNav.contains(link)) return;
+
+        const targetHash = link.getAttribute('href');
+        if (!targetHash) return;
+
+        // Guard against a double trigger from the same tap gesture.
+        const now = Date.now();
+        if (targetHash === lastNavHash && now - lastNavAt < 500) return;
+        lastNavHash = targetHash;
+        lastNavAt = now;
+
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+        }
+
+        // Suppress the emulated click so navigation runs exactly once.
+        event.preventDefault();
+    }, { passive: false });
+}

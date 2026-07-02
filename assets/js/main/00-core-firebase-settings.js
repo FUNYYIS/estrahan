@@ -56,7 +56,7 @@ const firebaseConfig = {
   appId: "1:198308357962:web:63b5b267e738efd54a83b3"
 };
 
-const APP_ASSET_VERSION = '278';
+const APP_ASSET_VERSION = '283';
 const FCM_VAPID_KEY = 'BDv-0DqOy9KaOY4Om9wdNitW8ZB3ZDTqZn-vbOH2I7jWQL888yWFq1GGWXqR4GYHyTw_NWB_S4cx8HI7zrnp77U';
 
 
@@ -177,12 +177,26 @@ function applySplashSettings() {
             <strong>${escapeHtml(title)}</strong>
         `;
     } else {
-        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || 'assets/icons/icon-512-original-zoom.png?v=278';
+        const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '') || `assets/icons/icon-512-original-zoom.png?v=${APP_ASSET_VERSION}`;
         splashCard.innerHTML = `
             <img class="splash-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(title)}" width="210" height="210" loading="eager" decoding="async" fetchpriority="high">
             <strong>${escapeHtml(title)}</strong>
         `;
     }
+}
+
+function hexToRgbParts(hex) {
+    const h = hex.replace('#', '');
+    return [
+        parseInt(h.slice(0, 2), 16),
+        parseInt(h.slice(2, 4), 16),
+        parseInt(h.slice(4, 6), 16)
+    ];
+}
+
+function cardLuminance(r, g, b) {
+    const lin = c => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
 function applyCustomTheme() {
@@ -192,19 +206,59 @@ function applyCustomTheme() {
     const background = appSettings.themeBackgroundColor || '#f6f3ea';
     const card = appSettings.themeCardColor || '#ffffff';
 
+    // Primary accent — always applied; CSS light-mode rules consume via var(--theme-primary).
     root.style.setProperty('--theme-primary', primary);
-    root.style.setProperty('--theme-background', background);
-    root.style.setProperty('--theme-card', card);
-
     root.style.setProperty('--theme-bg-color', background);
 
-    document.querySelectorAll('.panel, .home-reference-card, .payment-summary-card, .list-item-card, .service-card, .stat-card').forEach((el) => {
-        el.style.backgroundColor = card;
-    });
+    // Soft tints of primary for active-state fills and hover backgrounds.
+    try {
+        const [r, g, b] = hexToRgbParts(primary);
+        root.style.setProperty('--theme-primary-dim', `rgba(${r},${g},${b},0.14)`);
+        root.style.setProperty('--theme-primary-faint', `rgba(${r},${g},${b},0.07)`);
+        const rl = Math.min(255, Math.round(r + (255 - r) * 0.48));
+        const gl = Math.min(255, Math.round(g + (255 - g) * 0.48));
+        const bl = Math.min(255, Math.round(b + (255 - b) * 0.48));
+        root.style.setProperty('--theme-primary-light', `rgb(${rl},${gl},${bl})`);
+    } catch {
+        root.style.setProperty('--theme-primary-dim', 'rgba(120,145,90,0.14)');
+        root.style.setProperty('--theme-primary-faint', 'rgba(120,145,90,0.07)');
+        root.style.setProperty('--theme-primary-light', '#adc4a5');
+    }
 
-    document.querySelectorAll('.btn').forEach((el) => {
-        el.style.backgroundColor = primary;
-    });
+    // Background: only override when admin chose a non-default value.
+    if (background && background !== '#f6f3ea') {
+        root.style.setProperty('--theme-background', background);
+    } else {
+        root.style.removeProperty('--theme-background');
+    }
+
+    // Card surface hierarchy: only override when admin set a non-default card color.
+    // When unset, CSS :root defaults provide the warm-cream surfaces with visual depth.
+    if (card && card !== '#ffffff') {
+        try {
+            const [rc, gc, bc] = hexToRgbParts(card);
+            root.style.setProperty('--theme-card', `rgba(${rc},${gc},${bc},0.94)`);
+            root.style.setProperty('--theme-surface', `rgba(${rc},${gc},${bc},0.80)`);
+            root.style.setProperty('--theme-card-muted', `rgba(${rc},${gc},${bc},0.54)`);
+            // Auto-contrast: dark card → light text, light card → dark text (default)
+            const lum = cardLuminance(rc, gc, bc);
+            if (lum < 0.35) {
+                root.style.setProperty('--card-ink', '#f0ece0');
+                root.style.setProperty('--card-muted', 'rgba(240, 236, 224, 0.72)');
+            } else {
+                root.style.removeProperty('--card-ink');
+                root.style.removeProperty('--card-muted');
+            }
+        } catch {
+            root.style.setProperty('--theme-card', card);
+        }
+    } else {
+        root.style.removeProperty('--theme-card');
+        root.style.removeProperty('--theme-surface');
+        root.style.removeProperty('--theme-card-muted');
+        root.style.removeProperty('--card-ink');
+        root.style.removeProperty('--card-muted');
+    }
 
     const logoUrl = safeExternalUrl(appSettings.themeLogoUrl || '', '');
     if (logoUrl) {

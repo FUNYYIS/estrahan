@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estraha-cache-v278';
+const CACHE_NAME = 'estraha-cache-v283';
 
 const APP_SHELL_URLS = [
   '/',
@@ -9,6 +9,7 @@ const APP_SHELL_URLS = [
   '/assets/css/page-fixes.css',
   '/assets/css/home-layout-fix.css',
   '/assets/css/layout-theme-fix.css',
+  '/assets/css/mobile-theme-polish.css',
   '/assets/css/chat-composer-fix.css',
   '/assets/css/home-polish.css',
   '/assets/css/runtime-ux.css',

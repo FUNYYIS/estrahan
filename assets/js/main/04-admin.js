@@ -602,7 +602,7 @@ function getAdminNotificationErrorMessage(error) {
     }
 
     if (code.includes('failed-precondition')) {
-        return message || 'فشل الإرسال: لا توجد بيانات كافية لإرسال هذا الاختبار.';
+        return 'ما في مباراة قريبة حالياً لإرسال إشعار تجريبي. سيُرسل الإشعار تلقائياً قبل المباراة القادمة.';
     }
 
     if (code.includes('invalid-argument')) {

@@ -142,3 +142,32 @@ document.addEventListener('click', (event) => {
         console.error('Navigation failed:', error);
     });
 });
+
+// iOS Safari can drop the first synthetic click on the fixed bottom navigation.
+// A touchend fallback scoped to #bottom-nav keeps tab switching reliable there
+// without adding any document-wide listener or touching the router.
+if (bottomNav) {
+    let lastNavHash = '';
+    let lastNavAt = 0;
+
+    bottomNav.addEventListener('touchend', (event) => {
+        const link = event.target.closest?.('.nav-link[href^="#"]');
+        if (!link || !bottomNav.contains(link)) return;
+
+        const targetHash = link.getAttribute('href');
+        if (!targetHash) return;
+
+        // Guard against a double trigger from the same tap gesture.
+        const now = Date.now();
+        if (targetHash === lastNavHash && now - lastNavAt < 500) return;
+        lastNavHash = targetHash;
+        lastNavAt = now;
+
+        if (window.location.hash !== targetHash) {
+            window.location.hash = targetHash;
+        }
+
+        // Suppress the emulated click so navigation runs exactly once.
+        event.preventDefault();
+    }, { passive: false });
+}
